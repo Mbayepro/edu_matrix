@@ -49,11 +49,11 @@ export default function TeacherDashboard() {
       const today = new Date().toISOString().split('T')[0]
 
       const classStats = await Promise.all(
-        classes.map(async (cl) => {
+        classes.map(async (cl: any) => {
           const [{ count: nbEleves }, { count: nbNotes }, { count: presAujourd }] = await Promise.all([
             supabase.from('eleves').select('id', { count: 'exact', head: true }).eq('classe_id', cl.id),
             supabase.from('notes').select('id', { count: 'exact', head: true })
-              .in('eleve_id', (await supabase.from('eleves').select('id').eq('classe_id', cl.id)).data?.map(e => e.id) ?? []),
+              .in('eleve_id', (await supabase.from('eleves').select('id').eq('classe_id', cl.id)).data?.map((e: any) => e.id) ?? []),
             supabase.from('presences').select('id', { count: 'exact', head: true })
               .eq('classe_id', cl.id).eq('date', today),
           ])
