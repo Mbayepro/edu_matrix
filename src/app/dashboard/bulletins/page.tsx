@@ -140,9 +140,11 @@ export default function BulletinsPage() {
       const coefficient = notesMatiere[0]?.evaluation?.matiere?.coefficient || 1
 
       return {
-        nom,
+        matiere_id: notesMatiere[0]?.evaluation?.matiere?.id || '',
+        matiere_nom: nom,
         coefficient,
         moyenne: Math.round(moyenne * 100) / 100,
+        nombre_evaluations: notesMatiere.length,
       }
     })
 
@@ -166,11 +168,13 @@ export default function BulletinsPage() {
 
     return {
       eleve,
-      moyenneGenerale: Math.round(moyenneGenerale * 100) / 100,
+      niveau: {} as any, // À implémenter
+      serie: undefined, // À implémenter
+      moyenne_generale: Math.round(moyenneGenerale * 100) / 100,
       mention: getMention(moyenneGenerale),
       matieres: matieresData,
       trimestre,
-      anneeScolaire: '2024-2025', // Could be dynamic
+      annee_scolaire: '2024-2025',
     }
   }
 
@@ -239,7 +243,7 @@ export default function BulletinsPage() {
             ${ecole?.logo_url ? `<img src="${ecole.logo_url}" alt="Logo" class="logo">` : ''}
             <h1>${ecole?.nom || 'Établissement Scolaire'}</h1>
             <h2>Bulletin Trimestriel - Trimestre ${bulletin.trimestre}</h2>
-            <h2>Année Scolaire ${bulletin.anneeScolaire}</h2>
+            <h2>Année Scolaire ${bulletin.annee_scolaire}</h2>
         </div>
 
         <div class="student-info">
@@ -262,7 +266,7 @@ export default function BulletinsPage() {
             <tbody>
                 ${bulletin.matieres.map(matiere => `
                     <tr>
-                        <td>${matiere.nom}</td>
+                        <td>${matiere.matiere_nom}</td>
                         <td>${matiere.coefficient}</td>
                         <td class="moyenne">${matiere.moyenne}</td>
                     </tr>
@@ -274,7 +278,7 @@ export default function BulletinsPage() {
             <div>
                 <h3 style="margin: 0; color: #374151;">Moyenne Générale</h3>
                 <p style="font-size: 24px; font-weight: bold; color: #1f2937; margin: 10px 0;">
-                    ${bulletin.moyenneGenerale} / 20
+                    ${bulletin.moyenne_generale} / 20
                 </p>
             </div>
             <div>
@@ -359,7 +363,7 @@ export default function BulletinsPage() {
                   </span>
                   <span className="flex items-center gap-1">
                     <TrendingUp className="w-3 h-3" />
-                    Moyenne: {(bulletins.reduce((sum, b) => sum + b.moyenneGenerale, 0) / bulletins.length).toFixed(2)}
+                    Moyenne: {(bulletins.reduce((sum, b) => sum + b.moyenne_generale, 0) / bulletins.length).toFixed(2)}
                   </span>
                 </div>
               )}
@@ -392,7 +396,7 @@ export default function BulletinsPage() {
                   <div className="text-right">
                     <div className="text-xs text-slate-400">Moyenne</div>
                     <div className="text-lg font-bold text-slate-800">
-                      {bulletin.moyenneGenerale.toFixed(2)}/20
+                      {bulletin.moyenne_generale.toFixed(2)}/20
                     </div>
                   </div>
                   
@@ -437,7 +441,7 @@ export default function BulletinsPage() {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {bulletin.matieres.slice(0, 6).map((matiere, index) => (
                     <div key={index} className="bg-slate-50 rounded-lg p-3">
-                      <div className="text-xs text-slate-400">{matiere.nom}</div>
+                      <div className="text-xs text-slate-400">{matiere.matiere_nom}</div>
                       <div className="text-sm font-semibold text-slate-800">
                         {matiere.moyenne.toFixed(2)}/20
                       </div>
