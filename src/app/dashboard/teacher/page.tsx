@@ -29,6 +29,7 @@ export default function TeacherDashboard() {
   const [loading, setLoading]       = useState(true)
   const [activeTab, setActiveTab]   = useState<ActiveTab>('apercu')
   const [selectedClasse, setSelectedClasse] = useState<string>('')
+  const [trimestre, setTrimestre] = useState<number>(1)
 
   useEffect(() => { loadAll() }, [])
 
@@ -176,7 +177,7 @@ export default function TeacherDashboard() {
           )}
 
           {/* ── Notes ── */}
-          {activeTab === 'notes' && <GradesEntry />}
+          {activeTab === 'notes' && <GradesEntry classeId={selectedClasse} trimestre={trimestre} />}
 
           {/* ── Présences ── */}
           {activeTab === 'presences' && (
