@@ -36,7 +36,6 @@ export default function NotFound() {
           </p>
         </div>
 
-        {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
             href="/dashboard"
@@ -46,14 +45,14 @@ export default function NotFound() {
             <Home className="w-4 h-4" />
             Tableau de bord
           </Link>
-          <button
-            onClick={() => window.history.back()}
+          <Link
+            href="/"
             className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20
                        text-white font-semibold px-6 py-3 rounded-xl transition-colors border border-white/10"
           >
             <ArrowLeft className="w-4 h-4" />
-            Retour
-          </button>
+            Retour à l&apos;accueil
+          </Link>
         </div>
       </div>
     </div>
