@@ -27,11 +27,13 @@ interface Evaluation {
   date: string;
   coef: number;
   bareme: number;
+  matiere_id: string;
 }
 
 interface Note {
   id: string;
   evaluation_id: string;
+  eleve_id: string;
   note: number;
 }
 
@@ -102,7 +104,7 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
         return;
       }
 
-      const matieresFormatees: Matiere[] = data?.map(item => ({
+      const matieresFormatees: Matiere[] = data?.map((item: { coefficient: string; is_obligatoire: boolean; matieres: { id: string; nom: string } }) => ({
         id: item.matieres.id,
         nom: item.matieres.nom,
         coefficient: parseFloat(item.coefficient),
