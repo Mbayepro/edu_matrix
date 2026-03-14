@@ -142,6 +142,10 @@ export interface Note {
   evaluation_id: string
   note: number
   created_at: string
+  // Champs dénormalisés / joints (utilisés dans StudentCard)
+  coefficient: number
+  matiere: string
+  trimestre: 1 | 2 | 3
   // Joined fields
   eleve?: Eleve
   evaluation?: Evaluation

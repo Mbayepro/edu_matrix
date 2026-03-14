@@ -184,7 +184,14 @@ export default function StudentCard({ eleveId, onClose }: StudentCardProps) {
           .single(),
         supabase
           .from('notes')
-          .select('*')
+          .select(`
+            *,
+            evaluation:evaluations(
+              trimestre,
+              coef,
+              matiere:matieres(nom)
+            )
+          `)
           .eq('eleve_id', eleveId),
       ])
 
@@ -200,7 +207,13 @@ export default function StudentCard({ eleveId, onClose }: StudentCardProps) {
           setEcole((ecole ?? null) as Ecole | null)
         }
       }
-      setNotes(notesData ?? [])
+      const mappedNotes = (notesData ?? []).map((n: any) => ({
+        ...n,
+        trimestre:   n.evaluation?.trimestre ?? 1,
+        coefficient: n.evaluation?.coef      ?? 1,
+        matiere:     n.evaluation?.matiere?.nom ?? 'Inconnue',
+      }))
+      setNotes(mappedNotes)
     } finally {
       setLoading(false)
     }
