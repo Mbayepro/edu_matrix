@@ -259,6 +259,37 @@ export default function AttendanceScanner({ classeId }: { classeId: string }) {
   return (
     <div className="max-w-md mx-auto space-y-4">
 
+      {/* ── Offline Banner ── */}
+      {!isOnline && (
+        <div className="flex items-center gap-3 bg-amber-50 border-2 border-amber-300 rounded-2xl px-4 py-3 animate-pulse">
+          <span className="text-2xl">📶</span>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-amber-800 text-sm">Mode Hors-Ligne activé</p>
+            <p className="text-amber-600 text-xs mt-0.5 leading-tight">
+              Les présences sont sauvegardées localement.
+              Elles seront <strong>synchronisées automatiquement</strong> dès le retour du réseau.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Pending sync banner (shown when back online with pending items) ── */}
+      {isOnline && pendingOffline > 0 && (
+        <button
+          type="button"
+          onClick={() => void syncOfflineEvents()}
+          className="w-full flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3 text-left hover:bg-blue-100 transition-colors group"
+        >
+          <span className="text-xl">🔄</span>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-blue-800 text-sm">Synchronisation en attente</p>
+            <p className="text-blue-600 text-xs">
+              {pendingOffline} présence(s) hors-ligne à synchroniser. Cliquez pour synchroniser maintenant.
+            </p>
+          </div>
+        </button>
+      )}
+
       {/* Header */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
         <div className="flex items-center gap-3 mb-1">
@@ -270,23 +301,15 @@ export default function AttendanceScanner({ classeId }: { classeId: string }) {
             <p className="text-xs text-slate-400">{todayCount} élève(s) enregistré(s) aujourd&apos;hui</p>
           </div>
         </div>
-        <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400">
-          <div>
-            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${
-              isOnline ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
-            }`}>
-              <span className="w-1.5 h-1.5 rounded-full bg-current" />
-              {isOnline ? 'En ligne' : 'Hors ligne'}
-            </span>
-          </div>
-          {pendingOffline > 0 && (
-            <button
-              type="button"
-              onClick={() => { if (isOnline) void syncOfflineEvents() }}
-              className="text-[11px] text-amber-600 hover:text-amber-700 underline-offset-2 hover:underline"
-            >
-              {pendingOffline} présence(s) en attente de synchronisation
-            </button>
+        <div className="mt-2 flex items-center gap-2 text-[11px]">
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${
+            isOnline ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+          }`}>
+            <span className="w-1.5 h-1.5 rounded-full bg-current" />
+            {isOnline ? 'En ligne' : 'Hors ligne'}
+          </span>
+          {isOnline && pendingOffline === 0 && (
+            <span className="text-slate-400">Tout synchronisé ✓</span>
           )}
         </div>
       </div>

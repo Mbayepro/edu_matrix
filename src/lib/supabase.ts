@@ -197,6 +197,38 @@ export interface Paiement {
   created_at: string
 }
 
+export interface EnseignantClasse {
+  id: string
+  ecole_id: string
+  enseignant_id: string
+  classe_id: string
+  matiere_id: string | null
+  created_at: string
+  // Joined fields
+  enseignant?: Profile
+  classe?: Classe
+  matiere?: Matiere
+}
+
+export type JourSemaine = 1 | 2 | 3 | 4 | 5 | 6
+
+export interface EmploiDuTemps {
+  id: string
+  ecole_id: string
+  enseignant_id: string
+  classe_id: string
+  matiere_id: string | null
+  jour: JourSemaine
+  heure_debut: string   // 'HH:MM:SS'
+  heure_fin: string     // 'HH:MM:SS'
+  salle: string | null
+  created_at: string
+  // Joined fields
+  enseignant?: Profile
+  classe?: Classe
+  matiere?: Matiere
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -214,6 +246,8 @@ export type Database = {
       frais_scolaires: { Row: FraisScolaire; Insert: Omit<FraisScolaire, 'id' | 'created_at'>; Update: Partial<Omit<FraisScolaire, 'id' | 'created_at'>> }
       eleves_frais:    { Row: EleveFrais;    Insert: Omit<EleveFrais,    'id'>;               Update: Partial<Omit<EleveFrais, 'id'>> }
       paiements:       { Row: Paiement;      Insert: Omit<Paiement,      'id' | 'created_at'>; Update: Partial<Omit<Paiement, 'id' | 'created_at'>> }
+      enseignants_classes: { Row: EnseignantClasse; Insert: Omit<EnseignantClasse, 'id' | 'created_at'>; Update: Partial<Omit<EnseignantClasse, 'id' | 'created_at'>> }
+      emploi_du_temps: { Row: EmploiDuTemps; Insert: Omit<EmploiDuTemps, 'id' | 'created_at'>; Update: Partial<Omit<EmploiDuTemps, 'id' | 'created_at'>> }
     }
     Views: {
       v_moyennes_matieres: { Row: any; Insert: never; Update: never }

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { CalculateurMoyennes } from '@/lib/calculMoyennes'
 import type { Classe, Matiere, Evaluation, Eleve, Note, Niveau, Serie } from '@/lib/supabase'
 import {
   Loader2,
@@ -25,6 +24,7 @@ export default function NotesPage() {
   const [evaluations, setEvaluations] = useState<Evaluation[]>([])
   const [eleves, setEleves] = useState<Eleve[]>([])
   const [notes, setNotes] = useState<Record<string, number>>({})
+  const [moyennesGenerales, setMoyennesGenerales] = useState<Record<string, number>>({})
   
   const [selectedClasse, setSelectedClasse] = useState<string>('')
   const [selectedMatiere, setSelectedMatiere] = useState<string>('')
@@ -45,13 +45,6 @@ export default function NotesPage() {
     init()
   }, [])
 
-  useEffect(() => {
-    if (ecoleId) {
-      loadNiveaux()
-      loadSeries()
-      loadClasses()
-    }
-  }, [ecoleId])
 
   useEffect(() => {
     if (selectedClasse) {
@@ -95,19 +88,46 @@ export default function NotesPage() {
   }
 
   async function init() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    try {
+      setLoading(true)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { setLoading(false); return }
 
-    const { data: prof } = await supabase
-      .from('profiles')
-      .select('ecole_id')
-      .eq('user_id', user.id)
-      .single()
-    
-    if (prof?.ecole_id) {
-      setEcoleId(prof.ecole_id)
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('ecole_id')
+        .eq('user_id', user.id)
+        .single()
+      
+      if (prof?.ecole_id) {
+        setEcoleId(prof.ecole_id)
+        // loading will be set to false by loadBaseData()
+      } else {
+        // No school configured — stop loading
+        setLoading(false)
+      }
+    } catch {
+      setLoading(false)
     }
   }
+
+  async function loadBaseData() {
+    if (!ecoleId) return
+    setLoading(true)
+    try {
+      await Promise.all([
+        loadNiveaux(),
+        loadSeries(),
+        loadClasses()
+      ])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (ecoleId) loadBaseData()
+  }, [ecoleId])
 
   async function loadClasses() {
     if (!ecoleId) return
@@ -122,27 +142,31 @@ export default function NotesPage() {
   async function loadMatieres() {
     if (!selectedClasse || !ecoleId) return
     
-    // Récupérer les informations de la classe avec niveau et série
+    // Fetch matieres directly via coefficients_matieres for this classe
     const { data: classeData } = await supabase
       .from('classes')
-      .select('*, niveau_info:niveaux(*), serie_info:series(*)')
+      .select('niveau_id, serie_id')
       .eq('id', selectedClasse)
       .single()
 
-    if (!classeData) return
-
-    const niveau_id = classeData.niveau_info?.id
-    const serie_id = classeData.serie_info?.id
-
-    if (!niveau_id) return
+    if (!classeData?.niveau_id) return
 
     try {
-      const matieresDisponibles = await CalculateurMoyennes.getMatieresDisponibles(
-        ecoleId,
-        niveau_id,
-        serie_id
-      )
-      setMatieres(matieresDisponibles)
+      let query = supabase
+        .from('coefficients_matieres')
+        .select(`matiere:matieres(*)`)
+        .eq('ecole_id', ecoleId)
+        .eq('niveau_id', classeData.niveau_id)
+        .eq('is_obligatoire', true)
+
+      if (classeData.serie_id) {
+         query = query.or(`serie_id.eq.${classeData.serie_id},serie_id.is.null`)
+      } else {
+         query = query.is('serie_id', null)
+      }
+
+      const { data } = await query
+      setMatieres(data?.map((cm: any) => cm.matiere).filter(Boolean) as Matiere[] || [])
     } catch (error) {
       console.error('Erreur lors du chargement des matières:', error)
       setMatieres([])
@@ -184,16 +208,33 @@ export default function NotesPage() {
   async function loadNotes() {
     if (!selectedEvaluation) return
     
-    const { data } = await supabase
+    // Charger les notes de cette évaluation
+    const { data: notesData } = await supabase
       .from('notes')
       .select('*, eleve:eleves(nom, prenom)')
       .eq('evaluation_id', selectedEvaluation)
     
     const notesMap: Record<string, number> = {}
-    data?.forEach((note: any) => {
+    notesData?.forEach((note: any) => {
       notesMap[note.eleve_id] = note.note
     })
     setNotes(notesMap)
+
+    // Charger les moyennes générales depuis la vue SQL pour le trimestre courant et l'école
+    if (ecoleId && selectedClasse && selectedTrimestre) {
+      const { data: moyennesData } = await supabase
+        .from('v_moyennes_generales')
+        .select('eleve_id, moyenne_generale')
+        .eq('ecole_id', ecoleId) // isolation multi-école
+        .eq('classe_id', selectedClasse)
+        .eq('trimestre', selectedTrimestre)
+
+      const moyennesMap: Record<string, number> = {}
+      moyennesData?.forEach((m: any) => {
+         moyennesMap[m.eleve_id] = Number(m.moyenne_generale)
+      })
+      setMoyennesGenerales(moyennesMap)
+    }
   }
 
   async function createEvaluation() {
@@ -431,13 +472,17 @@ export default function NotesPage() {
                     Note / {selectedEvaluationData?.bareme || 20}
                   </th>
                   <th className="text-center px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide w-24">
-                    Mention
+                    Mention (Note)
+                  </th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide w-32 bg-emerald-50 whitespace-nowrap">
+                    Moy. G. Trim {selectedTrimestre}
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {eleves.map((eleve) => {
                   const note = notes[eleve.id] || 0
+                  const moyenneEleve = moyennesGenerales[eleve.id]
                   return (
                     <tr key={eleve.id} className="hover:bg-slate-50">
                       <td className="px-4 py-3">
@@ -468,6 +513,16 @@ export default function NotesPage() {
                         <span className={`text-xs font-semibold px-2 py-1 rounded-full ${getNoteColor(note)}`}>
                           {getMention(note)}
                         </span>
+                      </td>
+                      <td className="px-4 py-3 text-center bg-emerald-50/30">
+                        {moyenneEleve !== undefined ? (
+                          <div className="flex flex-col items-center">
+                            <span className="font-bold text-slate-800">{moyenneEleve.toFixed(2)}</span>
+                            <span className="text-[10px] text-slate-500">{getMention(moyenneEleve)}</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-400">-</span>
+                        )}
                       </td>
                     </tr>
                   )

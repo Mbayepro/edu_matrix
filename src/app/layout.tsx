@@ -22,7 +22,15 @@ export const metadata: Metadata = {
   },
   description: 'Plateforme de gestion scolaire moderne pour les établissements du Sénégal.',
   manifest: '/manifest.json',
-  icons: { icon: '/favicon.ico' },
+  icons: { 
+    icon: '/favicon.ico',
+    apple: '/icons/icon-192x192.svg'
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'EduMatrix',
+  },
 }
 
 export const viewport: Viewport = {

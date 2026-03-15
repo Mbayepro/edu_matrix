@@ -12,13 +12,16 @@ import {
   Loader2,
   Save,
   DollarSign,
+  Upload,
 } from 'lucide-react'
 
 export default function SchoolSettingsPage() {
   const router = useRouter()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [ecole, setEcole] = useState<Ecole | null>(null)
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState<'logo' | 'tampon' | 'signature' | null>(null)
   const [form, setForm] = useState({
     nom: '',
     ville: '',
@@ -34,44 +37,50 @@ export default function SchoolSettingsPage() {
   }, [])
 
   async function load() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      router.push('/login')
-      return
-    }
+    try {
+      setLoading(true)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        router.push('/login')
+        return
+      }
 
-    const { data: prof } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', user.id)
-      .single()
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single()
 
-    if (!prof) {
-      router.push('/login')
-      return
-    }
+      if (!prof) {
+        router.push('/login')
+        return
+      }
 
-    setProfile(prof as Profile)
+      setProfile(prof as Profile)
+      if (!prof.ecole_id) return
 
-    if (!prof.ecole_id) return
+      const { data: ec } = await supabase
+        .from('ecoles')
+        .select('*')
+        .eq('id', prof.ecole_id)
+        .single()
 
-    const { data: ec } = await supabase
-      .from('ecoles')
-      .select('*')
-      .eq('id', prof.ecole_id)
-      .single()
-
-    if (ec) {
-      setEcole(ec as Ecole)
-      setForm({
-        nom: ec.nom ?? '',
-        ville: ec.ville ?? '',
-        telephone: ec.telephone ?? '',
-        adresse: ec.adresse ?? '',
-        logo_url: ec.logo_url ?? '',
-        tampon_url: ec.tampon_url ?? '',
-        signature_url: ec.signature_url ?? '',
-      })
+      if (ec) {
+        setEcole(ec as Ecole)
+        setForm({
+          nom: ec.nom ?? '',
+          ville: ec.ville ?? '',
+          telephone: ec.telephone ?? '',
+          adresse: ec.adresse ?? '',
+          logo_url: ec.logo_url ?? '',
+          tampon_url: ec.tampon_url ?? '',
+          signature_url: ec.signature_url ?? '',
+        })
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -101,13 +110,50 @@ export default function SchoolSettingsPage() {
     }
   }
 
-  if (!ecole) {
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'tampon' | 'signature') {
+    const file = e.target.files?.[0]
+    if (!file || !ecole) return
+    
+    setUploading(type)
+    try {
+      const ext = file.name.split('.').pop()
+      const path = `branding/${ecole.id}_${type}_${Date.now()}.${ext}`
+      
+      const { error: uploadErr } = await supabase.storage
+        .from('eleves-photos') // Reuse existing bucket to avoid missing bucket errors
+        .upload(path, file, { upsert: true })
+        
+      if (uploadErr) throw uploadErr
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('eleves-photos')
+        .getPublicUrl(path)
+        
+      setForm(prev => ({ ...prev, [`${type}_url`]: publicUrl }))
+    } catch (err) {
+      console.error('Upload error:', err)
+      alert("Erreur lors de l'upload de l'image.")
+    } finally {
+      setUploading(null)
+    }
+  }
+
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="flex items-center gap-2 text-slate-500 text-sm">
           <Loader2 className="w-4 h-4 animate-spin" />
           Chargement des paramètres de l&apos;école…
         </div>
+      </div>
+    )
+  }
+
+  if (!ecole) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-slate-500">
+        <p>Aucune école associée à votre compte.</p>
+        <Link href="/dashboard" className="mt-4 text-emerald-600 hover:underline">Retour au tableau de bord</Link>
       </div>
     )
   }
@@ -205,13 +251,19 @@ export default function SchoolSettingsPage() {
                   <ImageIcon className="w-3.5 h-3.5 text-slate-400" />
                   Logo de l&apos;école (URL)
                 </label>
-                <input
-                  type="url"
-                  value={form.logo_url}
-                  onChange={(e) => setForm((f) => ({ ...f, logo_url: e.target.value }))}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  placeholder="https://…/logo.png"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={form.logo_url}
+                    onChange={(e) => setForm((f) => ({ ...f, logo_url: e.target.value }))}
+                    className="flex-1 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    placeholder="https://…/logo.png"
+                  />
+                  <label className="relative flex items-center justify-center px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl cursor-pointer transition-colors">
+                    {uploading === 'logo' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'logo')} disabled={!!uploading} />
+                  </label>
+                </div>
               </div>
               {form.logo_url && (
                 <div className="flex justify-center">
@@ -232,13 +284,19 @@ export default function SchoolSettingsPage() {
                   <Stamp className="w-3.5 h-3.5 text-slate-400" />
                   Tampon (URL)
                 </label>
-                <input
-                  type="url"
-                  value={form.tampon_url}
-                  onChange={(e) => setForm((f) => ({ ...f, tampon_url: e.target.value }))}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  placeholder="https://…/tampon.png"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={form.tampon_url}
+                    onChange={(e) => setForm((f) => ({ ...f, tampon_url: e.target.value }))}
+                    className="flex-1 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    placeholder="https://…/tampon.png"
+                  />
+                  <label className="relative flex items-center justify-center px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl cursor-pointer transition-colors">
+                    {uploading === 'tampon' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'tampon')} disabled={!!uploading} />
+                  </label>
+                </div>
               </div>
               {form.tampon_url && (
                 <div className="flex justify-center">
@@ -259,13 +317,19 @@ export default function SchoolSettingsPage() {
                   <PenTool className="w-3.5 h-3.5 text-slate-400" />
                   Signature du directeur (URL)
                 </label>
-                <input
-                  type="url"
-                  value={form.signature_url}
-                  onChange={(e) => setForm((f) => ({ ...f, signature_url: e.target.value }))}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  placeholder="https://…/signature.png"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={form.signature_url}
+                    onChange={(e) => setForm((f) => ({ ...f, signature_url: e.target.value }))}
+                    className="flex-1 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    placeholder="https://…/signature.png"
+                  />
+                  <label className="relative flex items-center justify-center px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl cursor-pointer transition-colors">
+                    {uploading === 'signature' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'signature')} disabled={!!uploading} />
+                  </label>
+                </div>
               </div>
               {form.signature_url && (
                 <div className="flex justify-center">

@@ -11,10 +11,11 @@ import {
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 
-const GradesEntry      = dynamic(() => import('@/components/GradesEntry'),      { ssr: false })
+const GradesEntry       = dynamic(() => import('@/components/GradesEntry'),       { ssr: false })
 const AttendanceScanner = dynamic(() => import('@/components/AttendanceScanner'), { ssr: false })
+const TeacherTimetable  = dynamic(() => import('@/components/TeacherTimetable'),  { ssr: false })
 
-type ActiveTab = 'apercu' | 'notes' | 'presences'
+type ActiveTab = 'apercu' | 'notes' | 'presences' | 'emploi'
 
 interface ClasseStat {
   classe:       Classe
@@ -43,8 +44,22 @@ export default function TeacherDashboard() {
       if (!prof) return
       setProfile(prof)
 
+      // ── Restriction : ne charger que les classes assignées à cet enseignant ──
+      const { data: assignations } = await supabase
+        .from('enseignants_classes')
+        .select('classe_id')
+        .eq('enseignant_id', prof.id)
+
+      // Si aucune assignation → tableau vide (pas toutes les classes de l'école)
+      if (!assignations?.length) { setLoading(false); return }
+
+      const classeIds = assignations.map((a: any) => a.classe_id)
+
       const { data: classes } = await supabase
-        .from('classes').select('*').eq('ecole_id', prof.ecole_id!).order('nom_classe')
+        .from('classes')
+        .select('*')
+        .in('id', classeIds)
+        .order('nom_classe')
       if (!classes?.length) { setLoading(false); return }
 
       const today = new Date().toISOString().split('T')[0]
@@ -73,6 +88,7 @@ export default function TeacherDashboard() {
     { id: 'apercu',    label: 'Aperçu',    icon: ClipboardList },
     { id: 'notes',     label: 'Notes',     icon: TrendingUp },
     { id: 'presences', label: 'Présences', icon: UserCheck },
+    { id: 'emploi',    label: 'Planning',  icon: Clock },
   ]
 
   if (loading) {
@@ -199,6 +215,14 @@ export default function TeacherDashboard() {
               )}
               {selectedClasse && <AttendanceScanner classeId={selectedClasse} />}
             </div>
+          )}
+
+          {/* ── Emploi du temps ── */}
+          {activeTab === 'emploi' && profile && profile.ecole_id && (
+            <TeacherTimetable
+              enseignantId={profile.id}
+              ecoleId={profile.ecole_id}
+            />
           )}
         </div>
       </div>

@@ -10,7 +10,7 @@ import type { Profile, Ecole } from '@/lib/supabase'
 import {
   GraduationCap, LayoutGrid, Users, BookOpen,
   TrendingUp, UserCheck, LogOut, Menu, X,
-  Bell, ChevronRight, Settings,
+  Bell, ChevronRight, Settings, Calendar,
 } from 'lucide-react'
 
 interface NavItem {
@@ -22,15 +22,17 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Tableau de bord', href: '/dashboard',             icon: LayoutGrid, roles: ['superadmin', 'director'] },
-  { label: 'Validation',      href: '/dashboard/admin/validation', icon: BookOpen, roles: ['superadmin'] },
-  { label: 'Toutes les écoles',href: '/dashboard/superadmin', icon: LayoutGrid, roles: ['superadmin'] },
-  { label: 'Mes classes',     href: '/dashboard/teacher',     icon: BookOpen,   roles: ['teacher'] },
-  { label: 'Élèves',          href: '/dashboard/eleves',      icon: Users,      roles: ['superadmin', 'director', 'teacher'] },
-  { label: 'Notes',           href: '/dashboard/notes',       icon: TrendingUp, roles: ['superadmin', 'director', 'teacher'] },
-  { label: 'Présences',       href: '/dashboard/presences',   icon: UserCheck,  roles: ['superadmin', 'director', 'teacher'] },
-  { label: 'Paiements',       href: '/dashboard/paiements',   icon: TrendingUp, roles: ['superadmin', 'director'] },
-  { label: 'Paramètres',      href: '/dashboard/parametres',  icon: Settings,   roles: ['superadmin', 'director'] },
+  { label: 'Tableau de bord',   href: '/dashboard',                       icon: LayoutGrid,    roles: ['superadmin', 'director'] },
+  { label: 'Validation',        href: '/dashboard/admin/validation',      icon: BookOpen,      roles: ['superadmin'] },
+  { label: 'Toutes les écoles', href: '/dashboard/admin/ecoles',          icon: LayoutGrid,    roles: ['superadmin'] },
+  { label: 'Mes classes',       href: '/dashboard/teacher',               icon: BookOpen,      roles: ['teacher'] },
+  { label: 'Enseignants',       href: '/dashboard/admin/enseignants',     icon: GraduationCap, roles: ['director'] },
+  { label: 'Emploi du temps',   href: '/dashboard/admin/emploi-du-temps', icon: Calendar,      roles: ['director'] },
+  { label: 'Élèves',            href: '/dashboard/eleves',                icon: Users,         roles: ['superadmin', 'director', 'teacher'] },
+  { label: 'Notes',             href: '/dashboard/notes',                 icon: TrendingUp,    roles: ['superadmin', 'director', 'teacher'] },
+  { label: 'Présences',         href: '/dashboard/presences',             icon: UserCheck,     roles: ['superadmin', 'director', 'teacher'] },
+  { label: 'Paiements',         href: '/dashboard/paiements',             icon: TrendingUp,    roles: ['superadmin', 'director'] },
+  { label: 'Paramètres',        href: '/dashboard/parametres',            icon: Settings,      roles: ['superadmin', 'director'] },
 ]
 
 function NavLink({ item, active, onClick }: { item: NavItem; active: boolean; onClick?: () => void }) {
@@ -99,9 +101,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     window.location.href = '/login'
   }
 
-  const visibleNav = NAV_ITEMS.filter(
-    (item) => !profile?.role || item.roles.includes(profile.role as any)
-  )
+  const visibleNav = NAV_ITEMS.filter((item) => {
+    if (!profile?.role) return false
+    return item.roles.includes(profile.role as any)
+  })
 
   const roleLabel: Record<string, string> = {
     superadmin: 'Super Admin',

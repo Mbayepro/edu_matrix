@@ -8,9 +8,12 @@ import type { Eleve, Classe } from '@/lib/supabase'
 import {
   Search, Plus, ChevronLeft, ChevronRight,
   Upload, User, Loader2, X, Eye, QrCode,
-  Users,
+  Users, UploadCloud, FileText, Printer
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
+import ExcelImportModal from '@/components/ExcelImportModal'
+import { generateClassePDF } from '@/lib/pdfListGenerator'
+import type { Ecole } from '@/lib/supabase'
 
 const StudentCard = dynamic(() => import('@/components/StudentCard'), { ssr: false })
 
@@ -30,6 +33,9 @@ export default function ElevesPage() {
   const [uploading,    setUploading]    = useState<string | null>(null)  // eleveId en cours d'upload
   const [viewing,      setViewing]      = useState<string | null>(null)  // carte ouverte
   const [ecoleId,      setEcoleId]      = useState<string | null>(null)
+  const [ecole,        setEcole]        = useState<Ecole | null>(null)
+  const [generatingPDF, setGeneratingPDF] = useState(false)
+  const [showImportModal, setShowImportModal] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const uploadingFor = useRef<string | null>(null)
 
@@ -37,22 +43,38 @@ export default function ElevesPage() {
   useEffect(() => { if (ecoleId) loadEleves() }, [page, search, filterClasse, filterStatut, ecoleId])
 
   async function init() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const { data: prof } = await supabase
-      .from('profiles')
-      .select('ecole_id')
-      .eq('user_id', user.id)
-      .single()
-    if (!prof?.ecole_id) return
-    setEcoleId(prof.ecole_id)
+    try {
+      setLoading(true)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('ecole_id')
+        .eq('user_id', user.id)
+        .single()
+      if (!prof?.ecole_id) {
+        setLoading(false)
+        return
+      }
+      setEcoleId(prof.ecole_id)
 
-    const { data: cls } = await supabase
-      .from('classes')
-      .select('*')
-      .eq('ecole_id', prof.ecole_id)
-      .order('nom_classe')
-    setClasses(cls ?? [])
+      const { data: ec } = await supabase
+        .from('ecoles')
+        .select('*')
+        .eq('id', prof.ecole_id)
+        .single()
+      if (ec) setEcole(ec as Ecole)
+
+      const { data: cls } = await supabase
+        .from('classes')
+        .select('*')
+        .eq('ecole_id', prof.ecole_id)
+        .order('nom_classe')
+      setClasses(cls ?? [])
+    } catch (err) {
+      console.error(err)
+      setLoading(false)
+    }
   }
 
   async function loadEleves() {
@@ -129,6 +151,31 @@ export default function ElevesPage() {
     'partiel': 'bg-amber-100 text-amber-700',
   }
 
+  async function handleExportPDF() {
+    if (!ecole || !filterClasse || eleves.length === 0) return
+    const currentClasse = classes.find(c => c.id === filterClasse)
+    if (!currentClasse) return
+    
+    setGeneratingPDF(true)
+    try {
+      // Need to fetch full list if paginated? The user might want the whole class.
+      // If we are paginating, we only get PAGE_SIZE. So we should fetch all students for this class.
+      const { data: classEleves } = await supabase
+        .from('eleves')
+        .select('*')
+        .eq('classe_id', filterClasse)
+        .order('nom')
+      
+      if (!classEleves || classEleves.length === 0) return
+      await generateClassePDF(ecole, currentClasse, classEleves as Eleve[])
+    } catch (err) {
+      console.error(err)
+      alert("Erreur lors de la génération du PDF.")
+    } finally {
+      setGeneratingPDF(false)
+    }
+  }
+
   return (
     <div className="max-w-7xl mx-auto space-y-4">
 
@@ -183,6 +230,36 @@ export default function ElevesPage() {
           <option value="impayé">Impayé</option>
           <option value="partiel">Partiel</option>
         </select>
+
+        {filterClasse && (
+          <div className="flex gap-2 items-center">
+            <button
+              onClick={handleExportPDF}
+              disabled={generatingPDF}
+              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shrink-0 disabled:opacity-50"
+            >
+              {generatingPDF ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+              PDF
+            </button>
+            <a
+              href={`/dashboard/eleves/print-cartes?classeId=${filterClasse}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shrink-0"
+            >
+              <Printer className="w-4 h-4" />
+              Cartes
+            </a>
+          </div>
+        )}
+
+        <button
+          onClick={() => setShowImportModal(true)}
+          className="flex items-center gap-2 bg-slate-100 border border-slate-200 hover:bg-slate-200 text-slate-700 text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shrink-0"
+        >
+          <UploadCloud className="w-4 h-4" />
+          Importer
+        </button>
 
         <a
           href="/dashboard/eleves/nouveau"
@@ -374,6 +451,19 @@ export default function ElevesPage() {
       {/* Student card modal */}
       {viewing && (
         <StudentCard eleveId={viewing} onClose={() => setViewing(null)} />
+      )}
+
+      {/* Excel Import Modal */}
+      {showImportModal && ecoleId && (
+        <ExcelImportModal
+          ecoleId={ecoleId}
+          classes={classes}
+          onClose={() => setShowImportModal(false)}
+          onSuccess={() => {
+            setShowImportModal(false)
+            loadEleves()
+          }}
+        />
       )}
     </div>
   )
