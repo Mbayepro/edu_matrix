@@ -23,11 +23,13 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'Tableau de bord', href: '/dashboard',             icon: LayoutGrid, roles: ['superadmin', 'director'] },
+  { label: 'Validation',      href: '/dashboard/admin/validation', icon: BookOpen, roles: ['superadmin'] },
+  { label: 'Toutes les écoles',href: '/dashboard/superadmin', icon: LayoutGrid, roles: ['superadmin'] },
   { label: 'Mes classes',     href: '/dashboard/teacher',     icon: BookOpen,   roles: ['teacher'] },
   { label: 'Élèves',          href: '/dashboard/eleves',      icon: Users,      roles: ['superadmin', 'director', 'teacher'] },
   { label: 'Notes',           href: '/dashboard/notes',       icon: TrendingUp, roles: ['superadmin', 'director', 'teacher'] },
   { label: 'Présences',       href: '/dashboard/presences',   icon: UserCheck,  roles: ['superadmin', 'director', 'teacher'] },
-  { label: 'Paiements',       href: '/dashboard/paiements',   icon: LayoutGrid, roles: ['superadmin', 'director'] },
+  { label: 'Paiements',       href: '/dashboard/paiements',   icon: TrendingUp, roles: ['superadmin', 'director'] },
   { label: 'Paramètres',      href: '/dashboard/parametres',  icon: Settings,   roles: ['superadmin', 'director'] },
 ]
 
@@ -105,6 +107,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     superadmin: 'Super Admin',
     director:   'Directeur',
     teacher:    'Enseignant',
+  }
+
+  // Prevent pending directors from using the nav
+  if (profile?.role === 'director' && ecole?.statut === 'en_attente') {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col">
+        {/* Simplified header for pending wall */}
+        <header className="px-6 py-4 border-b border-slate-800 bg-slate-900 sticky top-0 z-10 flex items-center justify-between">
+           <div className="flex items-center gap-3">
+             <div className="bg-emerald-500 p-2 rounded-xl shrink-0">
+               <GraduationCap className="w-5 h-5 text-white" />
+             </div>
+             <p className="font-bold text-lg text-white">EduMatrix</p>
+           </div>
+           
+           <div className="flex items-center gap-4 text-sm font-medium text-slate-300">
+             <span>{profile.prenom} {profile.nom}</span>
+           </div>
+        </header>
+
+        <main className="flex-1">
+          {children}
+        </main>
+      </div>
+    )
   }
 
   const SidebarContent = () => (

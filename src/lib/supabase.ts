@@ -8,6 +8,8 @@ export type Role = 'superadmin' | 'director' | 'teacher'
 export type StatutPaiement = 'payé' | 'impayé' | 'partiel'
 export type StatutPresence = 'présent' | 'absent' | 'retard'
 
+export type StatutEcole = 'en_attente' | 'actif' | 'suspendu'
+
 export interface Ecole {
   id: string
   nom: string
@@ -17,6 +19,7 @@ export interface Ecole {
   logo_url: string | null
   tampon_url: string | null
   signature_url: string | null
+  statut: StatutEcole
   created_at: string
 }
 
@@ -197,7 +200,7 @@ export interface Paiement {
 export type Database = {
   public: {
     Tables: {
-      ecoles:    { Row: Ecole;    Insert: Omit<Ecole,    'id' | 'created_at'>; Update: Partial<Omit<Ecole, 'id' | 'created_at'>> }
+      ecoles:    { Row: Ecole;    Insert: Omit<Ecole, 'id' | 'created_at'> & { statut?: StatutEcole }; Update: Partial<Omit<Ecole, 'id' | 'created_at'>> }
       profiles:  { Row: Profile;  Insert: Omit<Profile,  'id' | 'created_at'>; Update: Partial<Omit<Profile, 'id' | 'created_at'>> }
       niveaux:   { Row: Niveau;   Insert: Omit<Niveau,   'id' | 'created_at'>; Update: Partial<Omit<Niveau, 'id' | 'created_at'>> }
       series:    { Row: Serie;    Insert: Omit<Serie,    'id' | 'created_at'>; Update: Partial<Omit<Serie, 'id' | 'created_at'>> }

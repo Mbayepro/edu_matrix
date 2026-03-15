@@ -10,6 +10,7 @@ import {
 export default function SuperAdminDashboard() {
   const [stats, setStats] = useState({
     ecoles: 0,
+    attente: 0,
     users: 0,
     activeToday: 0
   })
@@ -23,13 +24,15 @@ export default function SuperAdminDashboard() {
   async function loadData() {
     try {
       // Load stats
-      const [ecolesCount, usersCount] = await Promise.all([
-        supabase.from('ecoles').select('id', { count: 'exact', head: true }),
+      const [ecolesCount, attenteCount, usersCount] = await Promise.all([
+        supabase.from('ecoles').select('id', { count: 'exact', head: true }).eq('statut', 'actif'),
+        supabase.from('ecoles').select('id', { count: 'exact', head: true }).eq('statut', 'en_attente'),
         supabase.from('profiles').select('id', { count: 'exact', head: true }),
       ])
 
       setStats({
         ecoles: ecolesCount.count || 0,
+        attente: attenteCount.count || 0,
         users: usersCount.count || 0,
         activeToday: 0 // Placeholder
       })
@@ -68,14 +71,21 @@ export default function SuperAdminDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <StatCard 
-          icon={<School className="w-6 h-6 text-blue-400" />}
-          label="Écoles inscrites"
+          icon={<School className="w-6 h-6 text-emerald-400" />}
+          label="Écoles Actives"
           value={stats.ecoles}
         />
+        <a href="/dashboard/admin/validation" className="block">
+          <StatCard 
+            icon={<ShieldAlert className="w-6 h-6 text-amber-400" />}
+            label="En Attente"
+            value={stats.attente}
+          />
+        </a>
         <StatCard 
-          icon={<Users className="w-6 h-6 text-emerald-400" />}
+          icon={<Users className="w-6 h-6 text-blue-400" />}
           label="Utilisateurs totaux"
           value={stats.users}
         />
@@ -106,6 +116,7 @@ export default function SuperAdminDashboard() {
               <tr>
                 <th className="px-4 py-3">Nom</th>
                 <th className="px-4 py-3">Ville</th>
+                <th className="px-4 py-3">Statut</th>
                 <th className="px-4 py-3">Utilisateurs</th>
                 <th className="px-4 py-3">Date création</th>
                 <th className="px-4 py-3">Actions</th>
@@ -116,6 +127,13 @@ export default function SuperAdminDashboard() {
                 <tr key={ecole.id} className="hover:bg-slate-700/30 transition-colors">
                   <td className="px-4 py-3 font-medium text-white">{ecole.nom}</td>
                   <td className="px-4 py-3">{ecole.ville}</td>
+                  <td className="px-4 py-3">
+                    {ecole.statut === 'actif' ? (
+                      <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-xs">Actif</span>
+                    ) : (
+                      <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded text-xs">En attente</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <span className="bg-slate-700 px-2 py-0.5 rounded text-xs text-slate-300">
                       {ecole.profiles[0]?.count || 0}

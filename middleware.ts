@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // Routes accessibles sans être connecté
-const PUBLIC_ROUTES = ['/login']
+const PUBLIC_ROUTES = ['/login', '/register', '/signup']
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -44,8 +44,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // Si déjà connecté et tente d'accéder à /login → /dashboard
-  if (user && pathname === '/login') {
+  // Si déjà connecté et tente d'accéder à /login ou /register → /dashboard
+  if (user && PUBLIC_ROUTES.includes(pathname)) {
     const dashUrl = request.nextUrl.clone()
     dashUrl.pathname = '/dashboard'
     return NextResponse.redirect(dashUrl)
