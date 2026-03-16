@@ -24,6 +24,7 @@ export default function BulletinsPage() {
   const [selectedTrimestre, setSelectedTrimestre] = useState<1 | 2 | 3>(1)
   const [bulletins, setBulletins] = useState<BulletinData[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingBulletins, setLoadingBulletins] = useState(false)
   const [generating, setGenerating] = useState<string | null>(null)
 
   useEffect(() => {
@@ -32,8 +33,9 @@ export default function BulletinsPage() {
 
   useEffect(() => {
     if (ecoleId) {
-      loadEcole()
-      loadClasses()
+      Promise.all([loadEcole(), loadClasses()]).finally(() => {
+        setLoading(false)
+      })
     }
   }, [ecoleId])
 
@@ -45,7 +47,10 @@ export default function BulletinsPage() {
 
   async function init() {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) {
+      setLoading(false)
+      return
+    }
 
     const { data: prof } = await supabase
       .from('profiles')
@@ -55,6 +60,8 @@ export default function BulletinsPage() {
     
     if (prof?.ecole_id) {
       setEcoleId(prof.ecole_id)
+    } else {
+      setLoading(false)
     }
   }
 
@@ -85,7 +92,7 @@ export default function BulletinsPage() {
   async function loadBulletins() {
     if (!selectedClasse || !selectedTrimestre) return
     
-    setLoading(true)
+    setLoadingBulletins(true)
     try {
       const bulletinsData = await CalculateurMoyennes.genererBulletinsClasse(
         selectedClasse,
@@ -97,7 +104,7 @@ export default function BulletinsPage() {
       console.error('Erreur lors du chargement des bulletins:', error)
       setBulletins([])
     } finally {
-      setLoading(false)
+      setLoadingBulletins(false)
     }
   }
 
@@ -373,7 +380,11 @@ export default function BulletinsPage() {
       </div>
 
       {/* Bulletins List */}
-      {bulletins.length > 0 ? (
+      {loadingBulletins ? (
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+        </div>
+      ) : bulletins.length > 0 ? (
         <div className="space-y-4">
           {bulletins.map((bulletin) => (
             <div key={bulletin.eleve.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">

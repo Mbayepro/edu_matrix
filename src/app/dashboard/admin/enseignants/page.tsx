@@ -189,7 +189,7 @@ export default function EnseignantsAdminPage() {
         </div>
         <button
           type="submit"
-          disabled={saving || !form.enseignant_id || !form.classe_id}
+          disabled={saving}
           className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}

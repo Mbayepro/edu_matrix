@@ -161,7 +161,7 @@ export default function ClassesPage() {
             </select>
             <button
               type="submit"
-              disabled={saving || !form.nom_classe || !form.niveau}
+              disabled={saving}
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl disabled:opacity-50 transition-colors shrink-0"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
