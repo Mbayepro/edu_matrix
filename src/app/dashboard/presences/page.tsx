@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useProfile } from '@/hooks/useProfile'
 import type { Classe, Profile } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import AttendanceScanner from '@/components/AttendanceScanner'
@@ -17,7 +18,9 @@ interface PresenceDetail {
 
 export default function PresencesPage() {
   const router = useRouter()
-  const [profile, setProfile] = useState<Profile | null>(null)
+  const { profile, loading: profileLoading } = useProfile()
+  const ecoleId = profile?.ecole_id || null
+
   const [classes, setClasses] = useState<Classe[]>([])
   
   const [loading, setLoading] = useState(true)
@@ -25,8 +28,12 @@ export default function PresencesPage() {
   const [todayPresences, setTodayPresences] = useState<PresenceDetail[]>([])
 
   useEffect(() => {
-    loadData()
-  }, [])
+    if (ecoleId) {
+      loadData(ecoleId)
+    } else if (!profileLoading && !ecoleId) {
+      setLoading(false)
+    }
+  }, [ecoleId, profileLoading])
 
   useEffect(() => {
     if (selectedClasseId) {
@@ -34,31 +41,18 @@ export default function PresencesPage() {
     }
   }, [selectedClasseId])
 
-  async function loadData() {
+  async function loadData(schoolId: string) {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
-
-      const { data: prof } = await supabase
-        .from('profiles')
+      setLoading(true)
+      const { data: cls } = await supabase
+        .from('classes')
         .select('*')
-        .eq('user_id', user.id)
-        .single()
+        .eq('ecole_id', schoolId)
+        .order('nom_classe')
       
-      if (!prof) { router.push('/login'); return }
-      setProfile(prof)
-
-      if (prof.ecole_id) {
-        const { data: cls } = await supabase
-          .from('classes')
-          .select('*')
-          .eq('ecole_id', prof.ecole_id)
-          .order('nom_classe')
-        
-        setClasses(cls || [])
-        if (cls && cls.length > 0) {
-          setSelectedClasseId(cls[0].id)
-        }
+      setClasses(cls || [])
+      if (cls && cls.length > 0) {
+        setSelectedClasseId(cls[0].id)
       }
     } finally {
       setLoading(false)
@@ -77,7 +71,7 @@ export default function PresencesPage() {
     setTodayPresences((data as any[]) || [])
   }
 
-  if (loading) {
+  if (loading || profileLoading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />

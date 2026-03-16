@@ -8,12 +8,16 @@ import type { Eleve, Classe } from '@/lib/supabase'
 import {
   Search, Plus, ChevronLeft, ChevronRight,
   Upload, User, Loader2, X, Eye, QrCode,
-  Users, UploadCloud, FileText, Printer
+  Users, UploadCloud, FileText, Printer, Edit
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
+import Link from 'next/link'
 import ExcelImportModal from '@/components/ExcelImportModal'
 import { generateClassePDF } from '@/lib/pdfListGenerator'
+import { SkeletonTable } from '@/components/Skeleton'
 import type { Ecole } from '@/lib/supabase'
+import { useProfile } from '@/hooks/useProfile'
+import { useToast } from '@/contexts/ToastContext'
 
 const StudentCard = dynamic(() => import('@/components/StudentCard'), { ssr: false })
 
@@ -22,6 +26,10 @@ const PAGE_SIZE = 15
 type StatutPaiement = 'tous' | 'payé' | 'impayé' | 'partiel'
 
 export default function ElevesPage() {
+  const { profile, ecole, loading: profileLoading } = useProfile()
+  const ecoleId = profile?.ecole_id || null
+  const { showToast } = useToast()
+
   const [eleves,       setEleves]       = useState<Eleve[]>([])
   const [classes,      setClasses]      = useState<Classe[]>([])
   const [total,        setTotal]        = useState(0)
@@ -32,51 +40,37 @@ export default function ElevesPage() {
   const [loading,      setLoading]      = useState(true)
   const [uploading,    setUploading]    = useState<string | null>(null)  // eleveId en cours d'upload
   const [viewing,      setViewing]      = useState<string | null>(null)  // carte ouverte
-  const [ecoleId,      setEcoleId]      = useState<string | null>(null)
-  const [ecole,        setEcole]        = useState<Ecole | null>(null)
+  const [viewingQR,    setViewingQR]    = useState<string | null>(null)  // QR ouvert
   const [generatingPDF, setGeneratingPDF] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const uploadingFor = useRef<string | null>(null)
 
-  useEffect(() => { init() }, [])
-  useEffect(() => { if (ecoleId) loadEleves() }, [page, search, filterClasse, filterStatut, ecoleId])
+  useEffect(() => {
+    if (ecoleId) {
+      loadClasses(ecoleId)
+    }
+  }, [ecoleId])
 
-  async function init() {
+  useEffect(() => { 
+    if (ecoleId) loadEleves() 
+  }, [page, search, filterClasse, filterStatut, ecoleId])
+
+  async function loadClasses(schoolId: string) {
     try {
       setLoading(true)
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      const { data: prof } = await supabase
-        .from('profiles')
-        .select('ecole_id')
-        .eq('user_id', user.id)
-        .single()
-      if (!prof?.ecole_id) {
-        setLoading(false)
-        return
-      }
-      setEcoleId(prof.ecole_id)
-
-      const { data: ec } = await supabase
-        .from('ecoles')
-        .select('*')
-        .eq('id', prof.ecole_id)
-        .single()
-      if (ec) setEcole(ec as Ecole)
-
       const { data: cls } = await supabase
         .from('classes')
         .select('*')
-        .eq('ecole_id', prof.ecole_id)
+        .eq('ecole_id', schoolId)
         .order('nom_classe')
       setClasses(cls ?? [])
     } catch (err) {
       console.error(err)
+    } finally {
       setLoading(false)
     }
   }
-
   async function loadEleves() {
     if (!ecoleId) return
     setLoading(true)
@@ -168,9 +162,10 @@ export default function ElevesPage() {
       
       if (!classEleves || classEleves.length === 0) return
       await generateClassePDF(ecole, currentClasse, classEleves as Eleve[])
+      showToast('PDF généré avec succès.', 'success')
     } catch (err) {
       console.error(err)
-      alert("Erreur lors de la génération du PDF.")
+      showToast('Erreur lors de la génération du PDF.', 'error')
     } finally {
       setGeneratingPDF(false)
     }
@@ -278,10 +273,8 @@ export default function ElevesPage() {
 
       {/* Table */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
-          </div>
+        {loading || profileLoading ? (
+          <SkeletonTable rows={PAGE_SIZE} columns={5} />
         ) : eleves.length === 0 ? (
           <div className="py-16 text-center text-slate-400">
             <Users className="w-10 h-10 mx-auto mb-3 opacity-30" />
@@ -354,6 +347,13 @@ export default function ElevesPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
+                          <Link
+                            href={`/dashboard/eleves/${e.id}/modifier`}
+                            className="p-2 rounded-lg hover:bg-slate-50 text-slate-400 hover:text-slate-600 transition-colors"
+                            title="Modifier"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Link>
                           <button
                             onClick={() => setViewing(e.id)}
                             className="p-2 rounded-lg hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 transition-colors"
@@ -362,7 +362,7 @@ export default function ElevesPage() {
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => setViewing(e.id)}
+                            onClick={() => setViewingQR(e.id)}
                             className="p-2 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"
                             title="QR Code"
                           >
@@ -393,11 +393,16 @@ export default function ElevesPage() {
                     <p className="text-sm font-semibold text-slate-800 truncate">{e.prenom} {e.nom}</p>
                     <p className="text-xs text-slate-400">{(e.classe as any)?.nom_classe ?? '—'} · {e.matricule}</p>
                   </div>
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex flex-col items-end gap-1 w-24">
                     <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${statutBadge[e.statut_paiement]}`}>
                       {e.statut_paiement}
                     </span>
-                    <button onClick={() => setViewing(e.id)} className="text-emerald-600 text-xs">Voir carte</button>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Link href={`/dashboard/eleves/${e.id}/modifier`} className="text-slate-500 hover:text-slate-700">
+                        <Edit className="w-3.5 h-3.5" />
+                      </Link>
+                      <button onClick={() => setViewing(e.id)} className="text-emerald-600 text-xs">Voir carte</button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -451,6 +456,11 @@ export default function ElevesPage() {
       {/* Student card modal */}
       {viewing && (
         <StudentCard eleveId={viewing} onClose={() => setViewing(null)} />
+      )}
+
+      {/* Student card modal — QR tab */}
+      {viewingQR && (
+        <StudentCard eleveId={viewingQR} defaultTab="qr" onClose={() => setViewingQR(null)} />
       )}
 
       {/* Excel Import Modal */}

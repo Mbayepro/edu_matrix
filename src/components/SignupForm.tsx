@@ -30,42 +30,28 @@ export default function SignupForm() {
     setError(null)
 
     try {
-      // 1. Create auth user
+      // Pass ALL data (including school info) via user metadata.
+      // The SECURITY DEFINER trigger `handle_new_user` will atomically create
+      // the school row and the profile row, bypassing RLS entirely.
+      // This avoids the race condition where the client tries to INSERT into
+      // `ecoles` before the profile exists, causing get_my_role() to return NULL.
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: { nom, prenom, role: 'director' },
+          data: {
+            nom,
+            prenom,
+            role: 'director',
+            nom_ecole: nomEcole,
+            ville_ecole: ville,
+            telephone_ecole: telephone || null,
+          },
         },
       })
 
       if (authError) throw authError
       if (!authData.user) throw new Error("Erreur lors de la création du compte.")
-
-      // 2. If session exists (email confirm OFF), create school + update profile
-      if (authData.session) {
-        // Create school with statut = en_attente
-        const { data: ecoleData, error: ecoleError } = await supabase
-          .from('ecoles')
-          .insert({
-            nom: nomEcole,
-            ville,
-            telephone: telephone || null,
-            statut: 'en_attente',
-          } as any)
-          .select()
-          .single()
-
-        if (ecoleError) throw ecoleError
-
-        // Update profile with ecole_id and correct role
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({ ecole_id: ecoleData.id, role: 'director', nom, prenom })
-          .eq('user_id', authData.user.id)
-
-        if (profileError) throw profileError
-      }
 
       // Show the success / pending screen
       setStep('success')

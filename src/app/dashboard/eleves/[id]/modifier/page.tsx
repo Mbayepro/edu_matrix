@@ -2,18 +2,21 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { Classe, Profile } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
+import type { Classe, Eleve } from '@/lib/supabase'
+import { useRouter, useParams } from 'next/navigation'
 import {
-  UserPlus, ArrowLeft, Loader2, User, HelpCircle,
+  Save, ArrowLeft, Loader2, User, HelpCircle,
   Calendar, Hash, Briefcase, FileImage, AlertCircle
 } from 'lucide-react'
 import Link from 'next/link'
 import { useProfile } from '@/hooks/useProfile'
 import { useToast } from '@/contexts/ToastContext'
 
-export default function NouveauElevePage() {
+export default function ModifierElevePage() {
   const router = useRouter()
+  const params = useParams<{ id: string }>()
+  const id = params?.id
+
   const { profile, loading: profileLoading } = useProfile()
   const { showToast } = useToast()
   const ecoleId = profile?.ecole_id || null
@@ -33,14 +36,14 @@ export default function NouveauElevePage() {
   const [photoUrl, setPhotoUrl] = useState('')
 
   useEffect(() => {
-    if (ecoleId) {
-      loadClasses(ecoleId)
+    if (ecoleId && id) {
+      loadData(ecoleId, id)
     } else if (!profileLoading && !ecoleId) {
       setLoading(false)
     }
-  }, [ecoleId, profileLoading])
+  }, [ecoleId, profileLoading, id])
 
-  async function loadClasses(schoolId: string) {
+  async function loadData(schoolId: string, eleveId: string) {
     try {
       setLoading(true)
 
@@ -51,9 +54,29 @@ export default function NouveauElevePage() {
         .order('nom_classe')
       
       setClasses(cls || [])
-      if (cls && cls.length > 0) {
-        setClasseId(cls[0].id)
+
+      const { data: eleveData, error: eleveError } = await supabase
+        .from('eleves')
+        .select('*')
+        .eq('id', eleveId)
+        .single()
+      
+      if (eleveError || !eleveData) {
+        setError("Élève introuvable.")
+        return
       }
+
+      const eleve = eleveData as Eleve
+      setPrenom(eleve.prenom || '')
+      setNom(eleve.nom || '')
+      setMatricule(eleve.matricule || '')
+      setDateNaissance(eleve.date_naissance ? eleve.date_naissance.split('T')[0] : '')
+      setClasseId(eleve.classe_id || '')
+      setPhotoUrl(eleve.photo_url || '')
+
+    } catch (err: any) {
+      console.error(err)
+      setError("Une erreur est survenue lors du chargement des données.")
     } finally {
       setLoading(false)
     }
@@ -64,27 +87,28 @@ export default function NouveauElevePage() {
     setSaving(true)
     setError(null)
 
-    if (!profile?.ecole_id) {
-      setError("Erreur : Impossible d'identifier l'école.")
+    if (!ecoleId || !id) {
+      setError("Erreur : Données manquantes.")
       setSaving(false)
       return
     }
 
     try {
-      const { error: insertError } = await supabase.from('eleves').insert({
-        ecole_id: profile.ecole_id,
-        classe_id: classeId,
-        prenom,
-        nom,
-        matricule: matricule || null,
-        date_naissance: dateNaissance || null,
-        photo_url: photoUrl || null,
-        // statut_paiement defaults to 'impayé'
-      })
+      const { error: updateError } = await supabase
+        .from('eleves')
+        .update({
+          classe_id: classeId,
+          prenom,
+          nom,
+          matricule: matricule || null,
+          date_naissance: dateNaissance || null,
+          photo_url: photoUrl || null,
+        })
+        .eq('id', id)
 
-      if (insertError) throw insertError
+      if (updateError) throw updateError
 
-      showToast('Élève inscrit avec succès !', 'success')
+      showToast('Élève modifié avec succès !', 'success')
       router.push('/dashboard/eleves')
       router.refresh()
     } catch (err: any) {
@@ -92,7 +116,7 @@ export default function NouveauElevePage() {
       if (err.message?.includes('eleves_matricule_key')) {
         setError("Ce matricule est déjà utilisé par un autre élève.")
       } else {
-        setError("Une erreur s'est produite lors de l'inscription.")
+        setError("Une erreur s'est produite lors de la modification.")
       }
     } finally {
       setSaving(false)
@@ -117,8 +141,8 @@ export default function NouveauElevePage() {
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Inscrire un élève</h1>
-          <p className="text-sm text-slate-500">Ajoutez un nouvel élève à votre établissement.</p>
+          <h1 className="text-2xl font-bold text-slate-800">Modifier un élève</h1>
+          <p className="text-sm text-slate-500">Mettez à jour les informations de l'élève.</p>
         </div>
       </div>
 
@@ -128,7 +152,7 @@ export default function NouveauElevePage() {
             <HelpCircle className="w-8 h-8 text-amber-500 mx-auto mb-3" />
             <h3 className="font-semibold text-amber-800 mb-1">Aucune classe disponible</h3>
             <p className="text-amber-600 text-sm mb-4">
-              Veuillez d'abord configurer vos niveaux et classes avant d'inscrire des élèves.
+              Veuillez d'abord configurer vos niveaux et classes.
             </p>
             <Link 
               href="/dashboard/classes" 
@@ -270,8 +294,8 @@ export default function NouveauElevePage() {
                   </>
                 ) : (
                   <>
-                    <UserPlus className="w-4 h-4" />
-                    Inscrire l'élève
+                    <Save className="w-4 h-4" />
+                    Mettre à jour
                   </>
                 )}
               </button>

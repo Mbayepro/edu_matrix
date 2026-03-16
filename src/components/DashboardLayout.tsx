@@ -6,12 +6,14 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { useProfile } from '@/hooks/useProfile'
 import type { Profile, Ecole } from '@/lib/supabase'
 import {
   GraduationCap, LayoutGrid, Users, BookOpen,
   TrendingUp, UserCheck, LogOut, Menu, X,
-  Bell, ChevronRight, Settings, Calendar,
+  Bell, ChevronRight, Settings, Calendar, FileText,
 } from 'lucide-react'
+import { ToastProvider } from '@/contexts/ToastContext'
 
 interface NavItem {
   label:    string
@@ -22,14 +24,17 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Tableau de bord',   href: '/dashboard',                       icon: LayoutGrid,    roles: ['superadmin', 'director'] },
+  { label: 'Vue Globale',       href: '/dashboard/superadmin',            icon: LayoutGrid,    roles: ['superadmin'] },
+  { label: 'Tableau de bord',   href: '/dashboard',                       icon: LayoutGrid,    roles: ['director'] },
   { label: 'Validation',        href: '/dashboard/admin/validation',      icon: BookOpen,      roles: ['superadmin'] },
   { label: 'Toutes les écoles', href: '/dashboard/admin/ecoles',          icon: LayoutGrid,    roles: ['superadmin'] },
+  { label: 'Classes',           href: '/dashboard/classes',               icon: BookOpen,      roles: ['director', 'superadmin'] },
   { label: 'Mes classes',       href: '/dashboard/teacher',               icon: BookOpen,      roles: ['teacher'] },
   { label: 'Enseignants',       href: '/dashboard/admin/enseignants',     icon: GraduationCap, roles: ['director'] },
   { label: 'Emploi du temps',   href: '/dashboard/admin/emploi-du-temps', icon: Calendar,      roles: ['director'] },
   { label: 'Élèves',            href: '/dashboard/eleves',                icon: Users,         roles: ['superadmin', 'director', 'teacher'] },
   { label: 'Notes',             href: '/dashboard/notes',                 icon: TrendingUp,    roles: ['superadmin', 'director', 'teacher'] },
+  { label: 'Bulletins',         href: '/dashboard/bulletins',             icon: FileText,      roles: ['superadmin', 'director', 'teacher'] },
   { label: 'Présences',         href: '/dashboard/presences',             icon: UserCheck,     roles: ['superadmin', 'director', 'teacher'] },
   { label: 'Paiements',         href: '/dashboard/paiements',             icon: TrendingUp,    roles: ['superadmin', 'director'] },
   { label: 'Paramètres',        href: '/dashboard/parametres',            icon: Settings,      roles: ['superadmin', 'director'] },
@@ -60,41 +65,13 @@ function NavLink({ item, active, onClick }: { item: NavItem; active: boolean; on
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [ecole,   setEcole]   = useState<Ecole | null>(null)
+  const { profile, ecole, loading } = useProfile()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-
-  useEffect(() => {
-    loadProfile()
-  }, [])
 
   // Ferme sidebar sur changement de route (mobile)
   useEffect(() => {
     setSidebarOpen(false)
   }, [pathname])
-
-  async function loadProfile() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    const { data: prof } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', user.id)
-      .single()
-
-    if (prof) {
-      setProfile(prof)
-      if (prof.ecole_id) {
-        const { data: ec } = await supabase
-          .from('ecoles')
-          .select('*')
-          .eq('id', prof.ecole_id)
-          .single()
-        setEcole(ec)
-      }
-    }
-  }
 
   async function handleSignOut() {
     await supabase.auth.signOut()
@@ -131,10 +108,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         <main className="flex-1">
-          {children}
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </main>
       </div>
     )
+  }
+
+  if (loading) {
+    return <div className="min-h-screen bg-slate-50 flex items-center justify-center">Chargement...</div>
   }
 
   const SidebarContent = () => (
@@ -258,7 +241,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Page content */}
         <main className="flex-1 p-4 lg:p-6 animate-fade-in">
-          {children}
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </main>
       </div>
     </div>

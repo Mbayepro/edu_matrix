@@ -13,8 +13,9 @@ import {
 // Types
 // ─────────────────────────────────────────
 interface StudentCardProps {
-  eleveId:  string
-  onClose?: () => void
+  eleveId:     string
+  onClose?:    () => void
+  defaultTab?: 'card' | 'qr'  // 'qr' scrolls to the QR code section
 }
 
 interface MoyenneParMatiere {
@@ -163,16 +164,24 @@ function PhysicalCard({ eleve, ecole, className }: {
 // ─────────────────────────────────────────
 // Main Component
 // ─────────────────────────────────────────
-export default function StudentCard({ eleveId, onClose }: StudentCardProps) {
+export default function StudentCard({ eleveId, onClose, defaultTab }: StudentCardProps) {
   const [eleve, setEleve]         = useState<Eleve | null>(null)
   const [notes, setNotes]         = useState<Note[]>([])
   const [loading, setLoading]     = useState(true)
   const [trimestre, setTrimestre] = useState<1 | 2 | 3>(1)
   const [ecole, setEcole]         = useState<Ecole | null>(null)
+  const cardRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     loadData()
   }, [eleveId])
+
+  // Auto-scroll to card/QR section when defaultTab is 'qr'
+  useEffect(() => {
+    if (defaultTab === 'qr' && cardRef.current) {
+      setTimeout(() => cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200)
+    }
+  }, [defaultTab, eleve])
 
   async function loadData() {
     try {
@@ -265,7 +274,7 @@ export default function StudentCard({ eleveId, onClose }: StudentCardProps) {
         <div className="p-6 space-y-6">
 
           {/* Card + QR */}
-          <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center justify-center">
+          <div ref={cardRef} className="flex flex-col sm:flex-row gap-6 items-start sm:items-center justify-center">
             <PhysicalCard eleve={eleve} ecole={ecole} className={className} />
 
             {/* Download hint */}

@@ -33,13 +33,6 @@ export interface Profile {
   created_at: string
 }
 
-export interface Classe {
-  id: string
-  ecole_id: string
-  nom_classe: string
-  niveau: string
-  created_at: string
-}
 
 export interface Eleve {
   id: string

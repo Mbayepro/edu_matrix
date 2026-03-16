@@ -3,7 +3,10 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // Routes accessibles sans être connecté
-const PUBLIC_ROUTES = ['/login', '/register', '/signup']
+const PUBLIC_ROUTES = ['/login', '/register', '/signup', '/forgot-password']
+
+// Routes qui peuvent être accédées même avec une école en_attente
+const ATTENTE_ALLOWED = ['/dashboard/attente', '/login']
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -49,6 +52,30 @@ export async function middleware(request: NextRequest) {
     const dashUrl = request.nextUrl.clone()
     dashUrl.pathname = '/dashboard'
     return NextResponse.redirect(dashUrl)
+  }
+
+  // Si connecté, vérifier si directeur avec école en_attente
+  // (uniquement pour les routes dashboard non autorisées en mode attente)
+  if (user && pathname.startsWith('/dashboard') && !ATTENTE_ALLOWED.includes(pathname)) {
+    const { data: prof } = await supabase
+      .from('profiles')
+      .select('role, ecole_id')
+      .eq('user_id', user.id)
+      .single()
+
+    if (prof?.role === 'director' && prof.ecole_id) {
+      const { data: ecole } = await supabase
+        .from('ecoles')
+        .select('statut')
+        .eq('id', prof.ecole_id)
+        .single()
+
+      if (ecole?.statut === 'en_attente') {
+        const attenteUrl = request.nextUrl.clone()
+        attenteUrl.pathname = '/dashboard/attente'
+        return NextResponse.redirect(attenteUrl)
+      }
+    }
   }
 
   return supabaseResponse

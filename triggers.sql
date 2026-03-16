@@ -89,8 +89,8 @@ BEGIN
     v_tel_ecole   := NEW.raw_user_meta_data->>'telephone_ecole';
 
     IF v_nom_ecole IS NOT NULL THEN
-      INSERT INTO public.ecoles (nom, ville, telephone)
-      VALUES (v_nom_ecole, COALESCE(v_ville_ecole, 'Dakar'), v_tel_ecole)
+      INSERT INTO public.ecoles (nom, ville, telephone, statut)
+      VALUES (v_nom_ecole, COALESCE(v_ville_ecole, 'Dakar'), v_tel_ecole, 'en_attente')
       RETURNING id INTO v_ecole_id;
     END IF;
   END IF;

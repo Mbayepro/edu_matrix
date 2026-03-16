@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import type { Profile, Classe, Matiere, EnseignantClasse } from '@/lib/supabase'
 import { Users, Plus, Trash2, Loader2, BookOpen, GraduationCap, CheckCircle2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useToast } from '@/contexts/ToastContext'
 
 interface AssignmentRow extends EnseignantClasse {
   enseignant: Profile
@@ -23,7 +24,7 @@ export default function EnseignantsAdminPage() {
   const [assignments, setAssignments] = useState<AssignmentRow[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [toast, setToast] = useState<string | null>(null)
+  const { showToast } = useToast()
 
   const [form, setForm] = useState({
     enseignant_id: '',
@@ -94,11 +95,6 @@ export default function EnseignantsAdminPage() {
     setAssignments((data ?? []) as AssignmentRow[])
   }
 
-  function showToast(msg: string) {
-    setToast(msg)
-    setTimeout(() => setToast(null), 3000)
-  }
-
   async function handleAssign(e: React.FormEvent) {
     e.preventDefault()
     if (!ecoleId || !form.enseignant_id || !form.classe_id) return
@@ -112,13 +108,13 @@ export default function EnseignantsAdminPage() {
       })
       if (error) {
         if (error.code === '23505') {
-          showToast('⚠️ Cette assignation existe déjà.')
+          showToast('Cette assignation existe déjà.', 'error')
         } else {
-          showToast('Erreur : ' + error.message)
+          showToast('Erreur : ' + error.message, 'error')
         }
         return
       }
-      showToast('✅ Assignation enregistrée !')
+      showToast('Assignation enregistrée !', 'success')
       setForm({ enseignant_id: '', classe_id: '', matiere_id: '' })
       await loadAssignments(ecoleId)
     } finally {
@@ -129,7 +125,7 @@ export default function EnseignantsAdminPage() {
   async function handleDelete(id: string) {
     if (!ecoleId) return
     await supabase.from('enseignants_classes').delete().eq('id', id)
-    showToast('Assignation supprimée.')
+    showToast('Assignation supprimée.', 'success')
     await loadAssignments(ecoleId)
   }
 
@@ -145,13 +141,6 @@ export default function EnseignantsAdminPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Toast */}
-      {toast && (
-        <div className="fixed top-6 right-6 z-50 bg-slate-800 text-white text-sm px-5 py-3 rounded-2xl shadow-lg animate-in slide-in-from-top-2">
-          {toast}
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="bg-blue-100 p-2.5 rounded-xl">

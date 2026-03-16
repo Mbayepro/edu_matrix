@@ -14,9 +14,13 @@ import {
   Calendar,
   Filter,
 } from 'lucide-react'
+import { useProfile } from '@/hooks/useProfile'
+import { useToast } from '@/contexts/ToastContext'
 
 export default function NotesPage() {
-  const [ecoleId, setEcoleId] = useState<string | null>(null)
+  const { profile, loading: profileLoading } = useProfile()
+  const ecoleId = profile?.ecole_id || null
+
   const [classes, setClasses] = useState<Classe[]>([])
   const [niveaux, setNiveaux] = useState<Niveau[]>([])
   const [series, setSeries] = useState<Serie[]>([])
@@ -33,6 +37,7 @@ export default function NotesPage() {
   
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const { showToast } = useToast()
   const [showNewEvalModal, setShowNewEvalModal] = useState(false)
   const [newEval, setNewEval] = useState({
     type: 'controle' as 'controle' | 'devoir' | 'composition',
@@ -40,11 +45,6 @@ export default function NotesPage() {
     coef: 1,
     bareme: 20,
   })
-
-  useEffect(() => {
-    init()
-  }, [])
-
 
   useEffect(() => {
     if (selectedClasse) {
@@ -65,60 +65,13 @@ export default function NotesPage() {
     }
   }, [selectedEvaluation])
 
-  async function loadNiveaux() {
-    if (!ecoleId) return
-    const { data } = await supabase
-      .from('niveaux')
-      .select('*')
-      .eq('ecole_id', ecoleId)
-      .eq('is_active', true)
-      .order('ordre')
-    setNiveaux(data ?? [])
-  }
-
-  async function loadSeries() {
-    if (!ecoleId) return
-    const { data } = await supabase
-      .from('series')
-      .select('*')
-      .eq('ecole_id', ecoleId)
-      .eq('is_active', true)
-      .order('code')
-    setSeries(data ?? [])
-  }
-
-  async function init() {
-    try {
-      setLoading(true)
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { setLoading(false); return }
-
-      const { data: prof } = await supabase
-        .from('profiles')
-        .select('ecole_id')
-        .eq('user_id', user.id)
-        .single()
-      
-      if (prof?.ecole_id) {
-        setEcoleId(prof.ecole_id)
-        // loading will be set to false by loadBaseData()
-      } else {
-        // No school configured — stop loading
-        setLoading(false)
-      }
-    } catch {
-      setLoading(false)
-    }
-  }
-
-  async function loadBaseData() {
-    if (!ecoleId) return
+  async function loadBaseData(schoolId: string) {
     setLoading(true)
     try {
       await Promise.all([
-        loadNiveaux(),
-        loadSeries(),
-        loadClasses()
+        loadNiveaux(schoolId),
+        loadSeries(schoolId),
+        loadClasses(schoolId)
       ])
     } finally {
       setLoading(false)
@@ -126,15 +79,38 @@ export default function NotesPage() {
   }
 
   useEffect(() => {
-    if (ecoleId) loadBaseData()
-  }, [ecoleId])
+    if (ecoleId) {
+       loadBaseData(ecoleId)
+    } else if (!profileLoading && !ecoleId) {
+       setLoading(false)
+    }
+  }, [ecoleId, profileLoading])
 
-  async function loadClasses() {
-    if (!ecoleId) return
+  async function loadNiveaux(schoolId: string) {
+    const { data } = await supabase
+      .from('niveaux')
+      .select('*')
+      .eq('ecole_id', schoolId)
+      .eq('is_active', true)
+      .order('ordre')
+    setNiveaux(data ?? [])
+  }
+
+  async function loadSeries(schoolId: string) {
+    const { data } = await supabase
+      .from('series')
+      .select('*')
+      .eq('ecole_id', schoolId)
+      .eq('is_active', true)
+      .order('code')
+    setSeries(data ?? [])
+  }
+
+  async function loadClasses(schoolId: string) {
     const { data } = await supabase
       .from('classes')
       .select('*')
-      .eq('ecole_id', ecoleId)
+      .eq('ecole_id', schoolId)
       .order('nom_classe')
     setClasses(data ?? [])
   }
@@ -277,12 +253,20 @@ export default function NotesPage() {
     
     setSaving(true)
     try {
-      const notesToInsert = eleves.map(eleve => ({
-        ecole_id: ecoleId!,
-        eleve_id: eleve.id,
-        evaluation_id: selectedEvaluation,
-        note: notes[eleve.id] || 0,
-      }))
+      // Only upsert notes that were actually entered (skip students with no entry)
+      const notesToInsert = eleves
+        .filter(eleve => notes[eleve.id] !== undefined)
+        .map(eleve => ({
+          ecole_id: ecoleId!,
+          eleve_id: eleve.id,
+          evaluation_id: selectedEvaluation,
+          note: notes[eleve.id],
+        }))
+
+      if (notesToInsert.length === 0) {
+        showToast('Aucune note à enregistrer.')
+        return
+      }
 
       const { error } = await supabase
         .from('notes')
@@ -292,7 +276,9 @@ export default function NotesPage() {
         })
 
       if (!error) {
-        // Success feedback could be added here
+        showToast(`${notesToInsert.length} note(s) enregistrée(s) avec succès.`, 'success')
+      } else {
+        showToast('Erreur : ' + error.message, 'error')
       }
     } finally {
       setSaving(false)
@@ -318,7 +304,7 @@ export default function NotesPage() {
   const selectedClasseData = classes.find(c => c.id === selectedClasse)
   const selectedMatiereData = matieres.find(m => m.id === selectedMatiere)
 
-  if (loading) {
+  if (loading || profileLoading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="flex items-center gap-2 text-slate-500 text-sm">
@@ -501,10 +487,10 @@ export default function NotesPage() {
                           min="0"
                           max={selectedEvaluationData?.bareme || 20}
                           step="0.5"
-                          value={note}
+                          value={note === undefined ? '' : note}
                           onChange={(e) => setNotes(prev => ({
                             ...prev,
-                            [eleve.id]: Number(e.target.value)
+                            [eleve.id]: e.target.value === '' ? undefined as any : Number(e.target.value)
                           }))}
                           className={`w-full px-3 py-2 text-center border rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 ${getNoteColor(note)}`}
                         />

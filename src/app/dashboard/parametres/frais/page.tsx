@@ -11,9 +11,14 @@ import {
   Save,
   X,
 } from 'lucide-react'
+import { useProfile } from '@/hooks/useProfile'
+import { useToast } from '@/contexts/ToastContext'
 
 export default function FraisManagementPage() {
-  const [ecoleId, setEcoleId] = useState<string | null>(null)
+  const { profile, loading: profileLoading } = useProfile()
+  const ecoleId = profile?.ecole_id || null
+  const { showToast } = useToast()
+
   const [frais, setFrais] = useState<FraisScolaire[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -26,25 +31,6 @@ export default function FraisManagementPage() {
     is_active: true,
   })
   const [saving, setSaving] = useState(false)
-
-  useEffect(() => {
-    init()
-  }, [])
-
-  async function init() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    const { data: prof } = await supabase
-      .from('profiles')
-      .select('ecole_id')
-      .eq('user_id', user.id)
-      .single()
-    
-    if (prof?.ecole_id) {
-      setEcoleId(prof.ecole_id)
-    }
-  }
 
   useEffect(() => {
     if (ecoleId) {
@@ -129,8 +115,10 @@ export default function FraisManagementPage() {
         
         if (error) {
           console.error('Error updating frais:', error)
+          showToast('Erreur lors de la mise à jour des frais.', 'error')
           return
         }
+        showToast('Frais mis à jour avec succès.', 'success')
       } else {
         // Create new frais
         const { error } = await supabase
@@ -139,8 +127,10 @@ export default function FraisManagementPage() {
         
         if (error) {
           console.error('Error creating frais:', error)
+          showToast('Erreur lors de la création des frais.', 'error')
           return
         }
+        showToast('Nouveau frais créé avec succès.', 'success')
       }
 
       await loadFrais()
@@ -176,7 +166,10 @@ export default function FraisManagementPage() {
       .eq('id', frais.id)
     
     if (!error) {
+      showToast('Frais supprimé avec succès.', 'success')
       await loadFrais()
+    } else {
+      showToast('Erreur lors de la suppression du frais.', 'error')
     }
   }
 
@@ -186,7 +179,7 @@ export default function FraisManagementPage() {
     '2nde', '1ère', 'Terminale'
   ]
 
-  if (loading) {
+  if (loading || profileLoading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="flex items-center gap-2 text-slate-500 text-sm">

@@ -14,14 +14,22 @@ import {
   DollarSign,
   PieChart,
   BarChart3,
+  Download,
 } from 'lucide-react'
+import { useProfile } from '@/hooks/useProfile'
+import { useToast } from '@/contexts/ToastContext'
+import { generatePaiementRecuPDF, PaiementRecuInfo } from '@/lib/pdfRecuGenerator'
+import { Skeleton } from '@/components/Skeleton'
 
 interface EleveWithClasse extends Omit<Eleve, 'classe'> {
   classe?: { nom_classe: string }
 }
 
 export default function PaiementsPage() {
-  const [ecoleId, setEcoleId] = useState<string | null>(null)
+  const { profile, ecole, loading: profileLoading } = useProfile()
+  const ecoleId = profile?.ecole_id || null
+  const { showToast } = useToast()
+
   const [eleves, setEleves] = useState<EleveWithClasse[]>([])
   const [frais, setFrais] = useState<FraisScolaire[]>([])
   const [elevesFrais, setElevesFrais] = useState<EleveFrais[]>([])
@@ -34,41 +42,40 @@ export default function PaiementsPage() {
   const [mode, setMode] = useState('')
   const [reference, setReference] = useState('')
   const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState<string | null>(null)
-
-  useEffect(() => {
-    init()
-  }, [])
 
   useEffect(() => {
     if (ecoleId) {
-      void loadEleves()
-      void loadFrais()
-      void loadElevesFrais()
-      void loadPaiements()
+      loadAllData(ecoleId)
+    } else if (!profileLoading && !ecoleId) {
+      setLoading(false)
     }
-  }, [ecoleId])
+  }, [ecoleId, profileLoading])
 
-  async function init() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const { data: prof } = await supabase
-      .from('profiles')
-      .select('ecole_id')
-      .eq('user_id', user.id)
-      .single()
-    if (!prof?.ecole_id) return
-    setEcoleId(prof.ecole_id)
+  async function loadAllData(schoolId: string) {
+    setLoading(true)
+    try {
+      await Promise.all([
+        loadEleves(schoolId),
+        loadFrais(schoolId),
+        loadElevesFrais(schoolId),
+        loadPaiements(schoolId),
+      ])
+    } finally {
+      setLoading(false)
+    }
   }
 
-  async function loadEleves() {
-    if (!ecoleId) return
-    setLoading(true)
+  // Re-filter eleves when search changes
+  useEffect(() => {
+    if (ecoleId) void loadEleves(ecoleId)
+  }, [search])
+
+  async function loadEleves(schoolId: string) {
     try {
       let query = supabase
         .from('eleves')
         .select('*, classe:classes(nom_classe)')
-        .eq('ecole_id', ecoleId)
+        .eq('ecole_id', schoolId)
         .order('nom')
 
       if (search.trim()) {
@@ -79,37 +86,34 @@ export default function PaiementsPage() {
 
       const { data } = await query
       setEleves((data ?? []) as EleveWithClasse[])
-    } finally {
-      setLoading(false)
+    } catch (e) {
+      console.error(e)
     }
   }
 
-  async function loadFrais() {
-    if (!ecoleId) return
+  async function loadFrais(schoolId: string) {
     const { data } = await supabase
       .from('frais_scolaires')
       .select('*')
-      .eq('ecole_id', ecoleId)
+      .eq('ecole_id', schoolId)
       .eq('is_active', true)
       .order('libelle')
     setFrais((data ?? []) as FraisScolaire[])
   }
 
-  async function loadElevesFrais() {
-    if (!ecoleId) return
+  async function loadElevesFrais(schoolId: string) {
     const { data } = await supabase
       .from('eleves_frais')
       .select('*')
-      .eq('ecole_id', ecoleId)
+      .eq('ecole_id', schoolId)
     setElevesFrais((data ?? []) as EleveFrais[])
   }
 
-  async function loadPaiements() {
-    if (!ecoleId) return
+  async function loadPaiements(schoolId: string) {
     const { data } = await supabase
       .from('paiements')
       .select('*')
-      .eq('ecole_id', ecoleId)
+      .eq('ecole_id', schoolId)
       .order('date_paiement', { ascending: false })
     setPaiements((data ?? []) as Paiement[])
   }
@@ -118,11 +122,10 @@ export default function PaiementsPage() {
     e.preventDefault()
     if (!selectedEleve || !selectedFraisId || !montant || !ecoleId) return
     setSaving(true)
-    setMessage(null)
     try {
       const m = Number(montant.replace(',', '.'))
       if (!Number.isFinite(m) || m <= 0) {
-        setMessage('Montant invalide')
+        showToast('Montant invalide', 'error')
         return
       }
 
@@ -138,17 +141,43 @@ export default function PaiementsPage() {
         })
 
       if (insertError) {
-        setMessage(insertError.message)
+        showToast(insertError.message, 'error')
         return
       }
 
-      setMessage('Paiement enregistré avec succès.')
+      showToast('Paiement enregistré avec succès.', 'success')
       setMontant('')
       setMode('')
       setReference('')
-      await loadEleves()
+      await loadAllData(ecoleId)
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleDownloadReceipt(paiement: Paiement) {
+    if (!ecole || !selectedEleve) return
+
+    const fraisDetails = frais.find(f => f.id === paiement.frais_id)
+
+    const recuInfo: PaiementRecuInfo = {
+      id: paiement.id,
+      date_paiement: paiement.date_paiement,
+      montant: paiement.montant,
+      mode_paiement: paiement.mode || 'Non spécifié',
+      reference: paiement.reference,
+      eleve_nom: selectedEleve.nom,
+      eleve_prenom: selectedEleve.prenom,
+      eleve_matricule: selectedEleve.matricule,
+      classe_nom: selectedEleve.classe?.nom_classe || 'Niveau non défini',
+      frais_libelle: fraisDetails?.libelle || 'Scolarité',
+    }
+
+    try {
+      await generatePaiementRecuPDF(ecole, recuInfo, profile)
+    } catch (e) {
+      console.error(e)
+      showToast('Erreur lors de la génération du reçu PDF', 'error')
     }
   }
 
@@ -321,17 +350,23 @@ export default function PaiementsPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              onBlur={() => loadEleves()}
               placeholder="Rechercher un élève…"
               className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm max-h-[380px] overflow-y-auto">
-            {loading ? (
-              <div className="flex items-center justify-center py-16 text-slate-400 text-sm">
-                <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                Chargement des élèves…
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm max-h-[380px] overflow-y-auto w-full">
+            {loading || profileLoading ? (
+              <div className="p-4 space-y-4">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <Skeleton className="w-8 h-8 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-3 w-1/2" />
+                      <Skeleton className="h-2 w-1/3" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : filteredEleves.length === 0 ? (
               <div className="py-10 text-center text-slate-400 text-sm">
@@ -470,14 +505,51 @@ export default function PaiementsPage() {
                     </>
                   )}
                 </button>
-                {message && (
-                  <p className="text-[11px] text-slate-500 mt-1">
-                    {message}
-                  </p>
-                )}
               </form>
             )}
           </div>
+
+          {/* Historique des paiements de l'élève */}
+          {selectedEleve && (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
+              <h3 className="text-sm font-semibold text-slate-800">
+                Historique règlements
+              </h3>
+              <div className="space-y-2 max-h-[250px] overflow-y-auto">
+                {paiements.filter(p => p.eleve_id === selectedEleve.id).length === 0 ? (
+                  <p className="text-xs text-slate-400">Aucun paiement enregistré.</p>
+                ) : (
+                  paiements
+                    .filter(p => p.eleve_id === selectedEleve.id)
+                    .map((p) => {
+                      const fLibelle = frais.find(f => f.id === p.frais_id)?.libelle || 'Frais'
+                      return (
+                        <div key={p.id} className="p-3 bg-slate-50 rounded-xl flex items-center justify-between border border-slate-100">
+                          <div>
+                            <p className="text-xs font-semibold text-slate-800">
+                              {p.montant.toLocaleString('fr-FR')} F
+                            </p>
+                            <p className="text-[10px] text-slate-500 truncate max-w-[120px]">
+                              {fLibelle}
+                            </p>
+                            <p className="text-[9px] text-slate-400 mt-0.5">
+                              {new Date(p.date_paiement).toLocaleDateString('fr-FR')}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => handleDownloadReceipt(p)}
+                            className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-100 transition-colors"
+                            title="Télécharger le reçu"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )
+                    })
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

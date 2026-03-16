@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase'
 import type { Profile, Classe, Matiere, EmploiDuTemps } from '@/lib/supabase'
 import { Loader2, Plus, Trash2, Calendar, Clock } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useToast } from '@/contexts/ToastContext'
 
 const JOURS = ['', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'] as const
 
@@ -42,7 +43,7 @@ export default function EmploiDuTempsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [selectedTeacher, setSelectedTeacher] = useState<string>('')
-  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
+  const { showToast } = useToast()
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({
     jour: 1 as number,
@@ -91,11 +92,6 @@ export default function EmploiDuTempsPage() {
     setSlots((data ?? []) as Slot[])
   }
 
-  function showToast(msg: string, ok = true) {
-    setToast({ msg, ok })
-    setTimeout(() => setToast(null), 3000)
-  }
-
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
     if (!ecoleId || !selectedTeacher) return
@@ -109,7 +105,7 @@ export default function EmploiDuTempsPage() {
       s.heure_fin > newStart
     )
     if (overlap) {
-      showToast(`⚠️ Conflit horaire avec ${overlap.matiere?.nom ?? 'un cours'} (${overlap.heure_debut.slice(0,5)}–${overlap.heure_fin.slice(0,5)})`, false)
+      showToast(`Conflit horaire avec ${overlap.matiere?.nom ?? 'un cours'} (${overlap.heure_debut.slice(0,5)}–${overlap.heure_fin.slice(0,5)})`, 'error')
       return
     }
 
@@ -125,8 +121,8 @@ export default function EmploiDuTempsPage() {
         heure_fin: form.heure_fin + ':00',
         salle: form.salle || null,
       })
-      if (error) { showToast('Erreur : ' + error.message, false); return }
-      showToast('✅ Créneau ajouté !')
+      if (error) { showToast('Erreur : ' + error.message, 'error'); return }
+      showToast('Créneau ajouté avec succès !', 'success')
       setShowForm(false)
       await loadSlots()
     } finally { setSaving(false) }
@@ -134,7 +130,7 @@ export default function EmploiDuTempsPage() {
 
   async function handleDelete(id: string) {
     await supabase.from('emploi_du_temps').delete().eq('id', id)
-    showToast('Créneau supprimé.')
+    showToast('Créneau supprimé.', 'success')
     await loadSlots()
   }
 
@@ -156,16 +152,6 @@ export default function EmploiDuTempsPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-5">
-
-      {/* Toast */}
-      {toast && (
-        <div className={`fixed top-6 right-6 z-50 text-sm px-5 py-3 rounded-2xl shadow-lg font-medium ${
-          toast.ok ? 'bg-slate-800 text-white' : 'bg-red-600 text-white'
-        }`}>
-          {toast.msg}
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">

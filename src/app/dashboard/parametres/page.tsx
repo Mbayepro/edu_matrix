@@ -14,10 +14,15 @@ import {
   DollarSign,
   Upload,
 } from 'lucide-react'
+import { useProfile } from '@/hooks/useProfile'
+import { useToast } from '@/contexts/ToastContext'
 
 export default function SchoolSettingsPage() {
   const router = useRouter()
-  const [profile, setProfile] = useState<Profile | null>(null)
+  const { profile, loading: profileLoading } = useProfile()
+  const ecoleId = profile?.ecole_id || null
+  const { showToast } = useToast()
+
   const [ecole, setEcole] = useState<Ecole | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -33,36 +38,20 @@ export default function SchoolSettingsPage() {
   })
 
   useEffect(() => {
-    load()
-  }, [])
+    if (ecoleId) {
+      load(ecoleId)
+    } else if (!profileLoading && !ecoleId) {
+      setLoading(false)
+    }
+  }, [ecoleId, profileLoading])
 
-  async function load() {
+  async function load(schoolId: string) {
     try {
       setLoading(true)
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/login')
-        return
-      }
-
-      const { data: prof } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
-
-      if (!prof) {
-        router.push('/login')
-        return
-      }
-
-      setProfile(prof as Profile)
-      if (!prof.ecole_id) return
-
       const { data: ec } = await supabase
         .from('ecoles')
         .select('*')
-        .eq('id', prof.ecole_id)
+        .eq('id', schoolId)
         .single()
 
       if (ec) {
@@ -103,8 +92,11 @@ export default function SchoolSettingsPage() {
         .eq('id', ecole.id)
 
       if (!error) {
-        await load()
+        await load(ecole.id)
+        showToast('Paramètres mis à jour avec succès.', 'success')
       }
+    } catch (err: any) {
+      showToast('Erreur lors de la sauvegarde : ' + err.message, 'error')
     } finally {
       setSaving(false)
     }
@@ -132,13 +124,13 @@ export default function SchoolSettingsPage() {
       setForm(prev => ({ ...prev, [`${type}_url`]: publicUrl }))
     } catch (err) {
       console.error('Upload error:', err)
-      alert("Erreur lors de l'upload de l'image.")
+      showToast("Erreur lors de l'upload de l'image.", 'error')
     } finally {
       setUploading(null)
     }
   }
 
-  if (loading) {
+  if (loading || profileLoading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="flex items-center gap-2 text-slate-500 text-sm">

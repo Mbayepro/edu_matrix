@@ -1,8 +1,9 @@
 'use client'
 
-// src/app/dashboard/page.tsx
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { useProfile } from '@/hooks/useProfile'
 import type { Profile, Ecole } from '@/lib/supabase'
 import {
   Users, BookOpen, AlertCircle, LayoutGrid,
@@ -12,6 +13,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, CartesianGrid,
 } from 'recharts'
+import { Skeleton, SkeletonCard } from '@/components/Skeleton'
 
 interface DashboardStats {
   totalEleves:      number
@@ -70,39 +72,43 @@ function ChartTooltip({ active, payload, label }: any) {
 }
 
 export default function DashboardPage() {
-  const [profile,       setProfile]       = useState<Profile | null>(null)
-  const [ecole,         setEcole]         = useState<Ecole | null>(null)
+  const router = useRouter()
+  const { profile, ecole, loading: profileLoading } = useProfile()
+  const ecoleId = profile?.ecole_id || null
+
+  useEffect(() => {
+    if (profile?.role === 'superadmin') {
+      router.push('/dashboard/superadmin')
+    }
+  }, [profile, router])
+
   const [stats,         setStats]         = useState<DashboardStats | null>(null)
   const [recentEleves,  setRecentEleves]  = useState<RecentEleve[]>([])
   const [presenceChart, setPresenceChart] = useState<{ jour: string; present: number; absent: number }[]>([])
   const [notesChart,    setNotesChart]    = useState<{ classe: string; moyenne: number }[]>([])
   const [loading,       setLoading]       = useState(true)
 
-  useEffect(() => { loadAll() }, [])
+  useEffect(() => { 
+    if (ecoleId) {
+      loadAll(ecoleId)
+    } else if (!profileLoading && !ecoleId) {
+      setLoading(false)
+    }
+  }, [ecoleId, profileLoading])
 
-  async function loadAll() {
+  async function loadAll(schoolId: string) {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { window.location.href = '/login'; return }
-
-      const { data: prof } = await supabase
-        .from('profiles').select('*').eq('user_id', user.id).single()
-      if (!prof) { window.location.href = '/login'; return }
-      setProfile(prof)
-      if (!prof.ecole_id) { setLoading(false); return }
-
-      const { data: ec } = await supabase
-        .from('ecoles').select('*').eq('id', prof.ecole_id).single()
-      setEcole(ec)
-
+      setLoading(true)
       const today = new Date().toISOString().split('T')[0]
 
       const [elevesR, teachR, impayR, classR, presR] = await Promise.all([
-        supabase.from('eleves').select('id',  { count: 'exact', head: true }).eq('ecole_id', prof.ecole_id),
-        supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('ecole_id', prof.ecole_id).eq('role', 'teacher'),
-        supabase.from('eleves').select('id',  { count: 'exact', head: true }).eq('ecole_id', prof.ecole_id).eq('statut_paiement', 'impayé'),
-        supabase.from('classes').select('id', { count: 'exact', head: true }).eq('ecole_id', prof.ecole_id),
-        supabase.from('presences').select('id', { count: 'exact', head: true }).eq('date', today),
+        supabase.from('eleves').select('id',  { count: 'exact', head: true }).eq('ecole_id', schoolId),
+        supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('ecole_id', schoolId).eq('role', 'teacher'),
+        supabase.from('eleves').select('id',  { count: 'exact', head: true }).eq('ecole_id', schoolId).eq('statut_paiement', 'impayé'),
+        supabase.from('classes').select('id', { count: 'exact', head: true }).eq('ecole_id', schoolId),
+        // Fix: filter presences by ecole via classes join
+        supabase.from('presences').select('id, classe:classes!inner(ecole_id)', { count: 'exact', head: true })
+          .eq('date', today).eq('classes.ecole_id', schoolId).eq('statut', 'présent'),
       ])
 
       setStats({
@@ -117,28 +123,45 @@ export default function DashboardPage() {
       const { data: recents } = await supabase
         .from('eleves')
         .select('id, prenom, nom, matricule, classe:classes(nom_classe)')
-        .eq('ecole_id', prof.ecole_id)
+        .eq('ecole_id', schoolId)
         .order('created_at', { ascending: false })
         .limit(6)
       setRecentEleves((recents ?? []) as RecentEleve[])
 
-      // Présences 7 derniers jours
-      const days: typeof presenceChart = []
+      // Présences 7 derniers jours — une seule requête + regroupement client
+      const sevenDaysAgo = new Date()
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
+      const startDate = sevenDaysAgo.toISOString().split('T')[0]
+
+      const { data: presRaw } = await supabase
+        .from('presences')
+        .select('date, statut, classe:classes!inner(ecole_id)')
+        .eq('classes.ecole_id', schoolId)
+        .gte('date', startDate)
+        .lte('date', today)
+        .in('statut', ['présent', 'absent'])
+
+      // Build date→{present, absent} map
+      const presMap: Record<string, { present: number; absent: number }> = {}
       for (let i = 6; i >= 0; i--) {
         const d = new Date(); d.setDate(d.getDate() - i)
-        const ds    = d.toISOString().split('T')[0]
-        const label = d.toLocaleDateString('fr-FR', { weekday: 'short' })
-        const [pR, aR] = await Promise.all([
-          supabase.from('presences').select('id', { count: 'exact', head: true }).eq('date', ds).eq('statut', 'présent'),
-          supabase.from('presences').select('id', { count: 'exact', head: true }).eq('date', ds).eq('statut', 'absent'),
-        ])
-        days.push({ jour: label, present: pR.count ?? 0, absent: aR.count ?? 0 })
+        presMap[d.toISOString().split('T')[0]] = { present: 0, absent: 0 }
       }
+      presRaw?.forEach((p: any) => {
+        if (!presMap[p.date]) return
+        if (p.statut === 'présent') presMap[p.date].present++
+        else presMap[p.date].absent++
+      })
+
+      const days = Object.entries(presMap).map(([ds, counts]) => {
+        const label = new Date(ds).toLocaleDateString('fr-FR', { weekday: 'short' })
+        return { jour: label, ...counts }
+      })
       setPresenceChart(days)
 
       // Moyennes par classe
       const { data: classes } = await supabase
-        .from('classes').select('id, nom_classe').eq('ecole_id', prof.ecole_id).limit(6)
+        .from('classes').select('id, nom_classe').eq('ecole_id', schoolId).limit(6)
 
       if (classes) {
         const avgs = await Promise.all(
@@ -160,12 +183,19 @@ export default function DashboardPage() {
     }
   }
 
-  if (loading) {
+  if (loading || profileLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-slate-500 text-sm">Chargement…</p>
+      <div className="space-y-5 max-w-7xl mx-auto">
+        <Skeleton className="h-32 w-full rounded-2xl" />
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Skeleton className="h-[250px] rounded-2xl" />
+          <Skeleton className="h-[250px] rounded-2xl" />
         </div>
       </div>
     )
