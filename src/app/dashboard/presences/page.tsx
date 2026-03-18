@@ -81,10 +81,10 @@ export default function PresencesPage() {
 
     const presencesMap = new Map()
     if (presencesData) {
-      presencesData.forEach(p => presencesMap.set(p.eleve_id, p))
+      presencesData.forEach((p: any) => presencesMap.set(p.eleve_id, p))
     }
 
-    const combined = (studentsData || []).map(s => {
+    const combined = (studentsData || []).map((s: any) => {
       const p = presencesMap.get(s.id)
       return {
         ...s,
