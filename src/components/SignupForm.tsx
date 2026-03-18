@@ -6,7 +6,9 @@ import {
   Lock, Mail, User, School, MapPin, Phone,
   Loader2, CheckCircle2, Clock, GraduationCap,
 } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { useEffect } from 'react'
 
 type Step = 'form' | 'success'
 
@@ -23,6 +25,18 @@ export default function SignupForm() {
   const [telephone, setTelephone] = useState('')
   const [email, setEmail]         = useState('')
   const [password, setPassword]   = useState('')
+
+  const searchParams = useSearchParams()
+  const invitedSchoolId = searchParams.get('school')
+  const invitedRole = (searchParams.get('role') as any) || 'director'
+  const isInvitation = !!invitedSchoolId
+
+  useEffect(() => {
+    if (isInvitation) {
+      // Fetch school name if possible or just set a placeholder
+      setNomEcole('Invitation en cours...')
+    }
+  }, [isInvitation])
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,10 +56,11 @@ export default function SignupForm() {
           data: {
             nom,
             prenom,
-            role: 'director',
-            nom_ecole: nomEcole,
-            ville_ecole: ville,
-            telephone_ecole: telephone || null,
+            role: isInvitation ? invitedRole : 'director',
+            ecole_id: isInvitation ? invitedSchoolId : null,
+            nom_ecole: isInvitation ? 'Membre École' : nomEcole,
+            ville_ecole: isInvitation ? 'N/A' : ville,
+            telephone_ecole: isInvitation ? null : (telephone || null),
           },
         },
       })
@@ -82,24 +97,29 @@ export default function SignupForm() {
             <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-500/15 rounded-2xl mb-5">
               <Clock className="w-8 h-8 text-amber-400" />
             </div>
-            <h1 className="text-2xl font-bold text-white mb-2">Demande envoyée !</h1>
+            <h1 className="text-2xl font-bold text-white mb-2">
+              {isInvitation ? 'Bienvenue dans votre équipe !' : 'Demande envoyée !'}
+            </h1>
             <p className="text-slate-400 text-sm leading-relaxed mb-6">
-              Votre école <strong className="text-white">{nomEcole}</strong> est en attente de validation par le Super Administrateur EduMatrix.
-              <br /><br />
-              Vous recevrez une confirmation dès que votre accès sera activé. Vous pouvez vous connecter à tout moment pour vérifier le statut.
+              {isInvitation 
+                ? 'Votre compte a été créé avec succès. Vous pouvez maintenant vous connecter pour accéder à votre espace de travail.'
+                : <>Votre école <strong className="text-white">{nomEcole}</strong> est en attente de validation par le Super Administrateur EduMatrix.<br /><br />Vous recevrez une confirmation dès que votre accès sera activé.</>
+              }
             </p>
 
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-6 text-left">
-              <div className="flex items-center gap-2 mb-2">
-                <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
-                <p className="text-amber-300 text-xs font-semibold">Ce qui se passe ensuite :</p>
+            {!isInvitation && (
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-6 text-left">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
+                  <p className="text-amber-300 text-xs font-semibold">Ce qui se passe ensuite :</p>
+                </div>
+                <ul className="text-slate-400 text-xs space-y-1.5 ml-6 list-disc">
+                  <li>Le Super Admin examine votre demande</li>
+                  <li>Votre école est activée (généralement sous 24h)</li>
+                  <li>Vous pouvez alors accéder à votre espace directeur</li>
+                </ul>
               </div>
-              <ul className="text-slate-400 text-xs space-y-1.5 ml-6 list-disc">
-                <li>Le Super Admin examine votre demande</li>
-                <li>Votre école est activée (généralement sous 24h)</li>
-                <li>Vous pouvez alors accéder à votre espace directeur</li>
-              </ul>
-            </div>
+            )}
 
             <Link
               href="/login"
@@ -130,8 +150,12 @@ export default function SignupForm() {
           <div className="inline-flex items-center justify-center w-14 h-14 bg-emerald-500 rounded-2xl mb-4 shadow-lg shadow-emerald-500/30">
             <GraduationCap className="w-7 h-7 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Inscrire votre école</h1>
-          <p className="text-slate-400 text-sm mt-1">Créez votre espace directeur sur EduMatrix</p>
+          <h1 className="text-2xl font-bold text-white">
+            {isInvitation ? 'Rejoindre votre établissement' : 'Inscrire votre école'}
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">
+            {isInvitation ? `Créez votre compte ${invitedRole === 'teacher' ? 'Enseignant' : 'Admin'}` : 'Créez votre espace directeur sur EduMatrix'}
+          </p>
         </div>
 
         <div className="bg-slate-900 rounded-2xl p-8 border border-slate-800 shadow-2xl">
@@ -166,46 +190,48 @@ export default function SignupForm() {
               </div>
             </div>
 
-            {/* Section 2 — School info */}
-            <div>
-              <h2 className="text-sm font-bold text-emerald-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <School className="w-4 h-4" /> Informations de l&apos;École
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <label className={labelClass}>Nom de l&apos;établissement</label>
-                  <div className="relative">
-                    <School className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                    <input
-                      id="signup-ecole"
-                      type="text" value={nomEcole} onChange={e => setNomEcole(e.target.value)}
-                      required className={inputClass} placeholder="Groupe Scolaire Excellence" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Section 2 — School info (Hidden if invitation) */}
+            {!isInvitation && (
+              <div>
+                <h2 className="text-sm font-bold text-emerald-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <School className="w-4 h-4" /> Informations de l&apos;École
+                </h2>
+                <div className="space-y-4">
                   <div>
-                    <label className={labelClass}>Ville</label>
+                    <label className={labelClass}>Nom de l&apos;établissement</label>
                     <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                      <School className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                       <input
-                        id="signup-ville"
-                        type="text" value={ville} onChange={e => setVille(e.target.value)}
-                        required className={inputClass} placeholder="Dakar" />
+                        id="signup-ecole"
+                        type="text" value={nomEcole} onChange={e => setNomEcole(e.target.value)}
+                        required className={inputClass} placeholder="Groupe Scolaire Excellence" />
                     </div>
                   </div>
-                  <div>
-                    <label className={labelClass}>Téléphone <span className="text-slate-500 font-normal">(optionnel)</span></label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                      <input
-                        id="signup-tel"
-                        type="tel" value={telephone} onChange={e => setTelephone(e.target.value)}
-                        className={inputClass} placeholder="77 000 00 00" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className={labelClass}>Ville</label>
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                        <input
+                          id="signup-ville"
+                          type="text" value={ville} onChange={e => setVille(e.target.value)}
+                          required className={inputClass} placeholder="Dakar" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className={labelClass}>Téléphone <span className="text-slate-500 font-normal">(optionnel)</span></label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                        <input
+                          id="signup-tel"
+                          type="tel" value={telephone} onChange={e => setTelephone(e.target.value)}
+                          className={inputClass} placeholder="77 000 00 00" />
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Section 3 — Credentials */}
             <div>

@@ -13,6 +13,7 @@ import {
   Save,
   DollarSign,
   Upload,
+  Users,
 } from 'lucide-react'
 import { useProfile } from '@/hooks/useProfile'
 import { useToast } from '@/contexts/ToastContext'
@@ -162,10 +163,17 @@ export default function SchoolSettingsPage() {
         </Link>
         <Link
           href="/dashboard/parametres/frais"
-          className="px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+          className="px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
         >
           <DollarSign className="w-4 h-4 inline mr-2" />
           Frais scolaires
+        </Link>
+        <Link
+          href="/dashboard/parametres/equipe"
+          className="px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
+        >
+          <Users className="w-4 h-4 inline mr-2" />
+          Équipe
         </Link>
       </div>
 

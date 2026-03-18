@@ -1,4 +1,4 @@
-// src/app/register/page.tsx
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import SignupForm from '@/components/SignupForm'
 
@@ -8,5 +8,9 @@ export const metadata: Metadata = {
 }
 
 export default function RegisterPage() {
-  return <SignupForm />
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">Chargement...</div>}>
+      <SignupForm />
+    </Suspense>
+  )
 }

@@ -143,26 +143,31 @@ export default function BulletinsPage() {
         return sum + (note.evaluation?.coef || 1)
       }, 0)
 
+      const bareme = notesMatiere[0]?.evaluation?.bareme || 20
       const moyenne = totalCoef > 0 ? totalPoints / totalCoef : 0
       const coefficient = notesMatiere[0]?.evaluation?.matiere?.coefficient || 1
 
       return {
         matiere_id: notesMatiere[0]?.evaluation?.matiere?.id || '',
-        matiere_nom: nom,
+        matiere_nom: nom || 'Inconnue',
         coefficient,
         moyenne: Math.round(moyenne * 100) / 100,
+        bareme,
         nombre_evaluations: notesMatiere.length,
       }
     })
 
-    // Calculate general average
-    const totalPoints = matieresData.reduce((sum, matiere) => 
-      sum + (matiere.moyenne * matiere.coefficient), 0)
-    
-    const totalCoef = matieresData.reduce((sum, matiere) => 
-      sum + matiere.coefficient, 0)
+    // Calculate general average normalized to 20
+    let weightedTotalPoints = 0
+    let totalCoefficients = 0
 
-    const moyenneGenerale = totalCoef > 0 ? totalPoints / totalCoef : 0
+    matieresData.forEach(matiere => {
+      const normalizedMoyenne = (matiere.moyenne / matiere.bareme) * 20
+      weightedTotalPoints += normalizedMoyenne * matiere.coefficient
+      totalCoefficients += matiere.coefficient
+    })
+
+    const moyenneGenerale = totalCoefficients > 0 ? weightedTotalPoints / totalCoefficients : 0
 
     // Determine mention
     const getMention = (moyenne: number) => {
@@ -279,7 +284,7 @@ export default function BulletinsPage() {
                 <tr>
                     <th>Matière</th>
                     <th>Coefficient</th>
-                    <th>Moyenne / 20</th>
+                    <th>Moyenne</th>
                 </tr>
             </thead>
             <tbody>
@@ -287,7 +292,7 @@ export default function BulletinsPage() {
                     <tr>
                         <td>${matiere.matiere_nom}</td>
                         <td>${matiere.coefficient}</td>
-                        <td class="moyenne">${matiere.moyenne}</td>
+                        <td class="moyenne">${matiere.moyenne} / ${matiere.bareme}</td>
                     </tr>
                 `).join('')}
             </tbody>

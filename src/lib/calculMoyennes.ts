@@ -6,6 +6,7 @@ export interface MoyenneMatiere {
   matiere_nom: string
   coefficient: number
   moyenne: number
+  bareme: number
   appreciation?: string
   nombre_evaluations: number
 }
@@ -57,21 +58,22 @@ export class CalculateurMoyennes {
     eleve_id: string,
     matiere_id: string,
     trimestre: number
-  ): Promise<{ moyenne: number; nombre_evaluations: number }> {
+  ): Promise<{ moyenne: number; bareme: number; nombre_evaluations: number }> {
     const { data: notes, error } = await supabase
       .from('v_moyennes_matieres')
-      .select('moyenne_matiere, nombre_evaluations')
+      .select('moyenne_matiere, nombre_evaluations, bareme_moyen') // On suppose que la vue renvoie le barème moyen ou on le calcule
       .eq('eleve_id', eleve_id)
       .eq('matiere_id', matiere_id)
       .eq('trimestre', trimestre)
       .single()
 
     if (error || !notes) {
-      return { moyenne: 0, nombre_evaluations: 0 }
+      return { moyenne: 0, bareme: 20, nombre_evaluations: 0 }
     }
 
     return {
       moyenne: Number(notes.moyenne_matiere),
+      bareme: Number(notes.bareme_moyen || 20),
       nombre_evaluations: notes.nombre_evaluations
     }
   }
@@ -120,29 +122,31 @@ export class CalculateurMoyennes {
     let totalCoefficients = 0
 
     for (const coeff of coefficients) {
-      const { moyenne, nombre_evaluations } = await this.calculerMoyenneMatiere(
+      const { moyenne, bareme, nombre_evaluations } = await this.calculerMoyenneMatiere(
         eleve_id,
         coeff.matiere_id,
         trimestre
       )
 
-      // Générer l'appréciation selon le barème sénégalais
-      const appreciation = this.genererAppreciation(moyenne)
+      // Générer l'appréciation (normalisée sur 20 pour la mention)
+      const moyenneNormalisee = (moyenne / bareme) * 20
+      const appreciation = this.genererAppreciation(moyenneNormalisee)
 
       const moyenneMatiere: MoyenneMatiere = {
         matiere_id: coeff.matiere_id,
         matiere_nom: coeff.matiere!.nom,
         coefficient: coeff.coefficient,
         moyenne,
+        bareme,
         appreciation,
         nombre_evaluations
       }
 
       matieres.push(moyenneMatiere)
 
-      // Ajouter au calcul de la moyenne générale
-      if (moyenne > 0) {
-        totalPoints += moyenne * coeff.coefficient
+      // Ajouter au calcul de la moyenne générale (pondérée et normalisée sur 20)
+      if (nombre_evaluations > 0) {
+        totalPoints += moyenneNormalisee * coeff.coefficient
         totalCoefficients += coeff.coefficient
       }
     }
