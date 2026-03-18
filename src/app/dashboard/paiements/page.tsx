@@ -15,10 +15,16 @@ import {
   PieChart,
   BarChart3,
   Download,
+  Printer,
+  Share2,
+  MessageCircle,
+  Mail,
+  Copy,
+  X,
 } from 'lucide-react'
 import { useProfile } from '@/hooks/useProfile'
 import { useToast } from '@/contexts/ToastContext'
-import { generatePaiementRecuPDF, PaiementRecuInfo } from '@/lib/pdfRecuGenerator'
+import { generatePaiementRecuPDF, printPaiementRecuPDF, sharePaiementRecu, PaiementRecuInfo } from '@/lib/pdfRecuGenerator'
 import { Skeleton } from '@/components/Skeleton'
 
 interface EleveWithClasse extends Omit<Eleve, 'classe'> {
@@ -42,6 +48,8 @@ export default function PaiementsPage() {
   const [mode, setMode] = useState('')
   const [reference, setReference] = useState('')
   const [saving, setSaving] = useState(false)
+  const [shareOpenId, setShareOpenId] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     if (ecoleId) {
@@ -155,12 +163,10 @@ export default function PaiementsPage() {
     }
   }
 
-  async function handleDownloadReceipt(paiement: Paiement) {
-    if (!ecole || !selectedEleve) return
-
+  function buildRecuInfo(paiement: Paiement): PaiementRecuInfo | null {
+    if (!ecole || !selectedEleve) return null
     const fraisDetails = frais.find(f => f.id === paiement.frais_id)
-
-    const recuInfo: PaiementRecuInfo = {
+    return {
       id: paiement.id,
       date_paiement: paiement.date_paiement,
       montant: paiement.montant,
@@ -172,13 +178,32 @@ export default function PaiementsPage() {
       classe_nom: selectedEleve.classe?.nom_classe || 'Niveau non défini',
       frais_libelle: fraisDetails?.libelle || 'Scolarité',
     }
+  }
 
-    try {
-      await generatePaiementRecuPDF(ecole, recuInfo, profile)
-    } catch (e) {
-      console.error(e)
-      showToast('Erreur lors de la génération du reçu PDF', 'error')
+  async function handleDownloadReceipt(paiement: Paiement) {
+    const info = buildRecuInfo(paiement)
+    if (!info || !ecole) return
+    try { await generatePaiementRecuPDF(ecole, info, profile) }
+    catch { showToast('Erreur lors de la génération du reçu PDF', 'error') }
+  }
+
+  async function handlePrintReceipt(paiement: Paiement) {
+    const info = buildRecuInfo(paiement)
+    if (!info || !ecole) return
+    try { await printPaiementRecuPDF(ecole, info, profile) }
+    catch { showToast("Erreur lors de l'impression", 'error') }
+  }
+
+  function handleShare(paiement: Paiement, method: 'whatsapp' | 'email' | 'copy') {
+    const info = buildRecuInfo(paiement)
+    if (!info || !ecole) return
+    sharePaiementRecu(info, ecole, method)
+    if (method === 'copy') {
+      setCopied(true)
+      showToast('Texte copié dans le presse-papier !', 'success')
+      setTimeout(() => setCopied(false), 2000)
     }
+    setShareOpenId(null)
   }
 
   const filteredEleves = eleves
@@ -523,26 +548,57 @@ export default function PaiementsPage() {
                     .filter(p => p.eleve_id === selectedEleve.id)
                     .map((p) => {
                       const fLibelle = frais.find(f => f.id === p.frais_id)?.libelle || 'Frais'
+                      const isShareOpen = shareOpenId === p.id
                       return (
-                        <div key={p.id} className="p-3 bg-slate-50 rounded-xl flex items-center justify-between border border-slate-100">
-                          <div>
-                            <p className="text-xs font-semibold text-slate-800">
-                              {p.montant.toLocaleString('fr-FR')} F
-                            </p>
-                            <p className="text-[10px] text-slate-500 truncate max-w-[120px]">
-                              {fLibelle}
-                            </p>
-                            <p className="text-[9px] text-slate-400 mt-0.5">
-                              {new Date(p.date_paiement).toLocaleDateString('fr-FR')}
-                            </p>
+                        <div key={p.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                          {/* Info paiement */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-slate-800">
+                                {p.montant.toLocaleString('fr-FR')} F
+                              </p>
+                              <p className="text-[10px] text-slate-500 truncate max-w-[100px]">{fLibelle}</p>
+                              <p className="text-[9px] text-slate-400 mt-0.5">
+                                {new Date(p.date_paiement).toLocaleDateString('fr-FR')}
+                              </p>
+                            </div>
+                            {/* Actions */}
+                            <div className="flex items-center gap-0.5 shrink-0">
+                              <button onClick={() => handleDownloadReceipt(p)}
+                                className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-100 transition-colors"
+                                title="Télécharger le reçu">
+                                <Download className="w-3.5 h-3.5" />
+                              </button>
+                              <button onClick={() => handlePrintReceipt(p)}
+                                className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
+                                title="Imprimer le reçu">
+                                <Printer className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => setShareOpenId(isShareOpen ? null : p.id)}
+                                className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-200 transition-colors"
+                                title="Partager">
+                                {isShareOpen ? <X className="w-3.5 h-3.5" /> : <Share2 className="w-3.5 h-3.5" />}
+                              </button>
+                            </div>
                           </div>
-                          <button
-                            onClick={() => handleDownloadReceipt(p)}
-                            className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-100 transition-colors"
-                            title="Télécharger le reçu"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
+                          {/* Share menu */}
+                          {isShareOpen && (
+                            <div className="mt-2 pt-2 border-t border-slate-200 flex items-center gap-1 flex-wrap">
+                              <button onClick={() => handleShare(p, 'whatsapp')}
+                                className="flex items-center gap-1 text-[10px] font-medium px-2 py-1 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg transition-colors">
+                                <MessageCircle className="w-3 h-3" /> WhatsApp
+                              </button>
+                              <button onClick={() => handleShare(p, 'email')}
+                                className="flex items-center gap-1 text-[10px] font-medium px-2 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg transition-colors">
+                                <Mail className="w-3 h-3" /> Email
+                              </button>
+                              <button onClick={() => handleShare(p, 'copy')}
+                                className="flex items-center gap-1 text-[10px] font-medium px-2 py-1 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg transition-colors">
+                                <Copy className="w-3 h-3" /> {copied ? 'Copié !' : 'Copier'}
+                              </button>
+                            </div>
+                          )}
                         </div>
                       )
                     })

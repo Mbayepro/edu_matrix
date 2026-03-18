@@ -6,11 +6,12 @@ import type { Classe, Eleve } from '@/lib/supabase'
 import { useRouter, useParams } from 'next/navigation'
 import {
   Save, ArrowLeft, Loader2, User, HelpCircle,
-  Calendar, Hash, Briefcase, FileImage, AlertCircle
+  Calendar, Hash, Briefcase, AlertCircle
 } from 'lucide-react'
 import Link from 'next/link'
 import { useProfile } from '@/hooks/useProfile'
 import { useToast } from '@/contexts/ToastContext'
+import PhotoInput from '@/components/PhotoInput'
 
 export default function ModifierElevePage() {
   const router = useRouter()
@@ -22,7 +23,6 @@ export default function ModifierElevePage() {
   const ecoleId = profile?.ecole_id || null
 
   const [classes, setClasses] = useState<Classe[]>([])
-  
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -36,35 +36,20 @@ export default function ModifierElevePage() {
   const [photoUrl, setPhotoUrl] = useState('')
 
   useEffect(() => {
-    if (ecoleId && id) {
-      loadData(ecoleId, id)
-    } else if (!profileLoading && !ecoleId) {
-      setLoading(false)
-    }
+    if (ecoleId && id) loadData(ecoleId, id)
+    else if (!profileLoading && !ecoleId) setLoading(false)
   }, [ecoleId, profileLoading, id])
 
   async function loadData(schoolId: string, eleveId: string) {
     try {
       setLoading(true)
-
-      const { data: cls } = await supabase
-        .from('classes')
-        .select('*')
-        .eq('ecole_id', schoolId)
-        .order('nom_classe')
-      
+      const [{ data: cls }, { data: eleveData, error: eleveError }] = await Promise.all([
+        supabase.from('classes').select('*').eq('ecole_id', schoolId).order('nom_classe'),
+        supabase.from('eleves').select('*').eq('id', eleveId).single(),
+      ])
       setClasses(cls || [])
 
-      const { data: eleveData, error: eleveError } = await supabase
-        .from('eleves')
-        .select('*')
-        .eq('id', eleveId)
-        .single()
-      
-      if (eleveError || !eleveData) {
-        setError("Élève introuvable.")
-        return
-      }
+      if (eleveError || !eleveData) { setError("Élève introuvable."); return }
 
       const eleve = eleveData as Eleve
       setPrenom(eleve.prenom || '')
@@ -73,10 +58,8 @@ export default function ModifierElevePage() {
       setDateNaissance(eleve.date_naissance ? eleve.date_naissance.split('T')[0] : '')
       setClasseId(eleve.classe_id || '')
       setPhotoUrl(eleve.photo_url || '')
-
     } catch (err: any) {
-      console.error(err)
-      setError("Une erreur est survenue lors du chargement des données.")
+      setError("Une erreur est survenue lors du chargement.")
     } finally {
       setLoading(false)
     }
@@ -87,19 +70,14 @@ export default function ModifierElevePage() {
     setSaving(true)
     setError(null)
 
-    if (!ecoleId || !id) {
-      setError("Erreur : Données manquantes.")
-      setSaving(false)
-      return
-    }
+    if (!ecoleId || !id) { setError("Erreur : Données manquantes."); setSaving(false); return }
 
     try {
       const { error: updateError } = await supabase
         .from('eleves')
         .update({
           classe_id: classeId,
-          prenom,
-          nom,
+          prenom, nom,
           matricule: matricule || null,
           date_naissance: dateNaissance || null,
           photo_url: photoUrl || null,
@@ -112,7 +90,6 @@ export default function ModifierElevePage() {
       router.push('/dashboard/eleves')
       router.refresh()
     } catch (err: any) {
-      console.error(err)
       if (err.message?.includes('eleves_matricule_key')) {
         setError("Ce matricule est déjà utilisé par un autre élève.")
       } else {
@@ -122,6 +99,8 @@ export default function ModifierElevePage() {
       setSaving(false)
     }
   }
+
+  const inputCls = 'w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm'
 
   if (loading || profileLoading) {
     return (
@@ -134,10 +113,8 @@ export default function ModifierElevePage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
-        <Link 
-          href="/dashboard/eleves"
-          className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors text-slate-500"
-        >
+        <Link href="/dashboard/eleves"
+          className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors text-slate-500">
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
@@ -151,124 +128,63 @@ export default function ModifierElevePage() {
           <div className="bg-amber-50 rounded-xl border border-amber-200 p-6 text-center">
             <HelpCircle className="w-8 h-8 text-amber-500 mx-auto mb-3" />
             <h3 className="font-semibold text-amber-800 mb-1">Aucune classe disponible</h3>
-            <p className="text-amber-600 text-sm mb-4">
-              Veuillez d'abord configurer vos niveaux et classes.
-            </p>
-            <Link 
-              href="/dashboard/classes" 
-              className="inline-flex bg-amber-500 hover:bg-amber-600 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
-            >
+            <Link href="/dashboard/classes"
+              className="inline-flex mt-3 bg-amber-500 hover:bg-amber-600 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm">
               Gérer les classes
             </Link>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
-            
+
+            {/* Photo — upload ou URL au choix */}
+            {/* storageId = id réel de l'élève → upsert propre dans le bucket */}
+            <PhotoInput
+              value={photoUrl}
+              onChange={setPhotoUrl}
+              storageId={id ?? 'unknown'}
+            />
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
-              {/* Prénom */}
+
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                  Prénom <span className="text-red-500">*</span>
-                </label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Prénom <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                  <input
-                    type="text"
-                    required
-                    value={prenom}
-                    onChange={(e) => setPrenom(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm"
-                    placeholder="Ex: Awa"
-                  />
+                  <input type="text" required value={prenom} onChange={e => setPrenom(e.target.value)} className={inputCls} placeholder="Ex: Awa" />
                 </div>
               </div>
 
-              {/* Nom */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                  Nom <span className="text-red-500">*</span>
-                </label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Nom <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                  <input
-                    type="text"
-                    required
-                    value={nom}
-                    onChange={(e) => setNom(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm"
-                    placeholder="Ex: Sall"
-                  />
+                  <input type="text" required value={nom} onChange={e => setNom(e.target.value)} className={inputCls} placeholder="Ex: Sall" />
                 </div>
               </div>
 
-              {/* Classe */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                  Classe <span className="text-red-500">*</span>
-                </label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Classe <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                  <select
-                    required
-                    value={classeId}
-                    onChange={(e) => setClasseId(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm appearance-none"
-                  >
-                    {classes.map(c => (
-                      <option key={c.id} value={c.id}>{c.nom_classe}</option>
-                    ))}
+                  <select required value={classeId} onChange={e => setClasseId(e.target.value)} className={inputCls + ' appearance-none'}>
+                    {classes.map(c => <option key={c.id} value={c.id}>{c.nom_classe}</option>)}
                   </select>
                 </div>
               </div>
 
-              {/* Matricule */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                  Matricule <span className="text-slate-400 font-normal">(Optionnel)</span>
-                </label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Matricule <span className="text-slate-400 font-normal">(Optionnel)</span></label>
                 <div className="relative">
                   <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                  <input
-                    type="text"
-                    value={matricule}
-                    onChange={(e) => setMatricule(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm"
-                    placeholder="Ex: MAT-2026-001"
-                  />
+                  <input type="text" value={matricule} onChange={e => setMatricule(e.target.value)} className={inputCls + ' font-mono'} placeholder="Ex: EL-20260316-AB12" />
                 </div>
               </div>
 
-              {/* Date de naissance */}
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                  Date de naissance <span className="text-slate-400 font-normal">(Optionnel)</span>
-                </label>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Date de naissance <span className="text-slate-400 font-normal">(Optionnel)</span></label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                  <input
-                    type="date"
-                    value={dateNaissance}
-                    onChange={(e) => setDateNaissance(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm"
-                  />
-                </div>
-              </div>
-
-              {/* Photo */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                  URL de la photo <span className="text-slate-400 font-normal">(Optionnel)</span>
-                </label>
-                <div className="relative">
-                  <FileImage className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                  <input
-                    type="url"
-                    value={photoUrl}
-                    onChange={(e) => setPhotoUrl(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm"
-                    placeholder="https://..."
-                  />
+                  <input type="date" value={dateNaissance} onChange={e => setDateNaissance(e.target.value)} className={inputCls} />
                 </div>
               </div>
 
@@ -282,22 +198,9 @@ export default function ModifierElevePage() {
             )}
 
             <div className="pt-4 border-t border-slate-100 flex justify-end">
-              <button
-                type="submit"
-                disabled={saving || classes.length === 0}
-                className="bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-semibold py-2.5 px-6 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-emerald-600/20 disabled:opacity-50"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Enregistrement...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    Mettre à jour
-                  </>
-                )}
+              <button type="submit" disabled={saving || classes.length === 0}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 px-6 rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-600/20 disabled:opacity-50 transition-all">
+                {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Enregistrement...</> : <><Save className="w-4 h-4" /> Mettre à jour</>}
               </button>
             </div>
           </form>

@@ -11,7 +11,7 @@ import type { Profile, Ecole } from '@/lib/supabase'
 import {
   GraduationCap, LayoutGrid, Users, BookOpen,
   TrendingUp, UserCheck, LogOut, Menu, X,
-  Bell, ChevronRight, Settings, Calendar, FileText,
+  Bell, ChevronRight, Settings, Calendar, FileText, BookMarked, UsersRound,
 } from 'lucide-react'
 import { ToastProvider } from '@/contexts/ToastContext'
 
@@ -30,11 +30,13 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Toutes les écoles', href: '/dashboard/admin/ecoles',          icon: LayoutGrid,    roles: ['superadmin'] },
   { label: 'Classes',           href: '/dashboard/classes',               icon: BookOpen,      roles: ['director', 'superadmin'] },
   { label: 'Mes classes',       href: '/dashboard/teacher',               icon: BookOpen,      roles: ['teacher'] },
-  { label: 'Enseignants',       href: '/dashboard/admin/enseignants',     icon: GraduationCap, roles: ['director'] },
+  { label: 'Matières',          href: '/dashboard/matieres',              icon: BookMarked,    roles: ['director', 'superadmin'] },
+  { label: 'Enseignants',       href: '/dashboard/enseignants',           icon: GraduationCap, roles: ['director', 'superadmin'] },
   { label: 'Emploi du temps',   href: '/dashboard/admin/emploi-du-temps', icon: Calendar,      roles: ['director'] },
   { label: 'Élèves',            href: '/dashboard/eleves',                icon: Users,         roles: ['superadmin', 'director', 'teacher'] },
   { label: 'Notes',             href: '/dashboard/notes',                 icon: TrendingUp,    roles: ['superadmin', 'director', 'teacher'] },
   { label: 'Bulletins',         href: '/dashboard/bulletins',             icon: FileText,      roles: ['superadmin', 'director', 'teacher'] },
+  { label: 'Conseil de Classe', href: '/dashboard/conseil-classe',        icon: UsersRound,    roles: ['superadmin', 'director'] },
   { label: 'Présences',         href: '/dashboard/presences',             icon: UserCheck,     roles: ['superadmin', 'director', 'teacher'] },
   { label: 'Paiements',         href: '/dashboard/paiements',             icon: TrendingUp,    roles: ['superadmin', 'director'] },
   { label: 'Paramètres',        href: '/dashboard/parametres',            icon: Settings,      roles: ['superadmin', 'director'] },

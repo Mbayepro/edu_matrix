@@ -118,34 +118,51 @@ export default function NotesPage() {
   async function loadMatieres() {
     if (!selectedClasse || !ecoleId) return
     
-    // Fetch matieres directly via coefficients_matieres for this classe
+    // Fetch matieres via coefficients_matieres if niveau_id exists
     const { data: classeData } = await supabase
       .from('classes')
       .select('niveau_id, serie_id')
       .eq('id', selectedClasse)
       .single()
 
-    if (!classeData?.niveau_id) return
-
     try {
-      let query = supabase
-        .from('coefficients_matieres')
-        .select(`matiere:matieres(*)`)
-        .eq('ecole_id', ecoleId)
-        .eq('niveau_id', classeData.niveau_id)
-        .eq('is_obligatoire', true)
+      if (classeData?.niveau_id) {
+        // Cas normal : classe liée à un niveau → on filtre par niveau
+        let query = supabase
+          .from('coefficients_matieres')
+          .select(`matiere:matieres(*)`)
+          .eq('ecole_id', ecoleId)
+          .eq('niveau_id', classeData.niveau_id)
+          .eq('is_obligatoire', true)
 
-      if (classeData.serie_id) {
-         query = query.or(`serie_id.eq.${classeData.serie_id},serie_id.is.null`)
-      } else {
-         query = query.is('serie_id', null)
+        if (classeData.serie_id) {
+           query = query.or(`serie_id.eq.${classeData.serie_id},serie_id.is.null`)
+        } else {
+           query = query.is('serie_id', null)
+        }
+
+        const { data } = await query
+        const list = data?.map((cm: any) => cm.matiere).filter(Boolean) as Matiere[]
+        if (list && list.length > 0) {
+          setMatieres(list)
+          return
+        }
       }
-
-      const { data } = await query
-      setMatieres(data?.map((cm: any) => cm.matiere).filter(Boolean) as Matiere[] || [])
+      
+      // Fallback : classe sans niveau_id OU aucune matière trouvée dans coefficients
+      // → on charge toutes les matières actives de l'école
+      const { data: allMatieres } = await supabase
+        .from('matieres')
+        .select('*')
+        .eq('ecole_id', ecoleId)
+        .eq('is_active', true)
+        .order('nom')
+      setMatieres(allMatieres ?? [])
     } catch (error) {
       console.error('Erreur lors du chargement des matières:', error)
-      setMatieres([])
+      // Fallback final : toutes les matières de l'école
+      const { data } = await supabase.from('matieres').select('*').eq('ecole_id', ecoleId).eq('is_active', true).order('nom')
+      setMatieres(data ?? [])
     }
   }
 
@@ -384,8 +401,9 @@ export default function NotesPage() {
               </select>
               <button
                 onClick={() => setShowNewEvalModal(true)}
-                disabled={!selectedClasse || !selectedMatiere}
+                disabled={!selectedClasse}
                 className="px-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title={!selectedClasse ? 'Sélectionnez dabord une classe' : 'Créer une évaluation'}
               >
                 <Plus className="w-4 h-4" />
               </button>
