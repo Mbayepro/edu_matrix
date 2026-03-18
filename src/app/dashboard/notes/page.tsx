@@ -302,18 +302,25 @@ export default function NotesPage() {
     }
   }
 
-  const getMention = (note: number): string => {
-    if (note < 10) return 'Insuffisant'
-    if (note < 12) return 'Passable'
-    if (note < 14) return 'Assez bien'
-    if (note < 16) return 'Bien'
+  const getMention = (note: number, bareme: number = 20): string => {
+    if (note === undefined || note === null) return '-';
+    // Ramener la note sur 20 pour calculer la mention selon le standard
+    const noteSur20 = (note / bareme) * 20;
+    
+    if (noteSur20 < 10) return 'Insuffisant'
+    if (noteSur20 < 12) return 'Passable'
+    if (noteSur20 < 14) return 'Assez bien'
+    if (noteSur20 < 16) return 'Bien'
     return 'Très bien'
   }
 
-  const getNoteColor = (note: number) => {
-    if (note < 10) return 'text-red-600 bg-red-50'
-    if (note < 12) return 'text-orange-600 bg-orange-50'
-    if (note < 14) return 'text-yellow-600 bg-yellow-50'
+  const getNoteColor = (note: number, bareme: number = 20) => {
+    if (note === undefined || note === null) return 'text-slate-500 bg-slate-50';
+    const noteSur20 = (note / bareme) * 20;
+    
+    if (noteSur20 < 10) return 'text-red-600 bg-red-50'
+    if (noteSur20 < 12) return 'text-orange-600 bg-orange-50'
+    if (noteSur20 < 14) return 'text-yellow-600 bg-yellow-50'
     return 'text-green-600 bg-green-50'
   }
 
@@ -514,15 +521,15 @@ export default function NotesPage() {
                         />
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className={`text-xs font-semibold px-2 py-1 rounded-full ${getNoteColor(note)}`}>
-                          {getMention(note)}
+                        <span className={`text-xs font-semibold px-2 py-1 rounded-full ${getNoteColor(note, selectedEvaluationData?.bareme)}`}>
+                          {getMention(note, selectedEvaluationData?.bareme)}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center bg-emerald-50/30">
                         {moyenneEleve !== undefined ? (
                           <div className="flex flex-col items-center">
                             <span className="font-bold text-slate-800">{moyenneEleve.toFixed(2)}</span>
-                            <span className="text-[10px] text-slate-500">{getMention(moyenneEleve)}</span>
+                            <span className="text-[10px] text-slate-500">{getMention(moyenneEleve, 20)}</span>
                           </div>
                         ) : (
                           <span className="text-xs text-slate-400">-</span>
