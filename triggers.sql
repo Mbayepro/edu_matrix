@@ -200,15 +200,14 @@ BEGIN
   FROM public.paiements
   WHERE eleve_id = p_eleve_id;
 
-  IF v_total_du <= 0 THEN
-    -- Aucun frais configuré : par défaut impayé
-    v_statut := 'impayé';
-  ELSIF v_total_paye <= 0 THEN
-    v_statut := 'impayé';
-  ELSIF v_total_paye < v_total_du THEN
-    v_statut := 'partiel';
-  ELSE
+  IF v_total_paye >= v_total_du AND v_total_du > 0 THEN
     v_statut := 'payé';
+  ELSIF v_total_paye > 0 AND v_total_paye < v_total_du THEN
+    v_statut := 'partiel';
+  ELSIF v_total_paye > 0 AND v_total_du <= 0 THEN
+    v_statut := 'payé';
+  ELSE
+    v_statut := 'impayé';
   END IF;
 
   UPDATE public.eleves

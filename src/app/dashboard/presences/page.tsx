@@ -8,12 +8,14 @@ import { useRouter } from 'next/navigation'
 import AttendanceScanner from '@/components/AttendanceScanner'
 import { UserCheck, BookOpen, Clock, AlertCircle } from 'lucide-react'
 
-interface PresenceDetail {
+interface ElevePresence {
   id: string
-  eleve_id: string
-  statut: 'présent' | 'absent' | 'retard'
-  heure: string
-  eleve: { prenom: string, nom: string, matricule: string | null }
+  prenom: string
+  nom: string
+  matricule: string | null
+  presence_id?: string
+  statut?: 'présent' | 'absent' | 'retard'
+  heure?: string
 }
 
 export default function PresencesPage() {
@@ -25,7 +27,8 @@ export default function PresencesPage() {
   
   const [loading, setLoading] = useState(true)
   const [selectedClasseId, setSelectedClasseId] = useState('')
-  const [todayPresences, setTodayPresences] = useState<PresenceDetail[]>([])
+  const [eleves, setEleves] = useState<ElevePresence[]>([])
+  const [marking, setMarking] = useState<string | null>(null)
 
   useEffect(() => {
     if (ecoleId) {
@@ -61,14 +64,71 @@ export default function PresencesPage() {
 
   async function loadTodayPresences(cId: string) {
     const today = new Date().toISOString().split('T')[0]
-    const { data } = await supabase
+    
+    // Load all students for the class
+    const { data: studentsData } = await supabase
+      .from('eleves')
+      .select('id, prenom, nom, matricule')
+      .eq('classe_id', cId)
+      .order('nom')
+
+    // Load today's presences
+    const { data: presencesData } = await supabase
       .from('presences')
-      .select('id, eleve_id, statut, heure, eleve:eleves(prenom, nom, matricule)')
+      .select('id, eleve_id, statut, heure')
       .eq('classe_id', cId)
       .eq('date', today)
-      .order('heure', { ascending: false })
-    
-    setTodayPresences((data as any[]) || [])
+
+    const presencesMap = new Map()
+    if (presencesData) {
+      presencesData.forEach(p => presencesMap.set(p.eleve_id, p))
+    }
+
+    const combined = (studentsData || []).map(s => {
+      const p = presencesMap.get(s.id)
+      return {
+        ...s,
+        presence_id: p?.id,
+        statut: p?.statut,
+        heure: p?.heure
+      }
+    })
+
+    setEleves(combined)
+  }
+
+  async function markPresenceManually(eleveId: string, statut: 'présent' | 'absent' | 'retard') {
+    setMarking(eleveId)
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      const now = new Date().toTimeString().split(' ')[0]
+
+      // Check if already exists
+      const existing = eleves.find(e => e.id === eleveId)
+
+      if (existing?.presence_id) {
+        // Update
+        await supabase
+          .from('presences')
+          .update({ statut, heure: now })
+          .eq('id', existing.presence_id)
+      } else {
+        // Insert
+        await supabase
+          .from('presences')
+          .insert({
+            eleve_id: eleveId,
+            classe_id: selectedClasseId,
+            date: today,
+            heure: now,
+            statut
+          })
+      }
+      // Reload
+      await loadTodayPresences(selectedClasseId)
+    } finally {
+      setMarking(null)
+    }
   }
 
   if (loading || profileLoading) {
@@ -140,53 +200,91 @@ export default function PresencesPage() {
             </div>
           </div>
 
-          {/* Right Col: Today's presences feed */}
+          {/* Right Col: Class List */}
           <div className="lg:col-span-7">
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden h-full flex flex-col">
               <div className="p-5 border-b border-slate-50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <UserCheck className="w-5 h-5 text-emerald-600" />
-                  <h2 className="font-bold text-slate-800">Historique des scans (Aujourd'hui)</h2>
+                  <h2 className="font-bold text-slate-800">Appel de la classe</h2>
                 </div>
                 <div className="bg-slate-100 text-slate-500 font-bold px-3 py-1 rounded-full text-xs">
-                  {todayPresences.length}
+                  {eleves.filter(e => e.statut).length} / {eleves.length}
                 </div>
               </div>
 
               <div className="p-0 flex-1 overflow-y-auto max-h-[600px] bg-slate-50/50">
-                {todayPresences.length === 0 ? (
+                {eleves.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-48 text-slate-400">
                     <AlertCircle className="w-8 h-8 mb-2 text-slate-300" />
-                    <p className="text-sm">Aucun élève enregistré pour l'instant.</p>
+                    <p className="text-sm">Aucun élève dans cette classe.</p>
                   </div>
                 ) : (
                   <ul className="divide-y divide-slate-100">
-                    {todayPresences.map((p) => (
-                      <li key={p.id} className="p-4 hover:bg-white transition-colors flex items-center justify-between gap-4">
+                    {eleves.map((eleve) => (
+                      <li key={eleve.id} className="p-4 hover:bg-white transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center font-bold text-sm shrink-0 uppercase border border-slate-200">
-                            {p.eleve.prenom[0]}{p.eleve.nom[0]}
+                            {eleve.prenom[0]}{eleve.nom[0]}
                           </div>
                           <div>
                             <p className="font-semibold text-slate-800 text-sm">
-                              {p.eleve.prenom} {p.eleve.nom}
+                              {eleve.prenom} {eleve.nom}
                             </p>
-                            {p.eleve.matricule && (
-                              <p className="text-[10px] text-slate-400 font-mono">
-                                {p.eleve.matricule}
-                              </p>
-                            )}
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {eleve.matricule && (
+                                <span className="text-[10px] text-slate-400 font-mono">
+                                  {eleve.matricule}
+                                </span>
+                              )}
+                              {eleve.statut && (
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider ${statutColors[eleve.statut]}`}>
+                                  {eleve.statut}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
 
-                        <div className="flex flex-col items-end gap-1">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider ${statutColors[p.statut]}`}>
-                            {p.statut}
-                          </span>
-                          <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {p.heure.slice(0, 5)}
-                          </span>
+                        <div className="flex items-center gap-2">
+                          {marking === eleve.id ? (
+                            <div className="px-4 py-1 flex items-center text-xs text-slate-500">
+                              Enregistrement...
+                            </div>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => markPresenceManually(eleve.id, 'présent')}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                                  eleve.statut === 'présent' 
+                                    ? 'bg-emerald-500 text-white border-emerald-600 shadow-inner' 
+                                    : 'bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50'
+                                }`}
+                              >
+                                Présent
+                              </button>
+                              <button
+                                onClick={() => markPresenceManually(eleve.id, 'absent')}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                                  eleve.statut === 'absent' 
+                                    ? 'bg-red-500 text-white border-red-600 shadow-inner' 
+                                    : 'bg-white text-red-600 border-red-200 hover:bg-red-50'
+                                }`}
+                              >
+                                Absent
+                              </button>
+                              <button
+                                onClick={() => markPresenceManually(eleve.id, 'retard')}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                                  eleve.statut === 'retard' 
+                                    ? 'bg-amber-500 text-white border-amber-600 shadow-inner' 
+                                    : 'bg-white text-amber-600 border-amber-200 hover:bg-amber-50'
+                                }`}
+                              >
+                                Retard
+                              </button>
+                            </>
+                          )}
                         </div>
                       </li>
                     ))}
