@@ -260,6 +260,18 @@ export default function BulletinsPage() {
                 <p><strong>Matricule :</strong> ${bulletin.eleve.matricule || 'N/A'}</p>
                 <p><strong>Classe :</strong> ${bulletin.eleve.classe?.nom_classe || 'N/A'}</p>
             </div>
+            <div style="text-align: right;">
+                <h3>Conseil de Classe</h3>
+                <p><strong>Décision :</strong> <span style="text-transform: uppercase; font-weight: bold; color: ${bulletin.moyenne_generale >= 10 ? '#059669' : '#dc2626'}">${(bulletin.eleve as any).decision_conseil?.replace(/_/g, ' ') || 'À DÉTERMINER'}</span></p>
+                <p><strong>Rang :</strong> ${bulletin.rang} / ${bulletin.total_eleves}</p>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #e5e7eb; border-radius: 8px;">
+            <h3 style="margin: 0 0 10px 0; font-size: 14px; color: #374151;">Appréciation Générale</h3>
+            <p style="margin: 0; font-style: italic; color: #4b5563; min-height: 40px;">
+                ${(bulletin.eleve as any).appreciation_trimestre || 'Aucune appréciation saisie.'}
+            </p>
         </div>
 
         <table class="table">

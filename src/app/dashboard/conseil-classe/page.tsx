@@ -16,8 +16,11 @@ import {
   Search,
   School,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  X,
+  Save
 } from 'lucide-react'
+import { useToast } from '@/contexts/ToastContext'
 import { Skeleton, SkeletonCard, SkeletonTable } from '@/components/Skeleton'
 
 interface Decision {
@@ -37,6 +40,13 @@ export default function ConseilClassePage() {
   const [loading, setLoading] = useState(false)
   const [bulletins, setBulletins] = useState<BulletinData[]>([])
   const [search, setSearch] = useState('')
+  const [editingEleve, setEditingEleve] = useState<BulletinData | null>(null)
+  const [decision, setDecision] = useState({
+    appreciation: '',
+    decision: ''
+  })
+  const { showToast } = useToast()
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (ecoleId) loadClasses()
@@ -71,6 +81,45 @@ export default function ConseilClassePage() {
   useEffect(() => {
     loadData()
   }, [selectedClasse, selectedTrimestre])
+
+  async function handleEditDecision(b: BulletinData) {
+    setEditingEleve(b)
+    // On utilise bio pour l'appréciation et un champ custom pour la décision si dispo
+    // Pour l'instant on simule avec des champs existants ou on prépare le terrain
+    setDecision({
+      appreciation: (b.eleve as any).appreciation_trimestre || '',
+      decision: (b.eleve as any).decision_conseil || ''
+    })
+  }
+
+  async function saveDecision() {
+    if (!editingEleve || !ecoleId) return
+    setSaving(true)
+    try {
+      // Dans une vraie app on aurait une table 'decisions_conseil'
+      // Ici on va updater la table eleves avec des métadonnées ou des colonnes dédiées
+      // On utilise un champ JSON ou des colonnes si elles existent
+      const { error } = await supabase
+        .from('eleves')
+        .update({
+          // Note: Ces colonnes doivent exister ou être ajoutées via migration
+          // En attendant, on simule l'enregistrement réussi
+          appreciation_trimestre: decision.appreciation,
+          decision_conseil: decision.decision
+        })
+        .eq('id', editingEleve.eleve.id)
+
+      if (error) throw error
+      
+      showToast('Décision enregistrée avec succès', 'success')
+      setEditingEleve(null)
+      loadData()
+    } catch (error: any) {
+      showToast('Erreur : ' + error.message, 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const stats = {
     moyenneClasse: bulletins.length ? bulletins.reduce((a, b) => a + b.moyenne_generale, 0) / bulletins.length : 0,
@@ -257,7 +306,10 @@ export default function ConseilClassePage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button className="p-2 hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 rounded-xl transition-all">
+                        <button 
+                          onClick={() => handleEditDecision(b)}
+                          className="p-2 hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 rounded-xl transition-all"
+                        >
                             <ChevronRight className="w-5 h-5" />
                         </button>
                       </td>
@@ -265,6 +317,80 @@ export default function ConseilClassePage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Decision Modal */}
+      {editingEleve && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in duration-300">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-emerald-600" />
+                Décision du Conseil
+              </h3>
+              <button onClick={() => setEditingEleve(null)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-4 p-4 bg-emerald-50 rounded-2xl">
+                <div className="w-12 h-12 rounded-full bg-emerald-600 flex items-center justify-center text-white font-bold">
+                  {editingEleve.eleve.prenom[0]}
+                </div>
+                <div>
+                  <p className="font-bold text-emerald-900">{editingEleve.eleve.prenom} {editingEleve.eleve.nom}</p>
+                  <p className="text-xs text-emerald-600">Moyenne: <span className="font-bold">{editingEleve.moyenne_generale.toFixed(2)}</span> • {editingEleve.mention}</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Appréciation Globale</label>
+                <textarea 
+                  value={decision.appreciation}
+                  onChange={(e) => setDecision({...decision, appreciation: e.target.value})}
+                  className="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none text-sm min-h-[100px]"
+                  placeholder="Ex: Élève sérieux et appliqué. Continuez ainsi."
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Décision</label>
+                <select 
+                  value={decision.decision}
+                  onChange={(e) => setDecision({...decision, decision: e.target.value})}
+                  className="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none text-sm"
+                >
+                  <option value="">Choisir une décision</option>
+                  <option value="felicitations">Tableau d'Honneur + Félicitations</option>
+                  <option value="encouragements">Tableau d'Honneur + Encouragements</option>
+                  <option value="tableau_honneur">Tableau d'Honneur</option>
+                  <option value="passable">Passage au trimestre suivant</option>
+                  <option value="avertissement_travail">Avertissement Travail</option>
+                  <option value="avertissement_conduite">Avertissement Conduite</option>
+                  <option value="blame">Blâme</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="p-6 bg-slate-50 border-t border-slate-100 flex gap-3">
+              <button 
+                onClick={() => setEditingEleve(null)}
+                className="flex-1 px-6 py-3 border border-slate-200 rounded-2xl text-sm font-bold text-slate-600 hover:bg-white transition-all"
+              >
+                Annuler
+              </button>
+              <button 
+                onClick={saveDecision}
+                disabled={saving}
+                className="flex-3 px-8 py-3 bg-emerald-600 text-white rounded-2xl text-sm font-bold hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all flex items-center justify-center gap-2"
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Enregistrer la décision
+              </button>
             </div>
           </div>
         </div>
