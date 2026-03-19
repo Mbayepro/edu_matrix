@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { GraduationCap, ArrowRight, ShieldCheck, BarChart3, Users, QrCode } from 'lucide-react'
+import { GraduationCap, ArrowRight, ShieldCheck, BarChart3, Users, QrCode, MapPin, Phone, Mail, CheckCircle, Info, CreditCard } from 'lucide-react'
 
 export default function LandingPage() {
   return (
@@ -12,6 +12,11 @@ export default function LandingPage() {
               <GraduationCap className="w-5 h-5 text-white" />
             </div>
             <span className="font-bold text-lg tracking-tight">EduMatrix</span>
+          </div>
+          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
+            <Link href="#about" className="hover:text-white transition-colors">À propos</Link>
+            <Link href="#features" className="hover:text-white transition-colors">Fonctionnalités</Link>
+            <Link href="#contact" className="hover:text-white transition-colors">Contact</Link>
           </div>
           <div className="flex items-center gap-4">
             <Link 
@@ -63,11 +68,57 @@ export default function LandingPage() {
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link 
-              href="#features" 
+              href="#about" 
               className="px-8 py-3.5 text-base font-semibold bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition-all border border-slate-700"
             >
-              En savoir plus
+              Découvrir la solution
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* About Section */}
+      <section id="about" className="py-24 border-t border-slate-800/50">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid md:grid-cols-2 gap-16 items-center">
+            <div className="relative">
+              <div className="aspect-square bg-gradient-to-br from-emerald-500/20 to-blue-500/20 rounded-3xl border border-slate-800 flex items-center justify-center p-12">
+                <Info className="w-full h-full text-emerald-500/10 absolute top-0 left-0 -z-10" />
+                <div className="space-y-6">
+                  <div className="flex items-center gap-4 bg-slate-800/80 backdrop-blur p-4 rounded-2xl border border-slate-700 shadow-xl">
+                    <CheckCircle className="w-6 h-6 text-emerald-400 flex-shrink-0" />
+                    <p className="text-sm font-medium">Digitalisation complète du cycle scolaire</p>
+                  </div>
+                  <div className="flex items-center gap-4 bg-slate-800/80 backdrop-blur p-4 rounded-2xl border border-slate-700 shadow-xl ml-8">
+                    <CheckCircle className="w-6 h-6 text-blue-400 flex-shrink-0" />
+                    <p className="text-sm font-medium">Adapté aux échelles de notes du Sénégal</p>
+                  </div>
+                  <div className="flex items-center gap-4 bg-slate-800/80 backdrop-blur p-4 rounded-2xl border border-slate-700 shadow-xl">
+                    <CheckCircle className="w-6 h-6 text-purple-400 flex-shrink-0" />
+                    <p className="text-sm font-medium">Automatisation des bulletins de notes</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-6">
+              <h2 className="text-3xl font-bold text-white tracking-tight">À propos d&apos;EduMatrix</h2>
+              <p className="text-slate-400 leading-relaxed text-lg">
+                EduMatrix est née de la volonté de moderniser le système éducatif sénégalais. Notre mission est d&apos;offrir aux établissements scolaires des outils technologiques de pointe pour optimiser leur gestion quotidienne.
+              </p>
+              <p className="text-slate-400 leading-relaxed">
+                De la maternelle au lycée, notre plateforme s&apos;adapte aux spécificités locales, notamment les calculs de moyennes complexes et les exigences administratives des inspections d&apos;académie.
+              </p>
+              <div className="pt-4 grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/40">
+                  <div className="text-2xl font-bold text-white mb-1">Simple</div>
+                  <div className="text-xs text-slate-500 uppercase font-semibold">Prise en main immédiate</div>
+                </div>
+                <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/40">
+                  <div className="text-2xl font-bold text-white mb-1">Local</div>
+                  <div className="text-xs text-slate-500 uppercase font-semibold">Conçu à Dakar</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -85,6 +136,21 @@ export default function LandingPage() {
               icon={<QrCode className="w-6 h-6 text-emerald-400" />}
               title="Présences Intelligentes"
               description="Fini l'appel papier. Scannez les cartes d'étudiants pour enregistrer les présences instantanément et notifier les parents."
+            />
+            <FeatureCard 
+              icon={<CreditCard className="w-6 h-6 text-amber-400" />}
+              title="Gestion des Paiements"
+              description="Suivez les frais de scolarité, gérez les impayés et générez des reçus professionnels en un clic."
+            />
+            <FeatureCard 
+              icon={<GraduationCap className="w-6 h-6 text-indigo-400" />}
+              title="Bulletins Automatisés"
+              description="Générez des bulletins de notes conformes aux normes sénégalaises en quelques secondes pour toute l'école."
+            />
+            <FeatureCard 
+              icon={<Users className="w-6 h-6 text-pink-400" />}
+              title="Espace Enseignants"
+              description="Un outil dédié pour simplifier la saisie des notes, la gestion des cours et l'organisation du temps scolaire."
             />
             <FeatureCard 
               icon={<ShieldCheck className="w-6 h-6 text-purple-400" />}
@@ -107,18 +173,62 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-800 bg-slate-950 py-12">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-2">
-            <div className="bg-emerald-500/10 p-1.5 rounded-lg">
-              <GraduationCap className="w-5 h-5 text-emerald-500" />
+      {/* Footer / Contact */}
+      <footer id="contact" className="border-t border-slate-800 bg-slate-950 pt-16 pb-8">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
+            <div>
+              <div className="flex items-center gap-2 mb-6">
+                <div className="bg-emerald-500 p-1.5 rounded-lg">
+                  <GraduationCap className="w-5 h-5 text-white" />
+                </div>
+                <span className="font-bold text-xl tracking-tight text-white">EduMatrix</span>
+              </div>
+              <p className="text-slate-400 text-sm leading-relaxed mb-6">
+                Le leader de la gestion scolaire digitale au Sénégal. Une solution robuste pour les établissements d&apos;excellence.
+              </p>
             </div>
-            <span className="font-semibold text-slate-300">EduMatrix</span>
+            
+            <div>
+              <h4 className="text-white font-semibold mb-6 uppercase tracking-wider text-xs">Navigation</h4>
+              <ul className="space-y-4 text-sm text-slate-400">
+                <li><Link href="#" className="hover:text-emerald-400 transition-colors">Accueil</Link></li>
+                <li><Link href="#about" className="hover:text-emerald-400 transition-colors">À propos</Link></li>
+                <li><Link href="#features" className="hover:text-emerald-400 transition-colors">Fonctionnalités</Link></li>
+                <li><Link href="/login" className="hover:text-emerald-400 transition-colors">Espace réservé</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-white font-semibold mb-6 uppercase tracking-wider text-xs">Contact</h4>
+              <ul className="space-y-4 text-sm text-slate-400">
+                <li className="flex items-start gap-3">
+                  <MapPin className="w-5 h-5 text-emerald-500 shrink-0" />
+                  <span>Dakar yeumbeul/ASECNA</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <Phone className="w-5 h-5 text-emerald-500 shrink-0" />
+                  <span>770362616 / 774628987</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <Mail className="w-5 h-5 text-emerald-500 shrink-0" />
+                  <Link href="mailto:edumatrix445@gmail.com" className="hover:text-emerald-400 transition-colors">
+                    edumatrix445@gmail.com
+                  </Link>
+                </li>
+              </ul>
+            </div>
           </div>
-          <p className="text-slate-500 text-sm">
-            © {new Date().getFullYear()} EduMatrix Sénégal. Tous droits réservés.
-          </p>
+          
+          <div className="pt-8 border-t border-slate-800/60 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-slate-500 text-xs">
+              © {new Date().getFullYear()} EduMatrix Sénégal. Tous droits réservés.
+            </p>
+            <div className="flex gap-6 text-xs text-slate-500">
+              <Link href="#" className="hover:text-white">Confidentialité</Link>
+              <Link href="#" className="hover:text-white">CGU</Link>
+            </div>
+          </div>
         </div>
       </footer>
     </div>
