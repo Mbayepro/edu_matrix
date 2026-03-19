@@ -30,7 +30,12 @@ interface MoyenneParMatiere {
 // ─────────────────────────────────────────
 function calculateWeightedAverage(notes: Note[]): number {
   if (notes.length === 0) return 0
-  const sumProd = notes.reduce((acc, n) => acc + n.note * n.coefficient, 0)
+  const sumProd = notes.reduce((acc, n) => {
+    // Normalize note to 20 based on its bareme
+    const bareme = (n.evaluation as any)?.bareme || 20
+    const noteSur20 = (n.note / bareme) * 20
+    return acc + noteSur20 * n.coefficient
+  }, 0)
   const sumCoeff = notes.reduce((acc, n) => acc + n.coefficient, 0)
   if (sumCoeff === 0) return 0
   return Math.round((sumProd / sumCoeff) * 100) / 100
@@ -53,13 +58,22 @@ function groupByMatiere(notes: Note[]): MoyenneParMatiere[] {
   return result.sort((a, b) => a.matiere.localeCompare(b.matiere))
 }
 
-function MentionBadge({ moyenne }: { moyenne: number }) {
+function MentionBadge({ moyenne, isPrimary }: { moyenne: number, isPrimary?: boolean }) {
   let label = 'Insuffisant'
   let className = 'bg-red-100 text-red-600'
-  if (moyenne >= 16)      { label = 'Très bien';   className = 'bg-emerald-100 text-emerald-700' }
-  else if (moyenne >= 14) { label = 'Bien';         className = 'bg-teal-100 text-teal-700' }
-  else if (moyenne >= 12) { label = 'Assez bien';   className = 'bg-blue-100 text-blue-700' }
-  else if (moyenne >= 10) { label = 'Passable';     className = 'bg-amber-100 text-amber-700' }
+  
+  if (isPrimary) {
+    if (moyenne >= 8)      { label = 'Très bien';   className = 'bg-emerald-100 text-emerald-700' }
+    else if (moyenne >= 7) { label = 'Bien';         className = 'bg-teal-100 text-teal-700' }
+    else if (moyenne >= 6) { label = 'Assez bien';   className = 'bg-blue-100 text-blue-700' }
+    else if (moyenne >= 5) { label = 'Passable';     className = 'bg-amber-100 text-amber-700' }
+  } else {
+    if (moyenne >= 16)      { label = 'Très bien';   className = 'bg-emerald-100 text-emerald-700' }
+    else if (moyenne >= 14) { label = 'Bien';         className = 'bg-teal-100 text-teal-700' }
+    else if (moyenne >= 12) { label = 'Assez bien';   className = 'bg-blue-100 text-blue-700' }
+    else if (moyenne >= 10) { label = 'Passable';     className = 'bg-amber-100 text-amber-700' }
+  }
+
   return (
     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${className}`}>
       {label}
@@ -188,7 +202,7 @@ export default function StudentCard({ eleveId, onClose, defaultTab }: StudentCar
       const [{ data: eleveData }, { data: notesData }] = await Promise.all([
         supabase
           .from('eleves')
-          .select('*, classe:classes(nom_classe, niveau)')
+          .select('*, classe:classes(nom_classe, niveau, niveau_info:niveaux(cycle))')
           .eq('id', eleveId)
           .single(),
         supabase
@@ -198,6 +212,7 @@ export default function StudentCard({ eleveId, onClose, defaultTab }: StudentCar
             evaluation:evaluations(
               trimestre,
               coef,
+              bareme,
               matiere:matieres(nom)
             )
           `)
@@ -244,9 +259,20 @@ export default function StudentCard({ eleveId, onClose, defaultTab }: StudentCar
     )
   }
 
+  const isPrimary        = eleve.classe?.niveau_info?.cycle === 'primaire'
   const notesDuTrimestre = notes.filter((n) => n.trimestre === trimestre)
-  const moyenneGenerale  = calculateWeightedAverage(notesDuTrimestre)
-  const parMatiere       = groupByMatiere(notesDuTrimestre)
+  let moyenneGenerale    = calculateWeightedAverage(notesDuTrimestre)
+  let parMatiere         = groupByMatiere(notesDuTrimestre)
+
+  // Adjust scale to 10 for primary school
+  if (isPrimary) {
+    moyenneGenerale = moyenneGenerale / 2
+    parMatiere = parMatiere.map(m => ({
+      ...m,
+      moyenne: m.moyenne / 2
+    }))
+  }
+
   const className        = eleve.classe
     ? `${(eleve.classe as any).nom_classe} - ${(eleve.classe as any).niveau}`
     : '—'
@@ -315,14 +341,11 @@ export default function StudentCard({ eleveId, onClose, defaultTab }: StudentCar
                 <p className="text-3xl font-bold text-slate-800">
                   {moyenneGenerale.toFixed(2)}
                 </p>
-                <p className="text-xs text-slate-400">/ 20</p>
+                <p className="text-xs text-slate-400">/ {isPrimary ? '10' : '20'}</p>
               </div>
               <div>
-                <MentionBadge moyenne={moyenneGenerale} />
+                <MentionBadge moyenne={moyenneGenerale} isPrimary={isPrimary} />
                 <p className="text-xs text-slate-500 mt-1">Moyenne générale pondérée</p>
-                <p className="text-[10px] text-slate-400">
-                  Formule CM2 : Σ(note × coeff) / Σcoeff
-                </p>
               </div>
             </div>
 
@@ -352,13 +375,13 @@ export default function StudentCard({ eleveId, onClose, defaultTab }: StudentCar
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-base font-bold text-slate-800">{m.moyenne.toFixed(2)}</p>
-                      <p className="text-[10px] text-slate-400">/ 20</p>
+                      <p className="text-[10px] text-slate-400">/ {isPrimary ? '10' : '20'}</p>
                     </div>
                     {/* Mini bar */}
                     <div className="w-16 bg-slate-100 rounded-full h-1.5 shrink-0">
                       <div
-                        className={`h-1.5 rounded-full transition-all ${m.moyenne >= 10 ? 'bg-emerald-500' : 'bg-red-400'}`}
-                        style={{ width: `${(m.moyenne / 20) * 100}%` }}
+                        className={`h-1.5 rounded-full transition-all ${m.moyenne >= (isPrimary ? 5 : 10) ? 'bg-emerald-500' : 'bg-red-400'}`}
+                        style={{ width: `${(m.moyenne / (isPrimary ? 10 : 20)) * 100}%` }}
                       />
                     </div>
                   </div>

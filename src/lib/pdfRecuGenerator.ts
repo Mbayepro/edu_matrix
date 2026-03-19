@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf'
-import 'jspdf-autotable'
+import autoTable from 'jspdf-autotable'
 import type { Ecole, Profile } from './supabase'
 
 // Interface representing the payment data we need for the receipt
@@ -14,6 +14,22 @@ export interface PaiementRecuInfo {
   eleve_matricule?: string | null
   classe_nom: string
   frais_libelle: string
+}
+
+/** Helper pour charger une image distante en base64 pour jsPDF */
+async function getImageData(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url)
+    const blob = await res.blob()
+    return new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result as string)
+      reader.readAsDataURL(blob)
+    })
+  } catch (err) {
+    console.error('Erreur lors du chargement de l\'image:', url, err)
+    return null
+  }
 }
 
 /** Construit le document jsPDF du reçu (partagé entre téléchargement, impression, etc.) */
@@ -31,7 +47,10 @@ async function buildRecuDoc(
 
   // Logo
   if (ecole.logo_url) {
-    try { doc.addImage(ecole.logo_url, 'PNG', 14, 10, 24, 24) } catch {}
+    const logoData = await getImageData(ecole.logo_url)
+    if (logoData) {
+      try { doc.addImage(logoData, 'PNG', 14, 10, 24, 24) } catch {}
+    }
   }
 
   const titleX = ecole.logo_url ? 45 : 14
@@ -63,29 +82,37 @@ async function buildRecuDoc(
   if (paiement.eleve_matricule) eleveInfos.push(`Matricule : ${paiement.eleve_matricule}`)
   eleveInfos.forEach((text, i) => doc.text(text, 14, 75 + i * 7))
 
-  ;(doc as any).autoTable({
-    startY: 100,
-    head: [['Désignation', 'Mode de paiement', 'Référence', 'Montant Payé']],
-    body: [[
-      paiement.frais_libelle,
-      paiement.mode_paiement,
-      paiement.reference || '-',
-      `${paiement.montant.toLocaleString('fr-FR')} F`,
-    ]],
-    theme: 'grid',
-    headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold' },
-    styles: { font: 'helvetica', fontSize: 11, cellPadding: 6 },
-    columnStyles: { 3: { halign: 'right', fontStyle: 'bold', textColor: [5, 150, 105] } },
-  })
+  try {
+    autoTable(doc, {
+      startY: 100,
+      head: [['Désignation', 'Mode de paiement', 'Référence', 'Montant Payé']],
+      body: [[
+        paiement.frais_libelle,
+        paiement.mode_paiement,
+        paiement.reference || '-',
+        `${paiement.montant.toLocaleString('fr-FR')} F`,
+      ]],
+      theme: 'grid',
+      headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold' },
+      styles: { font: 'helvetica', fontSize: 11, cellPadding: 6 },
+      columnStyles: { 3: { halign: 'right', fontStyle: 'bold', textColor: [5, 150, 105] } },
+    })
+  } catch (err) {
+    console.error('AutoTable error:', err)
+  }
 
-  const finalY = (doc as any).lastAutoTable.finalY + 30
+  const lastAutoTable = (doc as any).lastAutoTable;
+  const finalY = lastAutoTable ? lastAutoTable.finalY + 30 : 150;
   doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(15, 23, 42)
   doc.text('La Direction', pageWidth - 50, finalY)
   doc.setFont('helvetica', 'normal').setFontSize(9).setTextColor(148, 163, 184)
   if (caissier) doc.text(`Encaissé par : ${caissier.prenom} ${caissier.nom}`, 14, finalY)
 
   if (ecole.tampon_url) {
-    try { doc.addImage(ecole.tampon_url, 'PNG', pageWidth - 60, finalY + 5, 40, 40) } catch {}
+    const tamponData = await getImageData(ecole.tampon_url)
+    if (tamponData) {
+      try { doc.addImage(tamponData, 'PNG', pageWidth - 60, finalY + 5, 40, 40) } catch {}
+    }
   }
 
   doc.setFontSize(8).setTextColor(148, 163, 184)

@@ -424,7 +424,7 @@ export default function BulletinsPage() {
                   <div className="text-right">
                     <div className="text-xs text-slate-400">Moyenne</div>
                     <div className="text-lg font-bold text-slate-800">
-                      {bulletin.moyenne_generale.toFixed(2)}/20
+                      {(bulletin.niveau?.cycle === 'primaire' ? bulletin.moyenne_generale / 2 : bulletin.moyenne_generale).toFixed(2)}/{bulletin.niveau?.cycle === 'primaire' ? '10' : '20'}
                     </div>
                   </div>
                   
@@ -471,7 +471,10 @@ export default function BulletinsPage() {
                     <div key={index} className="bg-slate-50 rounded-lg p-3">
                       <div className="text-xs text-slate-400">{matiere.matiere_nom}</div>
                       <div className="text-sm font-semibold text-slate-800">
-                        {matiere.moyenne.toFixed(2)}/20
+                        {bulletin.niveau?.cycle === 'primaire' 
+                          ? (matiere.moyenne / 2).toFixed(2) + '/10'
+                          : matiere.moyenne.toFixed(2) + '/20'
+                        }
                       </div>
                       <div className="text-xs text-slate-400">
                         Coef: {matiere.coefficient}

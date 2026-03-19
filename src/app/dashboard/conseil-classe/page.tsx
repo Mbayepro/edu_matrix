@@ -121,11 +121,12 @@ export default function ConseilClassePage() {
     }
   }
 
+  const isPrimary = bulletins[0]?.niveau?.cycle === 'primaire'
   const stats = {
     moyenneClasse: bulletins.length ? bulletins.reduce((a, b) => a + b.moyenne_generale, 0) / bulletins.length : 0,
-    reussite: bulletins.filter(b => b.moyenne_generale >= 10).length,
-    echecs: bulletins.filter(b => b.moyenne_generale < 10).length,
-    felicitations: bulletins.filter(b => b.moyenne_generale >= 14).length,
+    reussite: bulletins.filter(b => b.moyenne_generale >= (isPrimary ? 5 : 10)).length,
+    echecs: bulletins.filter(b => b.moyenne_generale < (isPrimary ? 5 : 10)).length,
+    felicitations: bulletins.filter(b => b.moyenne_generale >= (isPrimary ? 7 : 14)).length,
   }
 
   const filteredBulletins = bulletins.filter(b => 
@@ -192,8 +193,10 @@ export default function ConseilClassePage() {
             <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">Moyenne Classe</p>
                 <div className="flex items-end gap-2">
-                    <span className="text-2xl font-bold text-slate-800">{stats.moyenneClasse.toFixed(2)}</span>
-                    <span className="text-xs text-slate-400 mb-1">/20</span>
+                    <span className="text-2xl font-bold text-slate-800">
+                      {(isPrimary ? stats.moyenneClasse / 2 : stats.moyenneClasse).toFixed(2)}
+                    </span>
+                    <span className="text-xs text-slate-400 mb-1">/{isPrimary ? '10' : '20'}</span>
                 </div>
             </div>
             <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
@@ -276,11 +279,17 @@ export default function ConseilClassePage() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                            <span className={`text-base font-bold ${b.moyenne_generale >= 10 ? 'text-emerald-600' : 'text-red-500'}`}>
-                                {b.moyenne_generale.toFixed(2)}
-                            </span>
-                        </div>
+                        {(() => {
+                          const val = isPrimary ? b.moyenne_generale / 2 : b.moyenne_generale;
+                          const threshold = isPrimary ? 5 : 10;
+                          return (
+                            <div className="flex items-center gap-2">
+                              <span className={`text-base font-bold ${val >= threshold ? 'text-emerald-600' : 'text-red-500'}`}>
+                                {val.toFixed(2)}
+                              </span>
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="px-6 py-4">
                         {/* Placeholder for actual logic */}
@@ -298,8 +307,8 @@ export default function ConseilClassePage() {
                       </td>
                       <td className="px-6 py-4">
                         <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg ${
-                            b.moyenne_generale >= 14 ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' :
-                            b.moyenne_generale >= 10 ? 'bg-emerald-100 text-emerald-700' :
+                            b.moyenne_generale >= (isPrimary ? 7 : 14) ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' :
+                            b.moyenne_generale >= (isPrimary ? 5 : 10) ? 'bg-emerald-100 text-emerald-700' :
                             'bg-red-50 text-red-500 border border-red-100'
                         }`}>
                             {b.mention}
@@ -343,7 +352,7 @@ export default function ConseilClassePage() {
                 </div>
                 <div>
                   <p className="font-bold text-emerald-900">{editingEleve.eleve.prenom} {editingEleve.eleve.nom}</p>
-                  <p className="text-xs text-emerald-600">Moyenne: <span className="font-bold">{editingEleve.moyenne_generale.toFixed(2)}</span> • {editingEleve.mention}</p>
+                  <p className="text-xs text-emerald-600">Moyenne: <span className="font-bold">{(isPrimary ? editingEleve.moyenne_generale / 2 : editingEleve.moyenne_generale).toFixed(2)}/{isPrimary ? '10' : '20'}</span> • {editingEleve.mention}</p>
                 </div>
               </div>
 

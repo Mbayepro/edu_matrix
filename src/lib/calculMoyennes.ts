@@ -154,8 +154,11 @@ export class CalculateurMoyennes {
     // Calculer la moyenne générale
     const moyenne_generale = totalCoefficients > 0 ? totalPoints / totalCoefficients : 0
 
-    // Déterminer la mention selon le barème sénégalais
-    const mention = this.determinerMention(moyenne_generale)
+    // Toujours garder la moyenne sur 20 en interne, la division par 2 (pour le primaire) se fera à l'affichage
+    const moyenneFinale = moyenne_generale;
+
+    // Déterminer la mention selon le barème sénégalais (en passant le cycle)
+    const mention = this.determinerMention(moyenneFinale, niveau.cycle)
 
     return {
       eleve,
@@ -164,7 +167,7 @@ export class CalculateurMoyennes {
       trimestre,
       annee_scolaire,
       matieres,
-      moyenne_generale: Math.round(moyenne_generale * 100) / 100,
+      moyenne_generale: Math.round(moyenneFinale * 100) / 100,
       mention
     }
   }
@@ -188,15 +191,23 @@ export class CalculateurMoyennes {
       throw new Error('Impossible de récupérer les élèves de la classe')
     }
 
-    // Générer les bulletins en parallèle
+    // Générer les bulletins en parallèle (en filtrant les null)
+    const validEleves = eleves.filter((e: any) => e && e.id)
+    
     const bulletins = await Promise.all(
-      eleves.map((eleve: any) => 
-        this.genererBulletin(eleve.id, trimestre, annee_scolaire)
+      validEleves.map((eleve: any) => 
+        this.genererBulletin(eleve.id, trimestre, annee_scolaire).catch(e => {
+          console.error(`Erreur pour l'élève ${eleve.id}:`, e)
+          return null
+        })
       )
     )
 
+    // Filtrer les bulletins qui ont échoué (null)
+    const bulletinsValides = bulletins.filter((b): b is BulletinData => b !== null)
+
     // Calculer les rangs
-    const bulletinsAvecRangs = this.calculerRangs(bulletins)
+    const bulletinsAvecRangs = this.calculerRangs(bulletinsValides)
 
     return bulletinsAvecRangs
   }
@@ -223,7 +234,15 @@ export class CalculateurMoyennes {
   /**
    * Détermine la mention selon le barème sénégalais
    */
-  private static determinerMention(moyenne: number): string {
+  private static determinerMention(moyenne: number, cycle?: string): string {
+    if (cycle === 'primaire') {
+      if (moyenne < 5) return 'Insuffisant'
+      if (moyenne < 6) return 'Passable'
+      if (moyenne < 7) return 'Assez bien'
+      if (moyenne < 8) return 'Bien'
+      return 'Très bien'
+    }
+
     if (moyenne < 10) return 'Insuffisant'
     if (moyenne < 12) return 'Passable'
     if (moyenne < 14) return 'Assez bien'

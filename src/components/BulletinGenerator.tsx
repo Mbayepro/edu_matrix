@@ -179,7 +179,8 @@ export default function BulletinGenerator({ eleveId, classeId, trimestre }: Bull
         xPos += columnWidths[0];
         pdf.text(matiere.coefficient.toString(), xPos, yPosition, { align: 'center' });
         xPos += columnWidths[1];
-        pdf.text(matiere.moyenne.toFixed(2), xPos, yPosition, { align: 'center' });
+        const displayMatiereMoyenne = bulletinData.classe.cycle === 'primaire' ? matiere.moyenne / 2 : matiere.moyenne;
+        pdf.text(displayMatiereMoyenne.toFixed(2), xPos, yPosition, { align: 'center' });
         xPos += columnWidths[2];
         pdf.text(matiere.nombre_evaluations.toString(), xPos, yPosition, { align: 'center' });
         
@@ -193,8 +194,10 @@ export default function BulletinGenerator({ eleveId, classeId, trimestre }: Bull
 
       // Moyenne générale et mention
       pdf.setFont('helvetica', 'bold');
+      const scale = bulletinData.classe.cycle === 'primaire' ? 10 : 20;
+      const displayMoyenne = bulletinData.classe.cycle === 'primaire' ? bulletinData.moyenne_generale / 2 : bulletinData.moyenne_generale;
       pdf.text('MOYENNE GÉNÉRALE:', 20, yPosition);
-      pdf.text(`${bulletinData.moyenne_generale.toFixed(2)}/20`, 100, yPosition);
+      pdf.text(`${displayMoyenne.toFixed(2)}/${scale}`, 100, yPosition);
       
       yPosition += 10;
       pdf.text('MENTION:', 20, yPosition);
@@ -270,7 +273,7 @@ export default function BulletinGenerator({ eleveId, classeId, trimestre }: Bull
 
         <div>
           <h3 className="font-semibold mb-2">Résultats</h3>
-          <p><strong>Moyenne Générale:</strong> <span className="text-xl font-bold text-blue-600">{bulletinData.moyenne_generale.toFixed(2)}/20</span></p>
+          <p><strong>Moyenne Générale:</strong> <span className="text-xl font-bold text-blue-600">{(bulletinData.classe.cycle === 'primaire' ? bulletinData.moyenne_generale / 2 : bulletinData.moyenne_generale).toFixed(2)}/{bulletinData.classe.cycle === 'primaire' ? '10' : '20'}</span></p>
           <p><strong>Mention:</strong> <span className="font-semibold text-green-600">{bulletinData.mention}</span></p>
           <p><strong>Nombre de matières:</strong> {bulletinData.nombre_matieres}</p>
           <p><strong>Total coefficients:</strong> {bulletinData.total_coefficients}</p>
@@ -295,7 +298,7 @@ export default function BulletinGenerator({ eleveId, classeId, trimestre }: Bull
                   <td className="px-4 py-2 border-b">{matiere.nom}</td>
                   <td className="px-4 py-2 border-b text-center">{matiere.coefficient}</td>
                   <td className="px-4 py-2 border-b text-center font-semibold">
-                    {matiere.moyenne.toFixed(2)}
+                    {(bulletinData.classe.cycle === 'primaire' ? matiere.moyenne / 2 : matiere.moyenne).toFixed(2)}
                   </td>
                   <td className="px-4 py-2 border-b text-center">{matiere.nombre_evaluations}</td>
                 </tr>

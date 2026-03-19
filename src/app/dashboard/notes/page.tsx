@@ -109,7 +109,7 @@ export default function NotesPage() {
   async function loadClasses(schoolId: string) {
     const { data } = await supabase
       .from('classes')
-      .select('*')
+      .select('*, niveau_info:niveaux(cycle)')
       .eq('ecole_id', schoolId)
       .order('nom_classe')
     setClasses(data ?? [])
@@ -121,7 +121,7 @@ export default function NotesPage() {
     // Fetch matieres via coefficients_matieres if niveau_id exists
     const { data: classeData } = await supabase
       .from('classes')
-      .select('niveau_id, serie_id')
+      .select('niveau_id, serie_id, niveau_info:niveaux(cycle)')
       .eq('id', selectedClasse)
       .single()
 
@@ -223,6 +223,7 @@ export default function NotesPage() {
         .eq('trimestre', selectedTrimestre)
 
       const moyennesMap: Record<string, number> = {}
+      const isClassePrimaire = selectedClasseData?.niveau_info?.cycle === 'primaire'
       moyennesData?.forEach((m: any) => {
          moyennesMap[m.eleve_id] = Number(m.moyenne_generale)
       })
@@ -304,7 +305,17 @@ export default function NotesPage() {
 
   const getMention = (note: number, bareme: number = 20): string => {
     if (note === undefined || note === null) return '-';
-    // Ramener la note sur 20 pour calculer la mention selon le standard
+    
+    // Si le barème est sur 10 (ex: primaire au Sénégal)
+    if (bareme === 10) {
+      if (note < 5) return 'Insuffisant'
+      if (note < 6) return 'Passable'
+      if (note < 7) return 'Assez bien'
+      if (note < 8) return 'Bien'
+      return 'Très bien'
+    }
+
+    // Sinon, comportement classique sur 20
     const noteSur20 = (note / bareme) * 20;
     
     if (noteSur20 < 10) return 'Insuffisant'
@@ -316,6 +327,16 @@ export default function NotesPage() {
 
   const getNoteColor = (note: number, bareme: number = 20) => {
     if (note === undefined || note === null) return 'text-slate-500 bg-slate-50';
+    
+    // Si le barème est sur 10
+    if (bareme === 10) {
+      if (note < 5) return 'text-red-600 bg-red-50'
+      if (note < 6) return 'text-orange-600 bg-orange-50'
+      if (note < 7) return 'text-yellow-600 bg-yellow-50'
+      return 'text-green-600 bg-green-50'
+    }
+
+    // Sinon, sur 20
     const noteSur20 = (note / bareme) * 20;
     
     if (noteSur20 < 10) return 'text-red-600 bg-red-50'
@@ -407,7 +428,11 @@ export default function NotesPage() {
                 ))}
               </select>
               <button
-                onClick={() => setShowNewEvalModal(true)}
+                onClick={() => {
+                  const isPrimary = (classes.find(c => c.id === selectedClasse) as any)?.niveau_info?.cycle === 'primaire'
+                  setNewEval(prev => ({ ...prev, bareme: isPrimary ? 10 : 20 }))
+                  setShowNewEvalModal(true)
+                }}
                 disabled={!selectedClasse}
                 className="px-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 title={!selectedClasse ? 'Sélectionnez dabord une classe' : 'Créer une évaluation'}
@@ -528,8 +553,10 @@ export default function NotesPage() {
                       <td className="px-4 py-3 text-center bg-emerald-50/30">
                         {moyenneEleve !== undefined ? (
                           <div className="flex flex-col items-center">
-                            <span className="font-bold text-slate-800">{moyenneEleve.toFixed(2)}</span>
-                            <span className="text-[10px] text-slate-500">{getMention(moyenneEleve, 20)}</span>
+                            <span className="font-bold text-slate-800">
+                              {(selectedClasseData?.niveau_info?.cycle === 'primaire' ? moyenneEleve / 2 : moyenneEleve).toFixed(2)}
+                            </span>
+                            <span className="text-[10px] text-slate-500">{getMention(moyenneEleve, selectedClasseData?.niveau_info?.cycle === 'primaire' ? 10 : 20)}</span>
                           </div>
                         ) : (
                           <span className="text-xs text-slate-400">-</span>

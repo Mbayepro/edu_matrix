@@ -60,18 +60,32 @@ SELECT
   -- Calcul de la moyenne générale pondérée par les coefficients des matières
   CASE 
     WHEN SUM(coefficient) > 0 THEN 
-      ROUND(SUM(moyenne_matiere * coefficient) / SUM(coefficient), 2)
+      CASE 
+        WHEN cycle = 'primaire' THEN ROUND((SUM(moyenne_matiere * coefficient) / SUM(coefficient)) / 2, 2)
+        ELSE ROUND(SUM(moyenne_matiere * coefficient) / SUM(coefficient), 2)
+      END
     ELSE 0 
   END as moyenne_generale,
-  -- Détermination de la mention selon le barème sénégalais
+  -- Détermination de la mention selon le barème sénégalais (adapté au cycle)
   CASE 
     WHEN SUM(coefficient) > 0 THEN 
       CASE 
-        WHEN ROUND(SUM(moyenne_matiere * coefficient) / SUM(coefficient), 2) < 10 THEN 'Insuffisant'
-        WHEN ROUND(SUM(moyenne_matiere * coefficient) / SUM(coefficient), 2) < 12 THEN 'Passable'
-        WHEN ROUND(SUM(moyenne_matiere * coefficient) / SUM(coefficient), 2) < 14 THEN 'Assez bien'
-        WHEN ROUND(SUM(moyenne_matiere * coefficient) / SUM(coefficient), 2) < 16 THEN 'Bien'
-        ELSE 'Très bien'
+        WHEN cycle = 'primaire' THEN
+          CASE 
+            WHEN ROUND((SUM(moyenne_matiere * coefficient) / SUM(coefficient)) / 2, 2) < 5 THEN 'Insuffisant'
+            WHEN ROUND((SUM(moyenne_matiere * coefficient) / SUM(coefficient)) / 2, 2) < 6 THEN 'Passable'
+            WHEN ROUND((SUM(moyenne_matiere * coefficient) / SUM(coefficient)) / 2, 2) < 7 THEN 'Assez bien'
+            WHEN ROUND((SUM(moyenne_matiere * coefficient) / SUM(coefficient)) / 2, 2) < 8 THEN 'Bien'
+            ELSE 'Très bien'
+          END
+        ELSE
+          CASE 
+            WHEN ROUND(SUM(moyenne_matiere * coefficient) / SUM(coefficient), 2) < 10 THEN 'Insuffisant'
+            WHEN ROUND(SUM(moyenne_matiere * coefficient) / SUM(coefficient), 2) < 12 THEN 'Passable'
+            WHEN ROUND(SUM(moyenne_matiere * coefficient) / SUM(coefficient), 2) < 14 THEN 'Assez bien'
+            WHEN ROUND(SUM(moyenne_matiere * coefficient) / SUM(coefficient), 2) < 16 THEN 'Bien'
+            ELSE 'Très bien'
+          END
       END
     ELSE 'Insuffisant'
   END as mention,
