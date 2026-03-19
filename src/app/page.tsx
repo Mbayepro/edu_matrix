@@ -78,44 +78,47 @@ export default function LandingPage() {
       </section>
 
       {/* About Section */}
-      <section id="about" className="py-24 border-t border-slate-100 bg-slate-50/50">
-        <div className="max-w-7xl mx-auto px-6">
+      <section id="about" className="py-24 border-t border-slate-100 bg-emerald-50/30 relative overflow-hidden">
+        {/* Abstract background shape */}
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-amber-400/5 -skew-x-12 translate-x-1/2 pointer-events-none" />
+        
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div className="relative">
-              <div className="aspect-square bg-white rounded-3xl border border-slate-200 shadow-2xl flex items-center justify-center p-12">
-                <Info className="w-full h-full text-emerald-500/5 absolute top-0 left-0 -z-10" />
-                <div className="space-y-6">
-                  <div className="flex items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+              <div className="aspect-square bg-white rounded-3xl border border-slate-200 shadow-2xl flex items-center justify-center p-12 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="space-y-6 relative z-10">
+                  <div className="flex items-center gap-4 bg-white/90 backdrop-blur p-4 rounded-2xl border border-slate-100 shadow-sm transition-transform hover:translate-x-2">
                     <CheckCircle className="w-6 h-6 text-emerald-500 flex-shrink-0" />
-                    <p className="text-sm font-medium text-slate-700">Digitalisation complète du cycle scolaire</p>
+                    <p className="text-sm font-bold text-slate-700">Digitalisation complète du cycle scolaire</p>
                   </div>
-                  <div className="flex items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm ml-8">
+                  <div className="flex items-center gap-4 bg-white/90 backdrop-blur p-4 rounded-2xl border border-slate-100 shadow-sm ml-8 transition-transform hover:translate-x-2">
                     <CheckCircle className="w-6 h-6 text-amber-500 flex-shrink-0" />
-                    <p className="text-sm font-medium text-slate-700">Adapté aux échelles de notes du Sénégal</p>
+                    <p className="text-sm font-bold text-slate-700">Adapté aux échelles de notes du Sénégal</p>
                   </div>
-                  <div className="flex items-center gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                  <div className="flex items-center gap-4 bg-white/90 backdrop-blur p-4 rounded-2xl border border-slate-100 shadow-sm transition-transform hover:translate-x-2">
                     <CheckCircle className="w-6 h-6 text-emerald-600 flex-shrink-0" />
-                    <p className="text-sm font-medium text-slate-700">Automatisation des bulletins de notes</p>
+                    <p className="text-sm font-bold text-slate-700">Automatisation des bulletins de notes</p>
                   </div>
                 </div>
               </div>
             </div>
             <div className="space-y-6">
-              <h2 className="text-3xl font-bold text-slate-900 tracking-tight">À propos d&apos;EduMatrix</h2>
-              <p className="text-slate-600 leading-relaxed text-lg">
+              <h2 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">À propos d&apos;EduMatrix</h2>
+              <p className="text-slate-600 leading-relaxed text-lg font-medium">
                 EduMatrix est née de la volonté de moderniser le système éducatif sénégalais. Notre mission est d&apos;offrir aux établissements scolaires des outils technologiques de pointe pour optimiser leur gestion quotidienne.
               </p>
               <p className="text-slate-600 leading-relaxed">
                 De la maternelle au lycée, notre plateforme s&apos;adapte aux spécificités locales, notamment les calculs de moyennes complexes et les exigences administratives des inspections d&apos;académie.
               </p>
               <div className="pt-4 grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-sm">
-                  <div className="text-2xl font-bold text-emerald-600 mb-1">Simple</div>
-                  <div className="text-xs text-slate-500 uppercase font-semibold">Prise en main immédiate</div>
+                <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm transition-all hover:bg-emerald-50">
+                  <div className="text-2xl font-black text-emerald-600 mb-1">Simple</div>
+                  <div className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Prise en main immédiate</div>
                 </div>
-                <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-sm">
-                  <div className="text-2xl font-bold text-amber-500 mb-1">Local</div>
-                  <div className="text-xs text-slate-500 uppercase font-semibold">Conçu à Dakar</div>
+                <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm transition-all hover:bg-amber-50">
+                  <div className="text-2xl font-black text-amber-500 mb-1">Local</div>
+                  <div className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Conçu à Dakar</div>
                 </div>
               </div>
             </div>
@@ -124,12 +127,19 @@ export default function LandingPage() {
       </section>
 
       {/* Features Grid */}
-      <section id="features" className="py-24 bg-white border-t border-slate-100">
-        <div className="max-w-7xl mx-auto px-6 text-center mb-16">
-          <h2 className="text-3xl font-bold text-slate-900 mb-4">Nos Fonctionnalités</h2>
-          <p className="text-slate-600 max-w-2xl mx-auto">Tout ce dont vous avez besoin pour gérer votre établissement avec excellence.</p>
+      <section id="features" className="py-24 bg-slate-50 relative overflow-hidden">
+        {/* Simple grid pattern */}
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+             style={{ backgroundImage: `radial-gradient(#065f46 1px, transparent 1px)`, backgroundSize: '30px 30px' }} />
+
+        <div className="max-w-7xl mx-auto px-6 text-center mb-16 relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 border border-emerald-200 text-[10px] font-black uppercase tracking-widest text-emerald-700 mb-4">
+            Services
+          </div>
+          <h2 className="text-4xl font-black text-slate-900 mb-4 tracking-tight">Explorez nos solutions</h2>
+          <p className="text-slate-600 max-w-2xl mx-auto font-medium">Tout ce dont vous avez besoin pour gérer votre établissement avec excellence.</p>
         </div>
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="grid md:grid-cols-3 gap-8">
             <FeatureCard 
               icon={<BarChart3 className="w-6 h-6 text-amber-400" />}
@@ -166,57 +176,72 @@ export default function LandingPage() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-24 border-t border-slate-100 bg-emerald-600 text-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center text-white">
-            <StatItem number="50+" label="Écoles partenaires" />
-            <StatItem number="12k" label="Élèves inscrits" />
-            <StatItem number="98%" label="Taux de satisfaction" />
-            <StatItem number="24/7" label="Support technique" />
+      <section className="py-24 relative overflow-hidden">
+        <div className="absolute inset-0 bg-emerald-600" />
+        {/* Decorative circles */}
+        <div className="absolute top-0 left-0 w-64 h-64 bg-white/10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-amber-400/20 rounded-full translate-x-1/3 translate-y-1/3 blur-3xl opacity-50" />
+        
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-12 text-center">
+            <StatItem number="5000+" label="Élèves inscrits" />
+            <StatItem number="200+" label="Écoles partenaires" />
+            <StatItem number="98%" label="Satisfaction" />
+            <StatItem number="24/7" label="Support local" />
           </div>
         </div>
       </section>
 
       {/* Footer / Contact */}
-      <footer id="contact" className="border-t border-slate-100 bg-slate-50 pt-16 pb-8">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
+      <footer id="contact" className="bg-slate-900 pt-20 pb-10 relative overflow-hidden">
+        {/* Abstract shapes in footer */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-[100px] -mr-32 -mt-32" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-400/5 rounded-full blur-[80px] -ml-32 -mb-32" />
+
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-16 mb-16">
             <div>
-              <div className="flex items-center gap-2 mb-6">
-                <div className="bg-emerald-600 p-1.5 rounded-lg">
-                  <GraduationCap className="w-5 h-5 text-white" />
+              <div className="flex items-center gap-3 mb-8">
+                <div className="bg-emerald-600 p-2 rounded-2xl shadow-lg shadow-emerald-600/20">
+                  <GraduationCap className="w-6 h-6 text-white" />
                 </div>
-                <span className="font-bold text-xl tracking-tight text-slate-900">EduMatrix</span>
+                <span className="font-black text-2xl tracking-tight text-white">EduMatrix</span>
               </div>
-              <p className="text-slate-600 text-sm leading-relaxed mb-6">
-                Le leader de la gestion scolaire digitale au Sénégal. Une solution robuste pour les établissements d&apos;excellence.
+              <p className="text-slate-400 text-sm leading-relaxed mb-8 font-medium">
+                Le leader de la gestion scolaire digitale au Sénégal. Une solution robuste et innovante pour les établissements d&apos;excellence.
               </p>
             </div>
             
             <div>
-              <h4 className="text-slate-900 font-bold mb-6 uppercase tracking-wider text-xs">Navigation</h4>
-              <ul className="space-y-4 text-sm text-slate-600">
-                <li><Link href="#" className="hover:text-emerald-600 transition-colors">Accueil</Link></li>
-                <li><Link href="#about" className="hover:text-emerald-600 transition-colors">À propos</Link></li>
-                <li><Link href="#features" className="hover:text-emerald-600 transition-colors">Fonctionnalités</Link></li>
-                <li><Link href="/login" className="hover:text-emerald-600 transition-colors">Espace réservé</Link></li>
+              <h4 className="text-white font-black mb-8 uppercase tracking-widest text-[10px]">Navigation</h4>
+              <ul className="space-y-5 text-sm">
+                <li><Link href="#" className="text-slate-400 hover:text-amber-400 transition-colors">Accueil</Link></li>
+                <li><Link href="#about" className="text-slate-400 hover:text-amber-400 transition-colors">À propos</Link></li>
+                <li><Link href="#features" className="text-slate-400 hover:text-amber-400 transition-colors">Fonctionnalités</Link></li>
+                <li><Link href="/login" className="text-slate-400 hover:text-amber-400 transition-colors">Espace réservé</Link></li>
               </ul>
             </div>
 
             <div>
-              <h4 className="text-slate-900 font-bold mb-6 uppercase tracking-wider text-xs">Contact</h4>
-              <ul className="space-y-4 text-sm text-slate-600">
-                <li className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-emerald-600 shrink-0" />
+              <h4 className="text-white font-black mb-8 uppercase tracking-widest text-[10px]">Contact</h4>
+              <ul className="space-y-5 text-sm text-slate-400 font-medium">
+                <li className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center shrink-0">
+                    <MapPin className="w-5 h-5 text-emerald-400" />
+                  </div>
                   <span>Dakar yeumbeul/ASECNA</span>
                 </li>
-                <li className="flex items-center gap-3">
-                  <Phone className="w-5 h-5 text-emerald-600 shrink-0" />
+                <li className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center shrink-0">
+                    <Phone className="w-5 h-5 text-amber-400" />
+                  </div>
                   <span>770362616 / 774628987</span>
                 </li>
-                <li className="flex items-center gap-3">
-                  <Mail className="w-5 h-5 text-emerald-600 shrink-0" />
-                  <Link href="mailto:edumatrix445@gmail.com" className="hover:text-emerald-600 transition-colors">
+                <li className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center shrink-0">
+                    <Mail className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <Link href="mailto:edumatrix445@gmail.com" className="hover:text-amber-400 transition-colors">
                     edumatrix445@gmail.com
                   </Link>
                 </li>
@@ -224,13 +249,13 @@ export default function LandingPage() {
             </div>
           </div>
           
-          <div className="pt-8 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-slate-500 text-xs">
+          <div className="pt-10 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center gap-6">
+            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">
               © {new Date().getFullYear()} EduMatrix Sénégal. Tous droits réservés.
             </p>
-            <div className="flex gap-6 text-xs text-slate-500">
-              <Link href="#" className="hover:text-slate-900">Confidentialité</Link>
-              <Link href="#" className="hover:text-slate-900">CGU</Link>
+            <div className="flex gap-8 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+              <Link href="#" className="hover:text-white transition-colors">Confidentialité</Link>
+              <Link href="#" className="hover:text-white transition-colors">CGU</Link>
             </div>
           </div>
         </div>
@@ -241,12 +266,17 @@ export default function LandingPage() {
 
 function FeatureCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
   return (
-    <div className="p-8 rounded-2xl bg-white border border-slate-100 hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-500/5 transition-all duration-300 group">
-      <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center mb-6 group-hover:bg-emerald-50 transition-colors">
-        {icon}
+    <div className="p-8 rounded-[2rem] bg-white border border-slate-100 hover:border-emerald-200 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-500 group relative overflow-hidden">
+      {/* Subtle background glow on hover */}
+      <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 to-amber-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      
+      <div className="relative z-10">
+        <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center mb-8 border border-slate-100 transition-transform duration-500 group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white">
+          {icon}
+        </div>
+        <h3 className="text-2xl font-black text-slate-900 mb-4 tracking-tight">{title}</h3>
+        <p className="text-slate-500 leading-relaxed font-medium">{description}</p>
       </div>
-      <h3 className="text-xl font-bold text-slate-900 mb-3">{title}</h3>
-      <p className="text-slate-600 leading-relaxed text-sm">{description}</p>
     </div>
   )
 }
