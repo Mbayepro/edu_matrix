@@ -279,7 +279,7 @@ export default function ClassesPage() {
                     </td>
                     {isDirector && (
                       <td className="px-10 py-5 text-right">
-                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all duration-300">
+                        <div className="flex items-center justify-end gap-2 transition-all duration-300">
                           {editId === c.id ? (
                             <>
                               <button

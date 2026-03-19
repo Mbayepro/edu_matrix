@@ -53,8 +53,13 @@ export default function ElevesPage() {
   }, [ecoleId])
 
   useEffect(() => { 
-    if (ecoleId) loadEleves() 
-  }, [page, search, filterClasse, filterStatut, ecoleId])
+    if (profileLoading) return
+    if (ecoleId) {
+      loadEleves()
+    } else {
+      setLoading(false)
+    }
+  }, [page, search, filterClasse, filterStatut, ecoleId, profileLoading])
 
   async function loadClasses(schoolId: string) {
     try {
@@ -90,7 +95,14 @@ export default function ElevesPage() {
       if (filterClasse)              query = query.eq('classe_id', filterClasse)
       if (filterStatut !== 'tous')   query = query.eq('statut_paiement', filterStatut)
 
-      const { data, count } = await query
+      const { data, count, error } = await query
+      
+      if (error) {
+        console.error('Erreur loadEleves:', error)
+        showToast('Erreur lors du chargement des élèves : ' + error.message, 'error')
+        return
+      }
+
       setEleves((data ?? []) as Eleve[])
       setTotal(count ?? 0)
     } finally {
@@ -182,9 +194,18 @@ export default function ElevesPage() {
             </div>
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">Gestion des Élèves</h1>
           </div>
-          <p className="text-sm text-slate-500 font-medium">
-            Pilotez les inscriptions, les présences et les documents de vos {total.toLocaleString('fr-FR')} élèves.
-          </p>
+          <div className="text-sm font-medium flex items-center gap-2">
+            {loading || profileLoading ? (
+               <div className="flex items-center gap-2">
+                  <div className="w-24 h-4 bg-slate-100 rounded animate-pulse" />
+                  <span className="text-slate-300 italic text-[10px] font-black uppercase tracking-widest">(Synchronisation…)</span>
+               </div>
+            ) : (
+                <span className="text-slate-500">
+                  Pilotez les inscriptions, les présences et les documents de vos <span className="text-emerald-600 font-black">{total.toLocaleString('fr-FR')}</span> élèves.
+                </span>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -373,24 +394,24 @@ export default function ElevesPage() {
                         </span>
                       </td>
                       <td className="px-8 py-5">
-                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
+                        <div className="flex items-center justify-end gap-2 transition-all duration-300">
                           <Link
                             href={`/dashboard/eleves/${e.id}/modifier`}
-                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 transition-all shadow-sm"
+                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-200 text-slate-500 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 transition-all shadow-sm group/btn"
                             title="Modifier"
                           >
                             <Edit className="w-4 h-4" />
                           </Link>
                           <button
                             onClick={() => setViewing(e.id)}
-                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 transition-all shadow-sm"
+                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all shadow-sm group/btn"
                             title="Profil Complet"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => setViewingQR(e.id)}
-                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-amber-600 hover:border-amber-200 hover:bg-amber-50 transition-all shadow-sm"
+                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-200 text-slate-500 hover:text-amber-600 hover:border-amber-200 hover:bg-amber-50 transition-all shadow-sm group/btn"
                             title="QR ID Card"
                           >
                             <QrCode className="w-4 h-4" />
