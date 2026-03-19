@@ -1,9 +1,14 @@
 import Link from 'next/link'
-import { GraduationCap, ArrowRight, ShieldCheck, BarChart3, Users, QrCode, MapPin, Phone, Mail, CheckCircle, Info, CreditCard, TrendingUp } from 'lucide-react'
+import { GraduationCap, ArrowRight, ShieldCheck, BarChart3, Users, QrCode, MapPin, Phone, Mail, CheckCircle, Info, CreditCard, TrendingUp, ChevronRight } from 'lucide-react'
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans relative">
+      {/* Global Background Ornaments */}
+      <div className="fixed inset-0 pointer-events-none opacity-20 overflow-hidden">
+        <div className="absolute top-[20%] -left-[10%] w-[500px] h-[500px] bg-emerald-200 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[10%] -right-[5%] w-[400px] h-[400px] bg-amber-200 rounded-full blur-[100px]" />
+      </div>
       {/* Navbar */}
       <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-slate-200/50 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]">
         <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between py-4">
@@ -45,40 +50,41 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-20 pb-32 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl pointer-events-none">
-          <div className="absolute top-20 left-20 w-72 h-72 bg-emerald-500/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-20 right-20 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl" />
+      <section className="relative pt-20 pb-32 overflow-hidden bg-gradient-to-br from-emerald-600 via-emerald-500 to-amber-400">
+        {/* Decorative Mesh / Bubbles */}
+        <div className="absolute inset-0 opacity-30 pointer-events-none">
+          <div className="absolute top-20 left-20 w-96 h-96 bg-white/20 rounded-full blur-[100px]" />
+          <div className="absolute bottom-20 right-20 w-full h-full bg-emerald-900/10 rounded-full blur-[120px]" />
         </div>
 
         <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-medium text-amber-400 mb-8 animate-fade-in">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-xs font-black uppercase tracking-widest text-white mb-8 animate-fade-in backdrop-blur-md">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
             </span>
             Nouvelle version 1.0 disponible
           </div>
           
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 text-slate-900 max-w-4xl mx-auto">
-            La gestion scolaire réinventée pour le Sénégal.
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight mb-8 text-white max-w-5xl mx-auto drop-shadow-2xl">
+            La gestion scolaire <span className="text-slate-900">réinventée</span> pour le Sénégal.
           </h1>
           
-          <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto mb-12 leading-relaxed font-medium drop-shadow-lg">
             Une plateforme tout-en-un pour simplifier la vie des directeurs, enseignants et élèves. Suivi des notes, présences par QR Code et paiements en temps réel.
           </p>
           
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
             <Link 
               href="/login" 
-              className="px-8 py-3.5 text-base font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-all shadow-lg shadow-emerald-600/20 flex items-center gap-2"
+              className="px-10 py-4.5 text-lg font-black bg-slate-900 hover:bg-emerald-900 text-white rounded-2xl transition-all shadow-2xl shadow-black/20 flex items-center gap-3 group"
             >
               Commencer maintenant
-              <ArrowRight className="w-4 h-4 text-amber-400" />
+              <ArrowRight className="w-5 h-5 text-amber-400 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link 
               href="#about" 
-              className="px-8 py-3.5 text-base font-semibold bg-slate-100 hover:bg-slate-200 text-slate-900 rounded-xl transition-all border border-slate-200"
+              className="px-10 py-4.5 text-lg font-black bg-white/10 hover:bg-white/20 text-white rounded-2xl transition-all border border-white/30 backdrop-blur-md"
             >
               Découvrir la solution
             </Link>
@@ -232,10 +238,13 @@ export default function LandingPage() {
       </section>
 
       {/* Footer / Contact */}
-      <footer id="contact" className="bg-slate-900 pt-20 pb-10 relative overflow-hidden">
-        {/* Abstract shapes in footer */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-[100px] -mr-32 -mt-32" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-400/5 rounded-full blur-[80px] -ml-32 -mb-32" />
+      <footer id="contact" className="bg-slate-950 pt-20 pb-10 relative overflow-hidden">
+        {/* Artistic Background blobs */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-600/10 rounded-full blur-[120px] -mr-64 -mt-64" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-amber-500/10 rounded-full blur-[100px] -ml-48 -mb-48" />
+        
+        <div className="absolute inset-0 opacity-[0.02]"
+             style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }} />
 
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-16 mb-16">
@@ -305,16 +314,20 @@ export default function LandingPage() {
 
 function FeatureCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
   return (
-    <div className="p-8 rounded-[2rem] bg-white border border-slate-100 hover:border-emerald-200 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-500 group relative overflow-hidden">
-      {/* Subtle background glow on hover */}
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 to-amber-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+    <div className="p-10 rounded-[2.5rem] bg-white border border-slate-100/80 hover:border-emerald-200 hover:shadow-[0_20px_50px_-15px_rgba(16,185,129,0.15)] transition-all duration-500 group relative overflow-hidden flex flex-col items-start text-left">
+      {/* Dynamic background gradient on hover */}
+      <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-white to-amber-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       
-      <div className="relative z-10">
-        <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center mb-8 border border-slate-100 transition-transform duration-500 group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white">
+      <div className="relative z-10 w-full">
+        <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center mb-8 border border-slate-100 transition-all duration-500 group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white group-hover:shadow-lg group-hover:shadow-emerald-500/20">
           {icon}
         </div>
-        <h3 className="text-2xl font-black text-slate-900 mb-4 tracking-tight">{title}</h3>
-        <p className="text-slate-500 leading-relaxed font-medium">{description}</p>
+        <h3 className="text-2xl font-black text-slate-900 mb-4 tracking-tight group-hover:text-emerald-700 transition-colors">{title}</h3>
+        <p className="text-slate-500 leading-relaxed font-medium group-hover:text-slate-600 transition-colors">{description}</p>
+        
+        <div className="mt-8 pt-6 border-t border-slate-100 w-full flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+          <ChevronRight className="w-5 h-5 text-emerald-400" />
+        </div>
       </div>
     </div>
   )

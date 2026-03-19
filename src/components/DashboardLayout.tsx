@@ -192,7 +192,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   )
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-slate-50 flex relative overflow-hidden">
+      {/* Dynamic Background Accents */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] left-[20%] w-[500px] h-[500px] bg-amber-500/5 rounded-full blur-[100px]" />
+      </div>
 
       {/* ── Sidebar desktop ── */}
       <aside className="hidden lg:flex flex-col w-64 bg-slate-900 shrink-0 fixed top-0 left-0 bottom-0 z-30">
