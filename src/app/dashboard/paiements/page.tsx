@@ -230,382 +230,405 @@ export default function PaiementsPage() {
   }, {} as Record<string, number>)
 
   return (
-    <div className="max-w-5xl mx-auto space-y-4">
-      <div className="flex items-center gap-2">
-        <CreditCard className="w-5 h-5 text-emerald-600" />
-        <h1 className="text-lg font-bold text-slate-800">Paiements scolaires</h1>
+    <div className="space-y-8 pb-10">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-emerald-600/10 flex items-center justify-center">
+              <CreditCard className="w-4 h-4 text-emerald-600" />
+            </div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Paiements Scolaires</h1>
+          </div>
+          <p className="text-sm text-slate-500 font-medium max-w-2xl tracking-tight">
+            Pilotez les encaissements et le recouvrement. Le statut est synchronisé automatiquement.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-emerald-50 rounded-xl border border-emerald-100">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Flux en direct</span>
+          </div>
+        </div>
       </div>
-      <p className="text-sm text-slate-500">
-        Enregistrez les règlements des frais pour chaque élève. Le statut « payé / partiel / impayé » est mis à jour automatiquement.
-      </p>
 
       {/* KPIs Dashboard */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-              <Users className="w-5 h-5 text-blue-600" />
+      {/* KPIs Dashboard */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-6 group hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-900/5 transition-all duration-500 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-700" />
+          <div className="flex items-center gap-5 relative z-10">
+            <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 group-hover:rotate-6 transition-all duration-500">
+              <Users className="w-7 h-7" />
             </div>
             <div>
-              <div className="text-xs text-slate-400">Total élèves</div>
-              <div className="text-xl font-bold text-slate-800">{totalEleves}</div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Total élèves</p>
+              <div className="text-2xl font-black text-slate-900 leading-none">{totalEleves}</div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
-              <TrendingDown className="w-5 h-5 text-red-600" />
+        <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-6 group hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-900/5 transition-all duration-500 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/5 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-700" />
+          <div className="flex items-center gap-5 relative z-10">
+            <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center text-red-600 group-hover:rotate-6 transition-all duration-500">
+              <TrendingDown className="w-7 h-7" />
             </div>
             <div>
-              <div className="text-xs text-slate-400">Montant total dû</div>
-              <div className="text-xl font-bold text-slate-800">
-                {totalDu.toLocaleString('fr-FR')} F
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Total attendu</p>
+              <div className="text-2xl font-black text-slate-900 leading-none">
+                {totalDu.toLocaleString('fr-FR')} <span className="text-[10px] font-black ml-1 uppercase text-slate-400">F</span>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-emerald-600" />
+        <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-6 group hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-900/5 transition-all duration-500 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-700" />
+          <div className="flex items-center gap-5 relative z-10">
+            <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 group-hover:rotate-6 transition-all duration-500 shadow-sm">
+              <TrendingUp className="w-7 h-7" />
             </div>
             <div>
-              <div className="text-xs text-slate-400">Montant encaissé</div>
-              <div className="text-xl font-bold text-slate-800">
-                {totalEncaisse.toLocaleString('fr-FR')} F
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Encaissé</p>
+              <div className="text-2xl font-black text-emerald-600 leading-none">
+                {totalEncaisse.toLocaleString('fr-FR')} <span className="text-[10px] font-black ml-1 uppercase opacity-60">F</span>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
-              <DollarSign className="w-5 h-5 text-purple-600" />
+        <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-6 group hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-900/5 transition-all duration-500 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-slate-900/5 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-700" />
+          <div className="flex items-center gap-5 relative z-10">
+            <div className="w-14 h-14 bg-slate-900 flex items-center justify-center text-white rounded-2xl group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-slate-900/10">
+              <DollarSign className="w-7 h-7" />
             </div>
             <div>
-              <div className="text-xs text-slate-400">Taux recouvrement</div>
-              <div className="text-xl font-bold text-slate-800">
-                {tauxRecouvrement.toFixed(1)}%
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Recouvrement</p>
+              <div className="text-2xl font-black text-slate-900 leading-none">
+                {tauxRecouvrement.toFixed(1)} <span className="text-[10px] font-black ml-1 uppercase text-slate-400">%</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <h3 className="text-sm font-semibold text-slate-800 mb-4 flex items-center gap-2">
-            <PieChart className="w-4 h-4 text-slate-400" />
-            Répartition des statuts
-          </h3>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-600">Payés</span>
-              <div className="flex items-center gap-2">
-                <div className="w-24 bg-slate-200 rounded-full h-2">
-                  <div 
-                    className="bg-emerald-600 h-2 rounded-full" 
-                    style={{ width: `${(elevesParStatut.payé / totalEleves) * 100}%` }}
-                  />
-                </div>
-                <span className="text-sm font-semibold text-emerald-600">
-                  {elevesParStatut.payé}
-                </span>
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-8 group hover:shadow-xl hover:shadow-emerald-900/5 transition-all duration-500">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              Répartition des statuts
+            </h3>
+            <PieChart className="w-5 h-5 text-slate-300 group-hover:text-emerald-500 transition-colors" />
+          </div>
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-widest">
+                <span className="text-slate-500">Dossiers soldés</span>
+                <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">{elevesParStatut.payé} élèves</span>
+              </div>
+              <div className="w-full bg-slate-50 rounded-full h-3.5 p-1 border border-slate-100 shadow-inner">
+                <div 
+                  className="bg-emerald-500 h-full rounded-full transition-all duration-1000 shadow-sm shadow-emerald-500/30" 
+                  style={{ width: `${(elevesParStatut.payé / totalEleves) * 100}%` }}
+                />
               </div>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-600">Partiels</span>
-              <div className="flex items-center gap-2">
-                <div className="w-24 bg-slate-200 rounded-full h-2">
-                  <div 
-                    className="bg-amber-600 h-2 rounded-full" 
-                    style={{ width: `${(elevesParStatut.partiel / totalEleves) * 100}%` }}
-                  />
-                </div>
-                <span className="text-sm font-semibold text-amber-600">
-                  {elevesParStatut.partiel}
-                </span>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-widest">
+                <span className="text-slate-500">Paiements partiels</span>
+                <span className="text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md">{elevesParStatut.partiel} élèves</span>
+              </div>
+              <div className="w-full bg-slate-50 rounded-full h-3.5 p-1 border border-slate-100 shadow-inner">
+                <div 
+                  className="bg-amber-500 h-full rounded-full transition-all duration-1000 shadow-sm shadow-amber-500/30" 
+                  style={{ width: `${(elevesParStatut.partiel / totalEleves) * 100}%` }}
+                />
               </div>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-600">Impayés</span>
-              <div className="flex items-center gap-2">
-                <div className="w-24 bg-slate-200 rounded-full h-2">
-                  <div 
-                    className="bg-red-600 h-2 rounded-full" 
-                    style={{ width: `${(elevesParStatut.impayé / totalEleves) * 100}%` }}
-                  />
-                </div>
-                <span className="text-sm font-semibold text-red-600">
-                  {elevesParStatut.impayé}
-                </span>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-widest">
+                <span className="text-slate-500">Dossiers en attente</span>
+                <span className="text-red-600 bg-red-50 px-2 py-0.5 rounded-md">{elevesParStatut.impayé} élèves</span>
+              </div>
+              <div className="w-full bg-slate-50 rounded-full h-3.5 p-1 border border-slate-100 shadow-inner">
+                <div 
+                  className="bg-red-500 h-full rounded-full transition-all duration-1000 shadow-sm shadow-red-500/30" 
+                  style={{ width: `${(elevesParStatut.impayé / totalEleves) * 100}%` }}
+                />
               </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <h3 className="text-sm font-semibold text-slate-800 mb-4 flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-slate-400" />
-            Encaissements par mois
-          </h3>
-          <div className="space-y-2">
-            {Object.entries(paiementsParMois).slice(0, 6).map(([mois, montant]) => (
-              <div key={mois} className="flex items-center justify-between">
-                <span className="text-sm text-slate-600">{mois}</span>
-                <span className="text-sm font-semibold text-emerald-600">
-                  {montant.toLocaleString('fr-FR')} F
+        <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-8 group hover:shadow-xl hover:shadow-emerald-900/5 transition-all duration-500">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              Recettes Mensuelles
+            </h3>
+            <BarChart3 className="w-5 h-5 text-slate-300 group-hover:text-amber-500 transition-colors" />
+          </div>
+          <div className="space-y-3">
+            {Object.entries(paiementsParMois).slice(0, 5).map(([mois, montant]) => (
+              <div key={mois} className="flex items-center justify-between p-4 bg-slate-50/50 rounded-2xl border border-slate-100 shadow-sm hover:translate-x-1 transition-transform cursor-default">
+                <span className="text-[11px] font-black uppercase tracking-[0.1em] text-slate-500">{mois}</span>
+                <span className="text-sm font-black text-slate-900">
+                  {montant.toLocaleString('fr-FR')} <span className="text-[10px] text-slate-400">F</span>
                 </span>
               </div>
             ))}
+            {Object.entries(paiementsParMois).length === 0 && (
+              <div className="py-12 text-center">
+                <p className="text-[11px] font-black uppercase tracking-widest text-slate-300">Aucun historique mensuel</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex-1 space-y-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Left Column: Student Selection */}
+        <div className="flex-1 space-y-4">
+        {/* Left Column: Student Selection */}
+        <div className="flex-1 space-y-4">
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Rechercher un élève…"
-              className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              placeholder="Rechercher un dossier élève…"
+              className="w-full pl-12 pr-6 py-4.5 bg-white border border-slate-200/60 rounded-[2rem] text-sm font-bold text-slate-700 outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all shadow-sm placeholder:text-slate-400"
             />
           </div>
 
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm max-h-[380px] overflow-y-auto w-full">
+          <div className="bg-white rounded-[2.5rem] border border-slate-200/60 shadow-sm overflow-hidden min-h-[500px] flex flex-col">
             {loading || profileLoading ? (
-              <div className="p-4 space-y-4">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <Skeleton className="w-8 h-8 rounded-full" />
+              <div className="p-8 space-y-6">
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-4">
+                    <Skeleton className="w-12 h-12 rounded-2xl" />
                     <div className="flex-1 space-y-2">
-                      <Skeleton className="h-3 w-1/2" />
-                      <Skeleton className="h-2 w-1/3" />
+                      <Skeleton className="h-5 w-1/2" />
+                      <Skeleton className="h-3 w-1/3" />
                     </div>
                   </div>
                 ))}
               </div>
             ) : filteredEleves.length === 0 ? (
-              <div className="py-10 text-center text-slate-400 text-sm">
-                Aucun élève trouvé.
+              <div className="flex-1 flex flex-col items-center justify-center py-24 px-10 text-center animate-in fade-in duration-500">
+                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
+                  <Users className="w-10 h-10 text-slate-200" />
+                </div>
+                <h3 className="text-lg font-black text-slate-900 mb-1 tracking-tight">Aucun résultat</h3>
+                <p className="text-sm font-medium text-slate-400 max-w-xs mx-auto">
+                  Aucun élève ne correspond à votre recherche pour le moment.
+                </p>
               </div>
             ) : (
-              <ul className="divide-y divide-slate-50">
+              <ul className="divide-y divide-slate-50 overflow-y-auto max-h-[600px] custom-scrollbar">
                 {filteredEleves.map((e) => (
                   <li
                     key={e.id}
-                    className={`px-4 py-2.5 flex items-center gap-3 cursor-pointer hover:bg-slate-50 ${
-                      selectedEleve?.id === e.id ? 'bg-emerald-50/60' : ''
+                    className={`px-8 py-5 flex items-center gap-5 cursor-pointer transition-all duration-500 relative group overflow-hidden ${
+                      selectedEleve?.id === e.id ? 'bg-emerald-50/50' : 'hover:bg-slate-50/80 hover:translate-x-1'
                     }`}
                     onClick={() => setSelectedEleve(e)}
                   >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-xs font-bold">
+                    {selectedEleve?.id === e.id && (
+                      <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-emerald-500 shadow-[2px_0_10px_rgba(16,185,129,0.3)] animate-in slide-in-from-left duration-300" />
+                    )}
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white text-lg font-black shadow-lg transition-transform duration-500 group-hover:scale-105 ${
+                      selectedEleve?.id === e.id ? 'bg-emerald-600 rotate-3' : 'bg-slate-900 grayscale-[0.2] group-hover:grayscale-0'
+                    }`}>
                       {e.prenom[0]?.toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-800 truncate">
+                      <p className={`text-base font-black truncate transition-colors uppercase tracking-tight ${selectedEleve?.id === e.id ? 'text-emerald-700' : 'text-slate-900'}`}>
                         {e.prenom} {e.nom}
                       </p>
-                      <p className="text-[11px] text-slate-400">
-                        {(e.classe as any)?.nom_classe ?? '—'} · {e.matricule}
+                      <p className="text-[10px] text-slate-400 font-bold tracking-[0.1em] uppercase mt-0.5">
+                        {(e.classe as any)?.nom_classe ?? 'NON ASSIGNÉ'} · <span className="text-slate-500 font-black">{e.matricule}</span>
                       </p>
                     </div>
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize ${
-                      e.statut_paiement === 'payé'
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : e.statut_paiement === 'partiel'
-                        ? 'bg-amber-100 text-amber-700'
-                        : 'bg-red-100 text-red-700'
-                    }`}>
-                      {e.statut_paiement}
-                    </span>
+                    <div className="flex flex-col items-end gap-1.5">
+                      <span className={`text-[9px] font-black uppercase tracking-[0.15em] px-3 py-1.5 rounded-lg border shadow-sm ${
+                        e.statut_paiement === 'payé'
+                          ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                          : e.statut_paiement === 'partiel'
+                          ? 'bg-amber-50 text-amber-600 border-amber-100'
+                          : 'bg-red-50 text-red-600 border-red-100'
+                      }`}>
+                        {e.statut_paiement}
+                      </span>
+                    </div>
                   </li>
                 ))}
               </ul>
             )}
           </div>
         </div>
+        </div>
 
-        <div className="w-full md:w-[260px] space-y-3">
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
-            <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-              <Euro className="w-4 h-4 text-emerald-600" />
-              Paiement rapide
+        {/* Right Column: Payment Form & History */}
+        <div className="w-full lg:w-[320px] space-y-4">
+        {/* Right Column: Payment Form & History */}
+        <div className="w-full lg:w-[380px] space-y-6">
+          <div className="bg-white rounded-[2.5rem] border border-slate-200/60 shadow-sm p-8 space-y-8 relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-2 h-full bg-emerald-500/10 group-focus-within:bg-emerald-500/20 transition-all" />
+            
+            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Nouveau Versement
             </h2>
+            
             {!selectedEleve ? (
-              <p className="text-xs text-slate-400">
-                Sélectionnez d&apos;abord un élève dans la liste pour enregistrer un paiement.
-              </p>
-            ) : frais.length === 0 ? (
-              <p className="text-xs text-amber-600">
-                Aucun frais configuré pour cette école. Ajoutez des frais dans les paramètres ou en base (table <code>frais_scolaires</code>).
-              </p>
+              <div className="py-12 text-center bg-slate-50/50 rounded-3xl border border-dashed border-slate-200 animate-in zoom-in-95 duration-500">
+                <CreditCard className="w-10 h-10 text-slate-200 mx-auto mb-4" />
+                <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 px-8 leading-relaxed">
+                  Veuillez d&apos;abord sélectionner un élève dans la liste de gauche.
+                </p>
+              </div>
             ) : (
-              <form onSubmit={enregistrerPaiement} className="space-y-3">
-                <div className="text-xs text-slate-500">
-                  Élève sélectionné :
-                  <br />
-                  <span className="font-semibold text-slate-800">
-                    {selectedEleve.prenom} {selectedEleve.nom}
-                  </span>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-500 mb-1">
-                    Frais
-                  </label>
-                  <select
-                    value={selectedFraisId}
-                    onChange={(e) => setSelectedFraisId(e.target.value)}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    required
-                  >
-                    <option value="">Choisir un frais…</option>
-                    {frais.map((f) => (
-                      <option key={f.id} value={f.id}>
-                        {f.libelle} — {f.montant.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} F
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-500 mb-1">
-                    Montant réglé (F CFA)
-                  </label>
-                  <input
-                    type="text"
-                    value={montant}
-                    onChange={(e) => setMontant(e.target.value)}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[11px] font-medium text-slate-500 mb-1">
-                      Mode
-                    </label>
+              <form onSubmit={enregistrerPaiement} className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Type de Frais</label>
+                    <select
+                      value={selectedFraisId}
+                      onChange={(e) => setSelectedFraisId(e.target.value)}
+                      className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all appearance-none cursor-pointer"
+                      required
+                    >
+                      <option value="">Sélectionner…</option>
+                      {frais.map((f) => (
+                        <option key={f.id} value={f.id}>
+                          {f.libelle} ({f.montant.toLocaleString('fr-FR')} F)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Montant versé (F CFA)</label>
                     <input
                       type="text"
-                      value={mode}
-                      onChange={(e) => setMode(e.target.value)}
-                      placeholder="Espèces, OM, Wave…"
-                      className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      value={montant}
+                      onChange={(e) => setMontant(e.target.value)}
+                      placeholder="Ex: 25 000"
+                      className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 text-sm font-black text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all placeholder:text-slate-300"
+                      required
                     />
                   </div>
-                  <div>
-                    <label className="block text-[11px] font-medium text-slate-500 mb-1">
-                      Référence
-                    </label>
-                    <input
-                      type="text"
-                      value={reference}
-                      onChange={(e) => setReference(e.target.value)}
-                      placeholder="N° reçu"
-                      className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Mode</label>
+                      <input
+                        type="text"
+                        value={mode}
+                        onChange={(e) => setMode(e.target.value)}
+                        placeholder="Espèces/Mobile"
+                        className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Ref.</label>
+                      <input
+                        type="text"
+                        value={reference}
+                        onChange={(e) => setReference(e.target.value)}
+                        placeholder="N° Reçu"
+                        className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all"
+                      />
+                    </div>
                   </div>
                 </div>
+
                 <button
                   type="submit"
                   disabled={saving}
-                  className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full py-5 rounded-2xl bg-slate-900 hover:bg-emerald-600 text-white text-sm font-black tracking-widest uppercase transition-all shadow-xl shadow-slate-900/10 flex items-center justify-center gap-4 disabled:opacity-50"
                 >
                   {saving ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Enregistrement…
-                    </>
+                    <><Loader2 className="w-5 h-5 animate-spin" /> Enregistrement…</>
                   ) : (
-                    <>
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      Enregistrer le paiement
-                    </>
+                    <><CheckCircle2 className="w-5 h-5" /> Valider le versement</>
                   )}
                 </button>
               </form>
             )}
           </div>
 
-          {/* Historique des paiements de l'élève */}
-          {selectedEleve && (
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
-              <h3 className="text-sm font-semibold text-slate-800">
-                Historique règlements
+          {/* History Section */}
+          <div className="bg-white rounded-[2.5rem] border border-slate-200/60 shadow-sm overflow-hidden group">
+            <div className="p-8 border-b border-slate-100 bg-slate-50/30">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-3">
+                <BarChart3 className="w-4 h-4 text-amber-500" />
+                Derniers règlements
               </h3>
-              <div className="space-y-2 max-h-[250px] overflow-y-auto">
-                {paiements.filter(p => p.eleve_id === selectedEleve.id).length === 0 ? (
-                  <p className="text-xs text-slate-400">Aucun paiement enregistré.</p>
-                ) : (
-                  paiements
-                    .filter(p => p.eleve_id === selectedEleve.id)
-                    .map((p) => {
-                      const fLibelle = frais.find(f => f.id === p.frais_id)?.libelle || 'Frais'
-                      const isShareOpen = shareOpenId === p.id
-                      return (
-                        <div key={p.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                          {/* Info paiement */}
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0">
-                              <p className="text-xs font-semibold text-slate-800">
-                                {p.montant.toLocaleString('fr-FR')} F
-                              </p>
-                              <p className="text-[10px] text-slate-500 truncate max-w-[100px]">{fLibelle}</p>
-                              <p className="text-[9px] text-slate-400 mt-0.5">
-                                {new Date(p.date_paiement).toLocaleDateString('fr-FR')}
-                              </p>
-                            </div>
-                            {/* Actions */}
-                            <div className="flex items-center gap-0.5 shrink-0">
-                              <button onClick={() => handleDownloadReceipt(p)}
-                                className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-100 transition-colors"
-                                title="Télécharger le reçu">
-                                <Download className="w-3.5 h-3.5" />
-                              </button>
-                              <button onClick={() => handlePrintReceipt(p)}
-                                className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
-                                title="Imprimer le reçu">
-                                <Printer className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => setShareOpenId(isShareOpen ? null : p.id)}
-                                className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-200 transition-colors"
-                                title="Partager">
-                                {isShareOpen ? <X className="w-3.5 h-3.5" /> : <Share2 className="w-3.5 h-3.5" />}
-                              </button>
-                            </div>
-                          </div>
-                          {/* Share menu */}
-                          {isShareOpen && (
-                            <div className="mt-2 pt-2 border-t border-slate-200 flex items-center gap-1 flex-wrap">
-                              <button onClick={() => handleShare(p, 'whatsapp')}
-                                className="flex items-center gap-1 text-[10px] font-medium px-2 py-1 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg transition-colors">
-                                <MessageCircle className="w-3 h-3" /> WhatsApp
-                              </button>
-                              <button onClick={() => handleShare(p, 'email')}
-                                className="flex items-center gap-1 text-[10px] font-medium px-2 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg transition-colors">
-                                <Mail className="w-3 h-3" /> Email
-                              </button>
-                              <button onClick={() => handleShare(p, 'copy')}
-                                className="flex items-center gap-1 text-[10px] font-medium px-2 py-1 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg transition-colors">
-                                <Copy className="w-3 h-3" /> {copied ? 'Copié !' : 'Copier'}
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })
-                )}
-              </div>
             </div>
-          )}
+            <div className="p-4 space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar">
+              {!selectedEleve ? (
+                <div className="py-12 text-center opacity-30">
+                  <Printer className="w-10 h-10 mx-auto mb-4 text-slate-200" />
+                  <p className="text-[10px] font-black uppercase tracking-widest">Aucune donnée</p>
+                </div>
+              ) : (
+                paiements
+                  .filter(p => p.eleve_id === selectedEleve.id)
+                  .map((p) => {
+                    const fLibelle = frais.find(f => f.id === p.frais_id)?.libelle || 'Scolarité'
+                    return (
+                      <div key={p.id} className="p-5 bg-white border border-slate-100 rounded-3xl group/item hover:border-emerald-200 hover:shadow-lg hover:shadow-emerald-900/5 transition-all duration-300">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <p className="text-lg font-black text-slate-900 leading-none">
+                              {p.montant.toLocaleString('fr-FR')} <span className="text-xs uppercase text-slate-400">F</span>
+                            </p>
+                            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mt-1">{fLibelle}</p>
+                          </div>
+                          <div className="flex gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                            <button 
+                              onClick={() => handleDownloadReceipt(p)}
+                              className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-emerald-600 hover:text-white transition-all shadow-sm"
+                              title="Télécharger Reçu PDF"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => handlePrintReceipt(p)}
+                              className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-amber-500 hover:text-white transition-all shadow-sm"
+                              title="Imprimer"
+                            >
+                              <Printer className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="pt-3 border-t border-slate-50 mt-1 flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            {new Date(p.date_paiement).toLocaleDateString('fr-FR')}
+                          </span>
+                          <span className="text-[10px] font-black text-slate-300 uppercase italic">
+                            {p.mode || 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })
+              )}
+              {selectedEleve && paiements.filter(p => p.eleve_id === selectedEleve.id).length === 0 && (
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-300 text-center py-10">Aucun historique pour cet élève</p>
+              )}
+            </div>
+          </div>
+        </div>
         </div>
       </div>
     </div>

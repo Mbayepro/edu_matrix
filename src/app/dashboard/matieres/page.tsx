@@ -111,187 +111,245 @@ export default function MatieresPage() {
   )
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="bg-purple-100 p-2.5 rounded-xl">
-          <BookMarked className="w-5 h-5 text-purple-600" />
-        </div>
+    <div className="space-y-8 pb-10">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h1 className="text-xl font-bold text-slate-800">Gestion des matières</h1>
-          <p className="text-sm text-slate-500">
-            {matieres.filter(m => m.is_active).length} matière{matieres.filter(m => m.is_active).length > 1 ? 's' : ''} active{matieres.filter(m => m.is_active).length > 1 ? 's' : ''}
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-600/10 flex items-center justify-center">
+              <BookMarked className="w-5 h-5 text-emerald-600" />
+            </div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none">Référentiel Matières</h1>
+          </div>
+          <p className="text-sm text-slate-500 font-medium max-w-2xl tracking-tight leading-relaxed">
+            Configurez le socle pédagogique de votre établissement. Définissez les disciplines et leurs coefficients de pondération.
           </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="bg-white rounded-[1.5rem] border border-slate-200/60 shadow-sm p-4 flex items-center gap-6 group hover:border-emerald-200 transition-all duration-500">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Matières</span>
+              <span className="text-2xl font-black text-slate-900 leading-tight group-hover:text-emerald-600 transition-colors">
+                {matieres.length}
+              </span>
+            </div>
+            <div className="w-px h-10 bg-slate-100" />
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Actives</span>
+              <span className="text-2xl font-black text-emerald-600 leading-tight">
+                {matieres.filter(m => m.is_active).length}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Create form */}
       {isDirector && (
-        <form onSubmit={handleCreate} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
-          <h2 className="font-semibold text-slate-700 text-sm flex items-center gap-2">
-            <Plus className="w-4 h-4 text-emerald-600" /> Ajouter une matière
-          </h2>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <input
-              type="text"
-              value={form.nom}
-              onChange={e => setForm(f => ({ ...f, nom: e.target.value }))}
-              placeholder="Nom (ex: Mathématiques)"
-              className={inputCls + ' flex-1'}
-              required
-            />
-            <input
-              type="text"
-              value={form.code}
-              onChange={e => setForm(f => ({ ...f, code: e.target.value }))}
-              placeholder="Code (ex: MATH)"
-              className={inputCls + ' sm:w-32'}
-            />
-            <div className="flex items-center gap-2 sm:w-40">
-              <label className="text-xs text-slate-500 shrink-0">Coef.</label>
+        <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-8 group overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-500" />
+          
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+              <Plus className="w-5 h-5" />
+            </div>
+            <h2 className="text-base font-black uppercase tracking-widest text-slate-900">Nouvelle Matière</h2>
+          </div>
+
+          <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4 items-end">
+            <div className="md:col-span-2">
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Nom du cours</label>
+              <input
+                type="text"
+                value={form.nom}
+                onChange={e => setForm(f => ({ ...f, nom: e.target.value }))}
+                placeholder="Ex: Mathématiques, Français…"
+                className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all shadow-sm"
+                required
+              />
+            </div>
+            <div className="md:col-span-1">
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Code</label>
+              <input
+                type="text"
+                value={form.code}
+                onChange={e => setForm(f => ({ ...f, code: e.target.value }))}
+                placeholder="MATH, SVT…"
+                className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all shadow-sm"
+              />
+            </div>
+            <div className="md:col-span-1">
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Coefficient</label>
               <input
                 type="number"
                 min="1"
                 max="10"
                 value={form.coefficient}
                 onChange={e => setForm(f => ({ ...f, coefficient: Number(e.target.value) }))}
-                className={inputCls}
+                className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all shadow-sm"
               />
             </div>
-            <button
-              type="submit"
-              disabled={saving}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl disabled:opacity-50 transition-colors shrink-0"
-            >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              Ajouter
-            </button>
-          </div>
-        </form>
+            <div className="md:col-span-1">
+              <button
+                type="submit"
+                disabled={saving}
+                className="w-full inline-flex items-center justify-center gap-3 px-6 py-3.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-sm font-black transition-all shadow-xl shadow-slate-900/10 disabled:opacity-60"
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Créer
+              </button>
+            </div>
+          </form>
+        </div>
       )}
 
       {/* Matieres list */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-[2.5rem] border border-slate-200/50 shadow-sm overflow-hidden min-h-[400px]">
+        <div className="px-10 py-6 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
+          <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Catalogue Académique</h2>
+          <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] animate-pulse" />
+        </div>
+        
         {matieres.length === 0 ? (
-          <div className="py-16 text-center text-slate-400">
-            <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="text-sm font-medium">Aucune matière ajoutée.</p>
-            <p className="text-xs mt-1">Ajoutez votre première matière ci-dessus.</p>
+          <div className="py-24 text-center animate-in fade-in duration-700">
+            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <BookOpen className="w-10 h-10 text-slate-200" />
+            </div>
+            <h3 className="text-lg font-black uppercase tracking-widest text-slate-400">Aucune matière répertoriée</h3>
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase">Matière</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase">Code</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-slate-400 uppercase">Coef.</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-slate-400 uppercase">Statut</th>
-                {isDirector && <th className="px-4 py-3" />}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {matieres.map(m => (
-                <tr key={m.id} className={`hover:bg-slate-50/60 transition-colors ${!m.is_active ? 'opacity-50' : ''}`}>
-                  <td className="px-5 py-3">
-                    {editId === m.id ? (
-                      <input
-                        type="text"
-                        value={editForm.nom}
-                        onChange={e => setEditForm(f => ({ ...f, nom: e.target.value }))}
-                        className="border border-emerald-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 w-48"
-                        autoFocus
-                      />
-                    ) : (
-                      <span className="font-semibold text-slate-800">{m.nom}</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    {editId === m.id ? (
-                      <input
-                        type="text"
-                        value={editForm.code}
-                        onChange={e => setEditForm(f => ({ ...f, code: e.target.value }))}
-                        className="border border-emerald-300 rounded-lg px-2 py-1 text-sm focus:outline-none w-24"
-                        placeholder="Code"
-                      />
-                    ) : (
-                      <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">{m.code ?? '—'}</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    {editId === m.id ? (
-                      <input
-                        type="number"
-                        min="1"
-                        max="10"
-                        value={editForm.coefficient}
-                        onChange={e => setEditForm(f => ({ ...f, coefficient: Number(e.target.value) }))}
-                        className="border border-emerald-300 rounded-lg px-2 py-1 text-sm text-center focus:outline-none w-16"
-                      />
-                    ) : (
-                      <span className="text-xs font-semibold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">{m.coefficient}</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    {isDirector ? (
-                      <button
-                        onClick={() => handleToggleActive(m)}
-                        className={`text-xs font-semibold px-2.5 py-1 rounded-full transition-colors ${m.is_active ? 'bg-emerald-100 text-emerald-700 hover:bg-red-50 hover:text-red-600' : 'bg-slate-100 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600'}`}
-                      >
-                        {m.is_active ? 'Active' : 'Inactive'}
-                      </button>
-                    ) : (
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${m.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                        {m.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    )}
-                  </td>
-                  {isDirector && (
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-1">
-                        {editId === m.id ? (
-                          <>
-                            <button
-                              onClick={() => handleUpdate(m.id)}
-                              disabled={saving}
-                              className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors"
-                              title="Enregistrer"
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => setEditId(null)}
-                              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors"
-                              title="Annuler"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => startEdit(m)}
-                              className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"
-                              title="Modifier"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(m.id)}
-                              className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
-                              title="Supprimer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  )}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50/10">
+                  <th className="text-left px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Discipline</th>
+                  <th className="text-left px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Code Identification</th>
+                  <th className="text-center px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Coefficient</th>
+                  <th className="text-center px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Visibilité</th>
+                  {isDirector && <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {matieres.map(m => (
+                  <tr key={m.id} className={`group hover:bg-slate-50/80 transition-all duration-300 ${!m.is_active ? 'opacity-40 grayscale-[0.5]' : ''}`}>
+                    <td className="px-10 py-5">
+                      {editId === m.id ? (
+                        <input
+                          type="text"
+                          value={editForm.nom}
+                          onChange={e => setEditForm(f => ({ ...f, nom: e.target.value }))}
+                          className="bg-white border-2 border-emerald-500 rounded-2xl px-5 py-3 text-sm font-black focus:ring-4 focus:ring-emerald-500/10 transition-all w-full max-w-[300px]"
+                          autoFocus
+                        />
+                      ) : (
+                        <div className="flex items-center gap-4">
+                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-sm font-black transition-all duration-500 group-hover:scale-105 shadow-sm ${m.is_active ? 'bg-slate-900 text-white group-hover:bg-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
+                            {m.nom[0].toUpperCase()}
+                          </div>
+                          <div>
+                            <span className="text-base font-black text-slate-900 uppercase group-hover:text-emerald-700 transition-colors">{m.nom}</span>
+                            <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-0.5">Enseignement Général</p>
+                          </div>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-5">
+                      {editId === m.id ? (
+                        <input
+                          type="text"
+                          value={editForm.code}
+                          onChange={e => setEditForm(f => ({ ...f, code: e.target.value }))}
+                          className="bg-white border-2 border-emerald-500 rounded-2xl px-4 py-3 text-sm font-black focus:ring-4 focus:ring-emerald-500/10 transition-all w-32 uppercase"
+                        />
+                      ) : (
+                        <span className="inline-flex items-center px-4 py-1.5 rounded-xl bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-widest border border-slate-200/50 group-hover:bg-white group-hover:border-emerald-200 transition-all">
+                          {m.code ?? 'NON DÉFINI'}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-5 text-center">
+                      {editId === m.id ? (
+                        <input
+                          type="number"
+                          min="1"
+                          max="10"
+                          value={editForm.coefficient}
+                          onChange={e => setEditForm(f => ({ ...f, coefficient: Number(e.target.value) }))}
+                          className="bg-white border-2 border-emerald-500 rounded-2xl px-4 py-3 text-sm font-black focus:ring-4 focus:ring-emerald-500/10 transition-all w-20 text-center"
+                        />
+                      ) : (
+                        <div className="inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-slate-50 text-slate-900 text-sm font-black border border-slate-100 shadow-sm group-hover:bg-emerald-50 group-hover:text-emerald-700 group-hover:border-emerald-100 transition-all">
+                          {m.coefficient}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-5 text-center">
+                      {isDirector ? (
+                        <button
+                          onClick={() => handleToggleActive(m)}
+                          className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm ${
+                            m.is_active 
+                              ? 'bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-600 hover:text-white' 
+                              : 'bg-slate-50 text-slate-400 border border-slate-200 hover:bg-emerald-50'
+                          }`}
+                        >
+                          <div className={`w-1.5 h-1.5 rounded-full ${m.is_active ? 'bg-emerald-500 group-hover:bg-white animate-pulse' : 'bg-slate-300'}`} />
+                          {m.is_active ? 'Actif' : 'Veille'}
+                        </button>
+                      ) : (
+                        <span className={`inline-flex items-center px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border ${m.is_active ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
+                          {m.is_active ? 'Actif' : 'Veille'}
+                        </span>
+                      )}
+                    </td>
+                    {isDirector && (
+                      <td className="px-10 py-5 text-right">
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all duration-300">
+                          {editId === m.id ? (
+                            <>
+                              <button
+                                onClick={() => handleUpdate(m.id)}
+                                disabled={saving}
+                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-emerald-600 text-white hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/20"
+                                title="Sauvegarder"
+                              >
+                                <Check className="w-5 h-5" />
+                              </button>
+                              <button
+                                onClick={() => setEditId(null)}
+                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:bg-slate-50 transition-all shadow-sm"
+                                title="Annuler"
+                              >
+                                <X className="w-5 h-5" />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => startEdit(m)}
+                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 transition-all shadow-sm"
+                                title="Modifier"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(m.id)}
+                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all shadow-sm"
+                                title="Supprimer"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

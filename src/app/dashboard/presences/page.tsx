@@ -6,7 +6,7 @@ import { useProfile } from '@/hooks/useProfile'
 import type { Classe, Profile } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import AttendanceScanner from '@/components/AttendanceScanner'
-import { UserCheck, BookOpen, Clock, AlertCircle } from 'lucide-react'
+import { UserCheck, BookOpen, Clock, AlertCircle, Loader2 } from 'lucide-react'
 
 interface ElevePresence {
   id: string
@@ -146,29 +146,36 @@ export default function PresencesPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="space-y-8 pb-10">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Présences</h1>
-          <p className="text-sm text-slate-500">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-emerald-600/10 flex items-center justify-center">
+              <UserCheck className="w-4 h-4 text-emerald-600" />
+            </div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Feuille de Présence</h1>
+          </div>
+          <p className="text-sm text-slate-500 font-medium tracking-tight">
             {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
         </div>
-        
+
         {classes.length > 0 && (
-          <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
-            <BookOpen className="w-4 h-4 text-slate-400" />
-            <select
-              value={selectedClasseId}
-              onChange={(e) => setSelectedClasseId(e.target.value)}
-              className="bg-transparent border-none focus:outline-none text-sm font-semibold text-slate-700 pr-4 cursor-pointer"
-            >
-              {classes.map(c => (
-                <option key={c.id} value={c.id}>{c.nom_classe}</option>
-              ))}
-            </select>
+          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-slate-200 shadow-sm relative group overflow-hidden transition-all hover:border-emerald-200">
+            <div className="absolute top-0 right-0 w-8 h-8 bg-emerald-500/5 rounded-full -mr-4 -mt-4 transition-transform group-hover:scale-150" />
+            <div className="flex items-center gap-3 relative z-10">
+              <BookOpen className="w-4 h-4 text-emerald-600" />
+              <select
+                value={selectedClasseId}
+                onChange={(e) => setSelectedClasseId(e.target.value)}
+                className="bg-transparent border-none focus:outline-none text-sm font-black text-slate-900 pr-8 cursor-pointer appearance-none"
+              >
+                {classes.map(c => (
+                  <option key={c.id} value={c.id}>{c.nom_classe}</option>
+                ))}
+              </select>
+            </div>
           </div>
         )}
       </div>
@@ -202,14 +209,21 @@ export default function PresencesPage() {
 
           {/* Right Col: Class List */}
           <div className="lg:col-span-7">
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden h-full flex flex-col">
-              <div className="p-5 border-b border-slate-50 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <UserCheck className="w-5 h-5 text-emerald-600" />
-                  <h2 className="font-bold text-slate-800">Appel de la classe</h2>
+            <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm overflow-hidden h-full flex flex-col transition-all duration-500 hover:shadow-xl hover:shadow-emerald-900/5">
+              <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
+                    <UserCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-black text-slate-900 leading-tight">Appel de la Classe</h2>
+                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-0.5">Mise à jour en temps réel</p>
+                  </div>
                 </div>
-                <div className="bg-slate-100 text-slate-500 font-bold px-3 py-1 rounded-full text-xs">
-                  {eleves.filter(e => e.statut).length} / {eleves.length}
+                <div className="flex flex-col items-end">
+                   <div className="bg-slate-900 text-white font-black px-4 py-1.5 rounded-xl text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-slate-900/10">
+                    {eleves.filter(e => e.statut).length} / {eleves.length}
+                  </div>
                 </div>
               </div>
 
@@ -222,23 +236,23 @@ export default function PresencesPage() {
                 ) : (
                   <ul className="divide-y divide-slate-100">
                     {eleves.map((eleve) => (
-                      <li key={eleve.id} className="p-4 hover:bg-white transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center font-bold text-sm shrink-0 uppercase border border-slate-200">
+                      <li key={eleve.id} className="px-8 py-5 hover:bg-white transition-all duration-300 group flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-2xl flex items-center justify-center font-black text-xs shrink-0 uppercase border border-slate-200/50 group-hover:scale-110 transition-transform duration-500">
                             {eleve.prenom[0]}{eleve.nom[0]}
                           </div>
                           <div>
-                            <p className="font-semibold text-slate-800 text-sm">
+                            <p className="text-base font-black text-slate-900 leading-tight group-hover:text-emerald-600 transition-colors">
                               {eleve.prenom} {eleve.nom}
                             </p>
-                            <div className="flex items-center gap-2 mt-0.5">
+                            <div className="flex items-center gap-2 mt-1">
                               {eleve.matricule && (
-                                <span className="text-[10px] text-slate-400 font-mono">
+                                <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded-md">
                                   {eleve.matricule}
                                 </span>
                               )}
                               {eleve.statut && (
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider ${statutColors[eleve.statut]}`}>
+                                <span className={`text-[9px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-[0.15em] shadow-sm ${statutColors[eleve.statut]}`}>
                                   {eleve.statut}
                                 </span>
                               )}
@@ -248,42 +262,43 @@ export default function PresencesPage() {
 
                         <div className="flex items-center gap-2">
                           {marking === eleve.id ? (
-                            <div className="px-4 py-1 flex items-center text-xs text-slate-500">
-                              Enregistrement...
+                            <div className="px-8 py-2.5 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 animate-pulse bg-slate-50 rounded-xl">
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              Synced…
                             </div>
                           ) : (
-                            <>
+                            <div className="inline-flex p-1 bg-slate-50 border border-slate-200/60 rounded-xl gap-1">
                               <button
                                 onClick={() => markPresenceManually(eleve.id, 'présent')}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
                                   eleve.statut === 'présent' 
-                                    ? 'bg-emerald-500 text-white border-emerald-600 shadow-inner' 
-                                    : 'bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50'
+                                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20' 
+                                    : 'text-slate-400 hover:text-emerald-600 hover:bg-white'
                                 }`}
                               >
                                 Présent
                               </button>
                               <button
                                 onClick={() => markPresenceManually(eleve.id, 'absent')}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
                                   eleve.statut === 'absent' 
-                                    ? 'bg-red-500 text-white border-red-600 shadow-inner' 
-                                    : 'bg-white text-red-600 border-red-200 hover:bg-red-50'
+                                    ? 'bg-red-600 text-white shadow-lg shadow-red-500/20' 
+                                    : 'text-slate-400 hover:text-red-600 hover:bg-white'
                                 }`}
                               >
                                 Absent
                               </button>
                               <button
                                 onClick={() => markPresenceManually(eleve.id, 'retard')}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
                                   eleve.statut === 'retard' 
-                                    ? 'bg-amber-500 text-white border-amber-600 shadow-inner' 
-                                    : 'bg-white text-amber-600 border-amber-200 hover:bg-amber-50'
+                                    ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' 
+                                    : 'text-slate-400 hover:text-amber-600 hover:bg-white'
                                 }`}
                               >
                                 Retard
                               </button>
-                            </>
+                            </div>
                           )}
                         </div>
                       </li>

@@ -116,82 +116,101 @@ export default function NouveauElevePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center gap-4">
-        <Link 
-          href="/dashboard/eleves"
-          className="p-2 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors text-slate-500"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Inscrire un élève</h1>
-          <p className="text-sm text-slate-500">Ajoutez un nouvel élève à votre établissement.</p>
+    <div className="space-y-8 pb-10">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Link 
+            href="/dashboard/eleves"
+            className="w-12 h-12 flex items-center justify-center bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition-all text-slate-400 hover:text-emerald-600 shadow-sm"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-6 h-6 rounded-lg bg-emerald-600/10 flex items-center justify-center">
+                <UserPlus className="w-3.5 h-4 text-emerald-600" />
+              </div>
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight">Inscrire un Élève</h1>
+            </div>
+            <p className="text-sm text-slate-500 font-medium tracking-tight">
+              Constituez le dossier académique du nouvel apprenant.
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 sm:p-8">
+      <div className="bg-white rounded-[2.5rem] border border-slate-200/60 shadow-sm p-10 relative overflow-hidden group transition-all duration-500 hover:shadow-xl hover:shadow-emerald-900/5">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/5 rounded-full -mr-24 -mt-24 transition-transform group-hover:scale-110" />
+
         {classes.length === 0 ? (
-          <div className="bg-amber-50 rounded-xl border border-amber-200 p-6 text-center">
-            <HelpCircle className="w-8 h-8 text-amber-500 mx-auto mb-3" />
-            <h3 className="font-semibold text-amber-800 mb-1">Aucune classe disponible</h3>
-            <p className="text-amber-600 text-sm mb-4">
-              Veuillez d'abord configurer vos classes avant d'inscrire des élèves.
+          <div className="bg-slate-50/50 rounded-3xl p-16 text-center animate-in fade-in duration-500">
+            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-slate-100">
+              <HelpCircle className="w-10 h-10 text-amber-500" />
+            </div>
+            <h3 className="text-xl font-black text-slate-900 mb-2 tracking-tight">Configuration Requise</h3>
+            <p className="text-base text-slate-400 font-medium max-w-sm mx-auto mb-8">
+              Vous devez d&apos;abord définir vos classes avant de pouvoir inscrire des élèves.
             </p>
             <Link 
               href="/dashboard/classes" 
-              className="inline-flex bg-amber-500 hover:bg-amber-600 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
+              className="inline-flex items-center gap-3 bg-slate-900 hover:bg-emerald-600 text-white font-black py-4 px-8 rounded-2xl transition-all shadow-xl shadow-slate-900/10"
             >
-              Gérer les classes
+              Paramétrer les Classes
             </Link>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-10 relative z-10">
 
-            {/* Photo — upload ou URL au choix */}
-            <PhotoInput
-              value={photoUrl}
-              onChange={setPhotoUrl}
-              storageId={tempId}
-            />
+            {/* Photo Section */}
+            <div className="flex flex-col items-center">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-4">Portrait de l&apos;élève</p>
+              <PhotoInput
+                value={photoUrl}
+                onChange={setPhotoUrl}
+                storageId={tempId}
+              />
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-8">
 
               {/* Prénom */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
                   Prénom <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <div className="relative group">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
                   <input type="text" required value={prenom}
                     onChange={(e) => setPrenom(e.target.value)}
-                    className={inputCls} placeholder="Ex: Awa" />
+                    className="w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all" 
+                    placeholder="Ex: Babacar" />
                 </div>
               </div>
 
               {/* Nom */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
                   Nom <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <div className="relative group">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
                   <input type="text" required value={nom}
                     onChange={(e) => setNom(e.target.value)}
-                    className={inputCls} placeholder="Ex: Sall" />
+                    className="w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all" 
+                    placeholder="Ex: Diop" />
                 </div>
               </div>
 
               {/* Classe */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                  Classe <span className="text-red-500">*</span>
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
+                  Structure / Classe <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
-                  <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <div className="relative group">
+                  <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
                   <select required value={classeId} onChange={(e) => setClasseId(e.target.value)}
-                    className={inputCls + ' appearance-none'}>
+                    className="w-full pl-12 pr-12 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all appearance-none cursor-pointer">
                     {classes.map(c => (
                       <option key={c.id} value={c.id}>{c.nom_classe}</option>
                     ))}
@@ -199,59 +218,64 @@ export default function NouveauElevePage() {
                 </div>
               </div>
 
-              {/* Matricule auto-généré */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                  Matricule <span className="text-slate-400 font-normal text-xs">(généré automatiquement)</span>
+              {/* Matricule */}
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
+                  Matricule Unique <span className="text-slate-300 font-bold">(Automatique)</span>
                 </label>
-                <div className="relative">
-                  <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <div className="relative group">
+                  <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
                   <input type="text" value={matricule}
                     onChange={(e) => setMatricule(e.target.value)}
-                    className={inputCls + ' pr-10 font-mono'}
-                    placeholder="Ex: EL-20260316-AB12" />
+                    className="w-full pl-12 pr-12 py-4 bg-slate-50 border-none rounded-2xl text-sm font-black text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all tracking-wider"
+                    placeholder="Auto-généré" />
                   <button type="button"
                     onClick={() => setMatricule(generateMatricule())}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-600 transition-colors"
-                    title="Regénérer">
+                    className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                    title="Regénérer le matricule">
                     <RefreshCw className="w-4 h-4" />
                   </button>
                 </div>
-                <p className="text-xs text-slate-400 mt-1">Modifiable manuellement.</p>
               </div>
 
               {/* Date de naissance */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                  Date de naissance <span className="text-slate-400 font-normal">(Optionnel)</span>
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
+                  Date de naissance <span className="text-slate-300 font-bold">(Optionnel)</span>
                 </label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <div className="relative group">
+                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
                   <input type="date" value={dateNaissance}
                     onChange={(e) => setDateNaissance(e.target.value)}
-                    className={inputCls} />
+                    className="w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all" />
                 </div>
               </div>
 
             </div>
 
             {error && (
-              <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm flex items-start gap-2 border border-red-100">
-                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+              <div className="bg-red-50 text-red-600 p-6 rounded-[2rem] text-sm font-bold flex items-start gap-4 border border-red-100 animate-in shake duration-500">
+                <AlertCircle className="w-6 h-6 shrink-0" />
                 <p>{error}</p>
               </div>
             )}
 
-            <div className="pt-4 border-t border-slate-100 flex justify-end">
+            <div className="pt-10 border-t border-slate-100 flex flex-col sm:flex-row gap-4">
+              <Link 
+                href="/dashboard/eleves"
+                className="flex-1 py-4 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-2xl text-sm font-black uppercase tracking-widest text-center transition-all"
+              >
+                Annuler
+              </Link>
               <button
                 type="submit"
                 disabled={saving || classes.length === 0}
-                className="bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-semibold py-2.5 px-6 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-emerald-600/20 disabled:opacity-50"
+                className="flex-[2] py-4 bg-slate-900 hover:bg-emerald-600 text-white rounded-2xl text-sm font-black transition-all shadow-xl shadow-slate-900/10 flex items-center justify-center gap-3 disabled:opacity-50"
               >
                 {saving ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Enregistrement...</>
+                  <><Loader2 className="w-5 h-5 animate-spin" /> Finalisation…</>
                 ) : (
-                  <><UserPlus className="w-4 h-4" /> Inscrire l'élève</>
+                  <><UserPlus className="w-5 h-5 mr-1" /> Confirmer l&apos;Inscription</>
                 )}
               </button>
             </div>

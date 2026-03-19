@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase, FraisScolaire } from '@/lib/supabase'
+import Link from 'next/link'
 import {
   Loader2,
   Plus,
@@ -191,17 +192,47 @@ export default function FraisManagementPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <DollarSign className="w-5 h-5 text-emerald-600" />
-          <h1 className="text-xl font-bold text-slate-800">Gestion des frais scolaires</h1>
+    <div className="space-y-8 pb-10">
+      {/* Navigation & Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-emerald-600/10 flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-emerald-600" />
+            </div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Frais Scolaires</h1>
+          </div>
+          <p className="text-sm text-slate-500 font-medium tracking-tight">
+            Définissez les différents types de frais (scolarité, transport, cantine) applicables.
+          </p>
         </div>
-        
+
+        <nav className="flex p-1.5 bg-slate-100 rounded-[1.25rem] border border-slate-200 shadow-inner">
+          <Link
+            href="/dashboard/parametres"
+            className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all text-slate-400 hover:text-slate-600"
+          >
+            Général
+          </Link>
+          <Link
+            href="/dashboard/parametres/frais"
+            className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all bg-white text-emerald-600 shadow-sm"
+          >
+            Frais
+          </Link>
+          <Link
+            href="/dashboard/parametres/equipe"
+            className="px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all text-slate-400 hover:text-slate-600"
+          >
+            Équipe
+          </Link>
+        </nav>
+      </div>
+
+      <div className="flex justify-end">
         <button
           onClick={() => openModal()}
-          className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition-colors"
+          className="inline-flex items-center gap-2 px-6 py-3.5 bg-slate-900 hover:bg-emerald-600 text-white text-sm font-black rounded-xl transition-all shadow-xl shadow-slate-900/10"
         >
           <Plus className="w-4 h-4" />
           Nouveau frais
@@ -209,104 +240,91 @@ export default function FraisManagementPage() {
       </div>
 
       {/* Frais List */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm overflow-hidden">
+        <div className="px-8 py-5 border-b border-slate-100 bg-slate-50/50">
+          <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Catalogue des Frais</h2>
+        </div>
+        
         {frais.length === 0 ? (
-          <div className="py-12 text-center text-slate-400">
-            <DollarSign className="w-12 h-12 mx-auto mb-4 opacity-30" />
-            <h3 className="text-lg font-semibold text-slate-600 mb-2">
-              Aucun frais configuré
-            </h3>
-            <p className="text-sm text-slate-400">
-              Commencez par ajouter vos premiers frais scolaires.
+          <div className="py-24 text-center">
+            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <DollarSign className="w-10 h-10 text-slate-200" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-800 mb-2">Aucun frais</h3>
+            <p className="text-sm text-slate-400 max-w-xs mx-auto">
+              Ajoutez les frais scolaires pour permettre l&apos;enregistrement des paiements.
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50 border-b border-slate-100">
-                <tr>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                    Libellé
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                    Montant
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                    Fréquence
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                    Niveau
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                    Statut
-                  </th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {frais.map((frais) => (
-                  <tr key={frais.id} className="hover:bg-slate-50">
-                    <td className="px-5 py-3">
-                      <div className="font-medium text-slate-800">
-                        {frais.libelle}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="font-semibold text-emerald-600">
-                        {frais.montant.toLocaleString('fr-FR')} F
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-                        frais.frequence === 'unique' ? 'bg-blue-100 text-blue-700' :
-                        frais.frequence === 'mensuel' ? 'bg-amber-100 text-amber-700' :
-                        'bg-purple-100 text-purple-700'
-                      }`}>
-                        {frais.frequence}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm text-slate-600">
-                        {frais.niveau || 'Tous niveaux'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-100 bg-slate-50/30">
+                <th className="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Libellé</th>
+                <th className="text-left px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Montant</th>
+                <th className="text-left px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Fréquence</th>
+                <th className="text-left px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Cible</th>
+                <th className="text-left px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Statut</th>
+                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {frais.map((f) => (
+                <tr key={f.id} className="group hover:bg-slate-50/80 transition-all duration-300">
+                  <td className="px-8 py-5">
+                    <span className="text-base font-black text-slate-900">{f.libelle}</span>
+                  </td>
+                  <td className="px-4 py-5">
+                    <span className="text-base font-black text-emerald-600">{f.montant.toLocaleString('fr-FR')} F</span>
+                  </td>
+                  <td className="px-4 py-5">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
+                      f.frequence === 'unique' ? 'bg-blue-50 text-blue-700' :
+                      f.frequence === 'mensuel' ? 'bg-amber-50 text-amber-700' :
+                      'bg-purple-50 text-purple-700'
+                    }`}>
+                      {f.frequence}
+                    </span>
+                  </td>
+                  <td className="px-4 py-5">
+                    <span className="text-sm font-bold text-slate-500 italic">
+                      {f.niveau || 'Toutes'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-5 text-center">
+                    <button
+                      onClick={() => toggleActive(f)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
+                        f.is_active 
+                          ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' 
+                          : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                      }`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${f.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
+                      {f.is_active ? 'Actif' : 'Off'}
+                    </button>
+                  </td>
+                  <td className="px-8 py-5 text-right">
+                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
                       <button
-                        onClick={() => toggleActive(frais)}
-                        className={`text-xs font-medium px-2.5 py-1 rounded-full transition-colors ${
-                          frais.is_active 
-                            ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' 
-                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                        }`}
+                        onClick={() => openModal(f)}
+                        className="p-2.5 rounded-xl text-slate-400 hover:text-emerald-600 hover:bg-white hover:shadow-sm transition-all"
+                        title="Modifier"
                       >
-                        {frais.is_active ? 'Actif' : 'Inactif'}
+                        <Edit className="w-4 h-4" />
                       </button>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => openModal(frais)}
-                          className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"
-                          title="Modifier"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => deleteFrais(frais)}
-                          className="p-1.5 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
-                          title="Supprimer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      <button
+                        onClick={() => deleteFrais(f)}
+                        className="p-2.5 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
 

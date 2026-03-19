@@ -172,7 +172,38 @@ export default function ElevesPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-4">
+    <div className="space-y-8 pb-10">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-emerald-600/10 flex items-center justify-center">
+              <Users className="w-4 h-4 text-emerald-600" />
+            </div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Gestion des Élèves</h1>
+          </div>
+          <p className="text-sm text-slate-500 font-medium">
+            Pilotez les inscriptions, les présences et les documents de vos {total.toLocaleString('fr-FR')} élèves.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-sm font-bold hover:bg-slate-50 transition-all shadow-sm"
+          >
+            <UploadCloud className="w-4 h-4 text-emerald-600" />
+            Importer Excel
+          </button>
+          <Link
+            href="/dashboard/eleves/nouveau"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
+          >
+            <Plus className="w-4 h-4 text-amber-400" />
+            Nouvelle Inscription
+          </Link>
+        </div>
+      </div>
 
       {/* Hidden file input */}
       <input
@@ -183,102 +214,93 @@ export default function ElevesPage() {
         onChange={handleFileChange}
       />
 
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        {/* Search */}
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+      {/* Modern Filter Bar */}
+      <div className="bg-white p-3 rounded-[2rem] border border-slate-200/60 shadow-sm flex flex-col lg:flex-row gap-4">
+        <div className="relative flex-1 group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
           <input
             type="text"
-            placeholder="Rechercher un élève…"
+            placeholder="Rechercher par nom, prénom ou matricule…"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0) }}
-            className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full pl-12 pr-12 py-3.5 bg-slate-50/50 border-none rounded-2xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all placeholder:text-slate-400"
           />
           {search && (
             <button onClick={() => { setSearch(''); setPage(0) }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-              <X className="w-3.5 h-3.5" />
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors">
+              <X className="w-4 h-4" />
             </button>
           )}
         </div>
 
-        {/* Filters */}
-        <select
-          value={filterClasse}
-          onChange={(e) => { setFilterClasse(e.target.value); setPage(0) }}
-          className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-600"
-        >
-          <option value="">Toutes les classes</option>
-          {classes.map((c) => (
-            <option key={c.id} value={c.id}>{c.nom_classe}</option>
-          ))}
-        </select>
-
-        <select
-          value={filterStatut}
-          onChange={(e) => { setFilterStatut(e.target.value as StatutPaiement); setPage(0) }}
-          className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-600"
-        >
-          <option value="tous">Tous les statuts</option>
-          <option value="payé">Payé</option>
-          <option value="impayé">Impayé</option>
-          <option value="partiel">Partiel</option>
-        </select>
-
-        {filterClasse && (
-          <div className="flex gap-2 items-center">
-            <button
-              onClick={handleExportPDF}
-              disabled={generatingPDF}
-              className="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shrink-0 disabled:opacity-50"
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-3 px-4 py-2 bg-slate-50/50 rounded-2xl border border-slate-100/50">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Classe</span>
+            <select
+              value={filterClasse}
+              onChange={(e) => { setFilterClasse(e.target.value); setPage(0) }}
+              className="bg-transparent border-none p-0 pr-8 text-sm font-black text-slate-900 focus:ring-0 cursor-pointer appearance-none"
             >
-              {generatingPDF ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-              PDF
-            </button>
-            <a
-              href={`/dashboard/eleves/print-cartes?classeId=${filterClasse}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shrink-0"
-            >
-              <Printer className="w-4 h-4" />
-              Cartes
-            </a>
+              <option value="">Toutes les classes</option>
+              {classes.map((c) => (
+                <option key={c.id} value={c.id}>{c.nom_classe}</option>
+              ))}
+            </select>
           </div>
-        )}
 
-        <button
-          onClick={() => setShowImportModal(true)}
-          className="flex items-center gap-2 bg-slate-100 border border-slate-200 hover:bg-slate-200 text-slate-700 text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shrink-0"
-        >
-          <UploadCloud className="w-4 h-4" />
-          Importer
-        </button>
+          <div className="flex items-center gap-3 px-4 py-2 bg-slate-50/50 rounded-2xl border border-slate-100/50">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Paiement</span>
+            <select
+              value={filterStatut}
+              onChange={(e) => { setFilterStatut(e.target.value as StatutPaiement); setPage(0) }}
+              className="bg-transparent border-none p-0 pr-8 text-sm font-black text-slate-900 focus:ring-0 cursor-pointer appearance-none"
+            >
+              <option value="tous">Tous les statuts</option>
+              <option value="payé">Payé</option>
+              <option value="impayé">Impayé</option>
+              <option value="partiel">Partiel</option>
+            </select>
+          </div>
 
-        <a
-          href="/dashboard/eleves/nouveau"
-          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          Inscrire
-        </a>
+          {filterClasse && (
+            <div className="flex items-center gap-2 pl-4 ml-2 border-l border-slate-200">
+              <button
+                onClick={handleExportPDF}
+                disabled={generatingPDF}
+                className="w-11 h-11 flex items-center justify-center rounded-xl bg-slate-900 text-white hover:bg-emerald-600 transition-all shadow-lg shadow-slate-900/10 disabled:opacity-50"
+                title="Exporter liste PDF"
+              >
+                {generatingPDF ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+              </button>
+              <a
+                href={`/dashboard/eleves/print-cartes?classeId=${filterClasse}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-11 h-11 flex items-center justify-center rounded-xl bg-amber-400 text-slate-900 hover:bg-amber-500 transition-all shadow-lg shadow-amber-400/10"
+                title="Imprimer les cartes QR"
+              >
+                <Printer className="w-4 h-4" />
+              </a>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Count */}
-      <p className="text-xs text-slate-400">
-        {total.toLocaleString('fr-FR')} élève{total > 1 ? 's' : ''} trouvé{total > 1 ? 's' : ''}
-        {search && ` pour "${search}"`}
-      </p>
 
-      {/* Table */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      {/* Table Section */}
+      <div className="bg-white rounded-[2rem] border border-slate-200/50 shadow-sm overflow-hidden">
         {loading || profileLoading ? (
           <SkeletonTable rows={PAGE_SIZE} columns={5} />
         ) : eleves.length === 0 ? (
-          <div className="py-16 text-center text-slate-400">
-            <Users className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="text-sm">Aucun élève trouvé.</p>
+          <div className="py-24 text-center animate-in fade-in duration-500">
+            <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-8 relative">
+              <div className="absolute inset-0 bg-emerald-500/10 rounded-full animate-pulse" />
+              <Users className="w-10 h-10 text-slate-300 relative z-10" />
+            </div>
+            <h3 className="text-xl font-black text-slate-900 mb-2 tracking-tight">Aucun résultat trouvé</h3>
+            <p className="text-base text-slate-400 font-medium max-w-sm mx-auto">
+              Nous n&apos;avons trouvé aucun élève correspondant à vos critères de recherche. Essayez de modifier vos filtres.
+            </p>
           </div>
         ) : (
           <>
@@ -286,85 +308,90 @@ export default function ElevesPage() {
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50">
-                    <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Élève</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Matricule</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Classe</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">Paiement</th>
-                    <th className="px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wide text-right">Actions</th>
+                  <tr className="border-b border-slate-100 bg-slate-50/30">
+                    <th className="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Informations Élève</th>
+                    <th className="text-left px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Matricule</th>
+                    <th className="text-left px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Classe</th>
+                    <th className="text-left px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Scolarité</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Options</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                   {eleves.map((e) => (
-                    <tr key={e.id} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-3">
-                          {/* Photo / upload */}
+                    <tr key={e.id} className="group hover:bg-slate-50/80 transition-all duration-300">
+                      <td className="px-8 py-5">
+                        <div className="flex items-center gap-5">
                           <button
                             onClick={() => triggerUpload(e.id)}
-                            className="relative w-9 h-9 rounded-full overflow-hidden border-2 border-slate-200 hover:border-emerald-400 transition-colors shrink-0 group"
+                            className="relative w-14 h-14 rounded-2xl overflow-hidden border border-slate-200/60 shadow-sm group/photo transition-all duration-500 hover:border-emerald-200 hover:scale-105 shrink-0"
                             title="Changer la photo"
                           >
                             {uploading === e.id ? (
-                              <div className="absolute inset-0 bg-white flex items-center justify-center">
-                                <Loader2 className="w-4 h-4 animate-spin text-emerald-500" />
+                              <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center">
+                                <Loader2 className="w-5 h-5 animate-spin text-emerald-600" />
                               </div>
                             ) : e.photo_url ? (
                               <>
-                                <img src={e.photo_url} alt="" className="w-full h-full object-cover" />
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                  <Upload className="w-3 h-3 text-white" />
+                                <img src={e.photo_url} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover/photo:scale-110" />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/photo:opacity-100 transition-opacity flex items-center justify-center">
+                                  <Upload className="w-5 h-5 text-white" />
                                 </div>
                               </>
                             ) : (
-                              <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
-                                <span className="text-white text-xs font-bold">{e.prenom[0]?.toUpperCase()}</span>
+                              <div className="absolute inset-0 bg-slate-900 flex items-center justify-center group-hover/photo:bg-emerald-600 transition-colors">
+                                <span className="text-white text-lg font-black">{e.prenom[0]?.toUpperCase()}</span>
                               </div>
                             )}
                           </button>
                           <div>
-                            <p className="font-medium text-slate-800">{e.prenom} {e.nom}</p>
-                            {e.date_naissance && (
-                              <p className="text-xs text-slate-400">
-                                {new Date(e.date_naissance).toLocaleDateString('fr-FR')}
-                              </p>
-                            )}
+                            <p className="text-base font-black text-slate-900 leading-tight group-hover:text-emerald-600 transition-colors uppercase">
+                              {e.prenom} {e.nom}
+                            </p>
+                            <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase mt-1">
+                              {e.date_naissance ? new Date(e.date_naissance).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Date de naissance non définie'}
+                            </p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <span className="font-mono text-xs text-slate-500">{e.matricule}</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="text-slate-600 text-xs">
-                          {(e.classe as any)?.nom_classe ?? '—'}
+                      <td className="px-4 py-5">
+                        <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
+                          {e.matricule}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
-                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${statutBadge[e.statut_paiement] ?? ''}`}>
+                      <td className="px-4 py-5">
+                        <span className="inline-flex items-center px-3 py-1.5 rounded-xl bg-slate-100/50 text-slate-700 text-[10px] font-black uppercase tracking-widest border border-slate-200/50 shadow-sm">
+                          {(e.classe as any)?.nom_classe ?? 'NON ASSIGNÉ'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-5">
+                        <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-[0.15em] shadow-sm border ${
+                          e.statut_paiement === 'payé' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                          e.statut_paiement === 'impayé' ? 'bg-red-50 text-red-600 border-red-100' :
+                          'bg-amber-50 text-amber-600 border-amber-100'
+                        }`}>
                           {e.statut_paiement}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-1">
+                      <td className="px-8 py-5">
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
                           <Link
                             href={`/dashboard/eleves/${e.id}/modifier`}
-                            className="p-2 rounded-lg hover:bg-slate-50 text-slate-400 hover:text-slate-600 transition-colors"
+                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 transition-all shadow-sm"
                             title="Modifier"
                           >
                             <Edit className="w-4 h-4" />
                           </Link>
                           <button
                             onClick={() => setViewing(e.id)}
-                            className="p-2 rounded-lg hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 transition-colors"
-                            title="Voir la carte"
+                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 transition-all shadow-sm"
+                            title="Profil Complet"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => setViewingQR(e.id)}
-                            className="p-2 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"
-                            title="QR Code"
+                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-amber-600 hover:border-amber-200 hover:bg-amber-50 transition-all shadow-sm"
+                            title="QR ID Card"
                           >
                             <QrCode className="w-4 h-4" />
                           </button>
@@ -413,41 +440,43 @@ export default function ElevesPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-slate-400">
-            Page {page + 1} sur {totalPages}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+            Page <span className="text-slate-900">{page + 1}</span> sur <span className="text-slate-900">{totalPages}</span>
           </p>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={page === 0}
-              className="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
             >
-              <ChevronLeft className="w-4 h-4 text-slate-600" />
+              <ChevronLeft className="w-5 h-5" />
             </button>
-            {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
-              const p = page < 3 ? i : page - 2 + i
-              if (p >= totalPages) return null
-              return (
-                <button
-                  key={p}
-                  onClick={() => setPage(p)}
-                  className={`w-8 h-8 rounded-xl text-xs font-semibold transition-colors ${
-                    p === page
-                      ? 'bg-emerald-600 text-white'
-                      : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  {p + 1}
-                </button>
-              )
-            })}
+            <div className="flex items-center gap-1.5 mx-1">
+              {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
+                const p = page < 3 ? i : page - 2 + i
+                if (p >= totalPages) return null
+                return (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`w-10 h-10 rounded-xl text-[10px] font-black tracking-widest transition-all ${
+                      p === page
+                        ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
+                        : 'bg-white border border-slate-200 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'
+                    }`}
+                  >
+                    {p + 1}
+                  </button>
+                )
+              })}
+            </div>
             <button
               onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
               disabled={page >= totalPages - 1}
-              className="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
             >
-              <ChevronRight className="w-4 h-4 text-slate-600" />
+              <ChevronRight className="w-5 h-5" />
             </button>
           </div>
         </div>

@@ -340,167 +340,190 @@ export default function BulletinsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-2">
-        <FileText className="w-5 h-5 text-emerald-600" />
-        <h1 className="text-xl font-bold text-slate-800">Bulletins scolaires</h1>
+    <div className="space-y-8 pb-10">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-emerald-600/10 flex items-center justify-center">
+              <FileText className="w-4 h-4 text-emerald-600" />
+            </div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Bulletins Scolaires</h1>
+          </div>
+          <p className="text-sm text-slate-500 font-medium tracking-tight">
+            Générez et consultez les bulletins de performance de vos élèves.
+          </p>
+        </div>
+
+        {bulletins.length > 0 && (
+          <div className="flex items-center gap-4 px-4 py-2 bg-white rounded-2xl border border-slate-200 shadow-sm">
+            <div className="text-center px-4 border-r border-slate-100">
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total</div>
+              <div className="text-lg font-black text-slate-900 leading-tight">{bulletins.length}</div>
+            </div>
+            <div className="text-center px-4">
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Moy. Classe</div>
+              <div className="text-lg font-black text-emerald-600 leading-tight">
+                {(bulletins.reduce((sum, b) => sum + b.moyenne_generale, 0) / bulletins.length).toFixed(2)}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1.5">Classe</label>
+      <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-8">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
+          <div className="md:col-span-5 space-y-2">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Structure / Classe</label>
             <select
               value={selectedClasse}
               onChange={(e) => setSelectedClasse(e.target.value)}
-              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all shadow-sm"
             >
-              <option value="">Choisir une classe</option>
+              <option value="">Sélectionner une classe</option>
               {classes.map(cls => (
                 <option key={cls.id} value={cls.id}>{cls.nom_classe}</option>
               ))}
             </select>
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1.5">Trimestre</label>
+          <div className="md:col-span-4 space-y-2">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Période scolaire</label>
             <select
               value={selectedTrimestre}
               onChange={(e) => setSelectedTrimestre(Number(e.target.value) as 1 | 2 | 3)}
-              className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all shadow-sm"
             >
-              <option value={1}>Trimestre 1</option>
-              <option value={2}>Trimestre 2</option>
-              <option value={3}>Trimestre 3</option>
+              <option value={1}>1er Trimestre</option>
+              <option value={2}>2ème Trimestre</option>
+              <option value={3}>3ème Trimestre</option>
             </select>
           </div>
 
-          <div className="flex items-end">
-            <div className="text-xs text-slate-500">
-              {bulletins.length > 0 && (
-                <div className="flex items-center gap-4">
-                  <span className="flex items-center gap-1">
-                    <Users className="w-3 h-3" />
-                    {bulletins.length} bulletin{bulletins.length > 1 ? 's' : ''}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <TrendingUp className="w-3 h-3" />
-                    Moyenne: {(bulletins.reduce((sum, b) => sum + b.moyenne_generale, 0) / bulletins.length).toFixed(2)}
-                  </span>
+          <div className="md:col-span-3">
+             <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100/50 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center text-emerald-600 shadow-sm">
+                   <TrendingUp className="w-5 h-5" />
                 </div>
-              )}
-            </div>
+                <div>
+                   <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600/60">Session</p>
+                   <p className="text-sm font-black text-emerald-900 leading-tight">Année 2024-2025</p>
+                </div>
+             </div>
           </div>
         </div>
       </div>
 
       {/* Bulletins List */}
       {loadingBulletins ? (
-        <div className="flex justify-center items-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+        <div className="flex flex-col justify-center items-center py-24 gap-4 animate-in fade-in duration-500">
+          <div className="relative">
+             <div className="w-16 h-16 rounded-full border-4 border-emerald-500/10 border-t-emerald-600 animate-spin" />
+             <div className="absolute inset-0 flex items-center justify-center">
+                <FileText className="w-6 h-6 text-emerald-600/50" />
+             </div>
+          </div>
+          <p className="text-sm font-black uppercase tracking-widest text-slate-400">Génération des statistiques en cours…</p>
         </div>
       ) : bulletins.length > 0 ? (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           {bulletins.map((bulletin) => (
-            <div key={bulletin.eleve.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-sm font-bold">
-                    {bulletin.eleve.prenom[0]?.toUpperCase()}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-slate-800">
-                      {bulletin.eleve.prenom} {bulletin.eleve.nom}
-                    </h3>
-                    <p className="text-xs text-slate-400">
-                      {bulletin.eleve.matricule} • {selectedClasseData?.nom_classe}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <div className="text-xs text-slate-400">Moyenne</div>
-                    <div className="text-lg font-bold text-slate-800">
-                      {(bulletin.niveau?.cycle === 'primaire' ? bulletin.moyenne_generale / 2 : bulletin.moyenne_generale).toFixed(2)}/{bulletin.niveau?.cycle === 'primaire' ? '10' : '20'}
+            <div key={bulletin.eleve.id} className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm overflow-hidden group hover:shadow-xl hover:shadow-emerald-900/5 transition-all duration-500 flex flex-col">
+              <div className="p-8">
+                <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-slate-900 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-slate-900/20 group-hover:scale-110 transition-transform duration-500">
+                      {bulletin.eleve.prenom[0]?.toUpperCase()}
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black text-slate-900 leading-tight">
+                        {bulletin.eleve.prenom} {bulletin.eleve.nom}
+                      </h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100/50">
+                          {bulletin.eleve.matricule}
+                        </span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                          {selectedClasseData?.nom_classe}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   
-                  <div className="text-center">
-                    <div className="text-xs text-slate-400">Mention</div>
-                    <div className={`text-sm font-semibold px-3 py-1 rounded-full text-white ${
-                      bulletin.mention === 'Très bien' ? 'bg-emerald-600' :
-                      bulletin.mention === 'Bien' ? 'bg-blue-600' :
-                      bulletin.mention === 'Assez bien' ? 'bg-amber-600' :
-                      bulletin.mention === 'Passable' ? 'bg-orange-600' :
-                      'bg-red-600'
-                    }`}>
-                      {bulletin.mention}
+                  <div className="flex items-center gap-3">
+                    <div className="text-right mr-2">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1 leading-none">Moyenne</p>
+                      <p className="text-2xl font-black text-slate-900 tracking-tighter">
+                        {(bulletin.niveau?.cycle === 'primaire' ? bulletin.moyenne_generale / 2 : bulletin.moyenne_generale).toFixed(2)}
+                        <span className="text-sm text-slate-400">/{bulletin.niveau?.cycle === 'primaire' ? '10' : '20'}</span>
+                      </p>
                     </div>
+                    
+                    <button
+                      onClick={() => generateBulletinPDF(bulletin)}
+                      disabled={generating === bulletin.eleve.id}
+                      className="w-12 h-12 flex items-center justify-center bg-emerald-600 hover:bg-slate-900 text-white rounded-xl transition-all shadow-lg shadow-emerald-500/10 disabled:opacity-50 group/btn"
+                    >
+                      {generating === bulletin.eleve.id ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <Download className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
+                      )}
+                    </button>
                   </div>
-
-                  <button
-                    onClick={() => generateBulletinPDF(bulletin)}
-                    disabled={generating === bulletin.eleve.id}
-                    className="flex items-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {generating === bulletin.eleve.id ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Génération...
-                      </>
-                    ) : (
-                      <>
-                        <Download className="w-4 h-4" />
-                        PDF
-                      </>
-                    )}
-                  </button>
                 </div>
-              </div>
 
-              {/* Subjects preview */}
-              <div className="border-t border-slate-100 pt-4">
-                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
-                  Détail des matières
-                </h4>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {bulletin.matieres.slice(0, 6).map((matiere, index) => (
-                    <div key={index} className="bg-slate-50 rounded-lg p-3">
-                      <div className="text-xs text-slate-400">{matiere.matiere_nom}</div>
-                      <div className="text-sm font-semibold text-slate-800">
-                        {bulletin.niveau?.cycle === 'primaire' 
-                          ? (matiere.moyenne / 2).toFixed(2) + '/10'
-                          : matiere.moyenne.toFixed(2) + '/20'
-                        }
+                <div className="bg-slate-50/50 rounded-2xl p-6 mb-4 border border-slate-100">
+                  <div className="flex items-center justify-between mb-4">
+                     <h4 className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">Aperçu Académique</h4>
+                     <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${
+                        bulletin.mention === 'Très bien' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                        bulletin.mention === 'Bien' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                        bulletin.mention === 'Assez bien' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                        bulletin.mention === 'Passable' ? 'bg-orange-50 text-orange-600 border-orange-100' :
+                        'bg-red-50 text-red-600 border-red-100'
+                     }`}>
+                        {bulletin.mention}
+                     </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {bulletin.matieres.slice(0, 6).map((matiere, index) => (
+                      <div key={index} className="bg-white rounded-xl p-3 border border-slate-200/50 shadow-sm group/item hover:border-emerald-200 transition-colors">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate mb-1">{matiere.matiere_nom}</p>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-sm font-black text-slate-800">
+                            {bulletin.niveau?.cycle === 'primaire' 
+                              ? (matiere.moyenne / 2).toFixed(1)
+                              : matiere.moyenne.toFixed(1)
+                            }
+                          </span>
+                          <span className="text-[9px] font-bold text-slate-400">/{bulletin.niveau?.cycle === 'primaire' ? '10' : '20'}</span>
+                        </div>
                       </div>
-                      <div className="text-xs text-slate-400">
-                        Coef: {matiere.coefficient}
+                    ))}
+                    {bulletin.matieres.length > 6 && (
+                      <div className="bg-slate-100/50 rounded-xl p-3 border border-dashed border-slate-300 flex items-center justify-center">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                          +{bulletin.matieres.length - 6} autres
+                        </span>
                       </div>
-                    </div>
-                  ))}
-                  {bulletin.matieres.length > 6 && (
-                    <div className="bg-slate-50 rounded-lg p-3 flex items-center justify-center">
-                      <span className="text-xs text-slate-400">
-                        +{bulletin.matieres.length - 6} autres
-                      </span>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           ))}
         </div>
       ) : selectedClasse ? (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-12 text-center">
-          <FileText className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-slate-800 mb-2">
-            Aucun bulletin disponible
-          </h3>
-          <p className="text-sm text-slate-400">
-            Les notes n'ont pas encore été saisies pour cette classe et ce trimestre.
+        <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-24 text-center animate-in fade-in duration-500">
+          <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-8 relative">
+             <div className="absolute inset-0 bg-emerald-500/10 rounded-full animate-pulse" />
+             <FileText className="w-10 h-10 text-slate-300 relative z-10" />
+          </div>
+          <h3 className="text-xl font-black text-slate-900 mb-2 tracking-tight">Aucun bulletin disponible</h3>
+          <p className="text-base text-slate-400 font-medium max-w-sm mx-auto">
+            Les notes n&apos;ont pas encore été saisies pour cette classe et ce trimestre.
           </p>
         </div>
       ) : null}

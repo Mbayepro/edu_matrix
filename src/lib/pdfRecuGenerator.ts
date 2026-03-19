@@ -17,13 +17,16 @@ export interface PaiementRecuInfo {
 }
 
 /** Helper pour charger une image distante en base64 pour jsPDF */
-async function getImageData(url: string): Promise<string | null> {
+async function getImageData(url: string | null | undefined): Promise<string | null> {
+  if (!url) return null
   try {
-    const res = await fetch(url)
+    const res = await fetch(url, { mode: 'cors' })
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
     const blob = await res.blob()
     return new Promise((resolve) => {
       const reader = new FileReader()
       reader.onloadend = () => resolve(reader.result as string)
+      reader.onerror = () => resolve(null)
       reader.readAsDataURL(blob)
     })
   } catch (err) {
@@ -47,10 +50,12 @@ async function buildRecuDoc(
 
   // Logo
   if (ecole.logo_url) {
-    const logoData = await getImageData(ecole.logo_url)
-    if (logoData) {
-      try { doc.addImage(logoData, 'PNG', 14, 10, 24, 24) } catch {}
-    }
+    try {
+      const logoData = await getImageData(ecole.logo_url)
+      if (logoData) {
+        doc.addImage(logoData, 'PNG', 14, 10, 24, 24)
+      }
+    } catch (e) { console.warn('Logo error skipped', e) }
   }
 
   const titleX = ecole.logo_url ? 45 : 14
@@ -101,22 +106,24 @@ async function buildRecuDoc(
     console.error('AutoTable error:', err)
   }
 
-  const lastAutoTable = (doc as any).lastAutoTable;
-  const finalY = lastAutoTable ? lastAutoTable.finalY + 30 : 150;
+  const finalY = (doc as any).lastAutoTable?.finalY || 150
+  
   doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(15, 23, 42)
-  doc.text('La Direction', pageWidth - 50, finalY)
+  doc.text('La Direction', pageWidth - 50, finalY + 20)
   doc.setFont('helvetica', 'normal').setFontSize(9).setTextColor(148, 163, 184)
-  if (caissier) doc.text(`Encaissé par : ${caissier.prenom} ${caissier.nom}`, 14, finalY)
+  if (caissier) doc.text(`Encaissé par : ${caissier.prenom} ${caissier.nom}`, 14, finalY + 20)
 
   if (ecole.tampon_url) {
-    const tamponData = await getImageData(ecole.tampon_url)
-    if (tamponData) {
-      try { doc.addImage(tamponData, 'PNG', pageWidth - 60, finalY + 5, 40, 40) } catch {}
-    }
+    try {
+      const tamponData = await getImageData(ecole.tampon_url)
+      if (tamponData) {
+        doc.addImage(tamponData, 'PNG', pageWidth - 60, finalY + 25, 40, 40)
+      }
+    } catch (e) { console.warn('Tampon error skipped', e) }
   }
 
   doc.setFontSize(8).setTextColor(148, 163, 184)
-  doc.text('Généré par EduMatrix', pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' })
+  doc.text('Généré par EduMatrix • Logiciel de Gestion Scolaire Sénégalaise', pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' })
 
   return doc
 }

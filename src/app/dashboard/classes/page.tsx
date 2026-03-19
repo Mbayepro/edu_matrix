@@ -123,153 +123,207 @@ export default function ClassesPage() {
   )
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="bg-blue-100 p-2.5 rounded-xl">
-          <BookOpen className="w-5 h-5 text-blue-600" />
-        </div>
+    <div className="space-y-8 pb-10">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h1 className="text-xl font-bold text-slate-800">Gestion des classes</h1>
-          <p className="text-sm text-slate-500">{classes.length} classe{classes.length > 1 ? 's' : ''} enregistrée{classes.length > 1 ? 's' : ''}</p>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-2xl bg-blue-500/10 flex items-center justify-center">
+              <BookOpen className="w-5 h-5 text-blue-600" />
+            </div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none">Divisions Académiques</h1>
+          </div>
+          <p className="text-sm text-slate-500 font-medium max-w-2xl tracking-tight leading-relaxed">
+            Gérez les structures pédagogiques de votre établissement. Suivez les effectifs et les niveaux d&apos;enseignement.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="bg-white rounded-[1.5rem] border border-slate-200/60 shadow-sm p-4 flex items-center gap-6 group hover:border-blue-200 transition-all duration-500">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Classes</span>
+              <span className="text-2xl font-black text-slate-900 leading-tight group-hover:text-blue-600 transition-colors">
+                {classes.length}
+              </span>
+            </div>
+            <div className="w-px h-10 bg-slate-100" />
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Capacité Staff</span>
+              <span className="text-2xl font-black text-emerald-600 leading-tight">
+                OK
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Create form — directors only */}
       {isDirector && (
-        <form onSubmit={handleCreate} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
-          <h2 className="font-semibold text-slate-700 text-sm flex items-center gap-2">
-            <Plus className="w-4 h-4 text-emerald-600" /> Créer une nouvelle classe
-          </h2>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <input
-              type="text"
-              value={form.nom_classe}
-              onChange={e => setForm(f => ({ ...f, nom_classe: e.target.value }))}
-              placeholder="Nom de la classe (ex: CM2 A)"
-              className={inputCls + ' flex-1'}
-              required
-            />
-            <select
-              value={form.niveau}
-              onChange={e => setForm(f => ({ ...f, niveau: e.target.value }))}
-              className={inputCls + ' sm:w-44'}
-              required
-            >
-              <option value="">Niveau…</option>
-              {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
-            <button
-              type="submit"
-              disabled={saving}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl disabled:opacity-50 transition-colors shrink-0"
-            >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              Créer
-            </button>
+        <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-8 group overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-500" />
+          
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+              <Plus className="w-5 h-5" />
+            </div>
+            <h2 className="text-base font-black uppercase tracking-widest text-slate-900">Nouvelle Division</h2>
           </div>
-        </form>
+
+          <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div className="md:col-span-2">
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Nom de la Classe</label>
+              <input
+                type="text"
+                value={form.nom_classe}
+                onChange={e => setForm(f => ({ ...f, nom_classe: e.target.value }))}
+                placeholder="Ex: 6ème A, Terminale S1…"
+                className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all shadow-sm"
+                required
+              />
+            </div>
+            <div className="md:col-span-1">
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Niveau</label>
+              <select
+                value={form.niveau}
+                onChange={e => setForm(f => ({ ...f, niveau: e.target.value }))}
+                className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all shadow-sm cursor-pointer"
+                required
+              >
+                <option value="">Sélectionner…</option>
+                {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+            <div className="md:col-span-1">
+              <button
+                type="submit"
+                disabled={saving}
+                className="w-full inline-flex items-center justify-center gap-3 px-6 py-3.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-sm font-black transition-all shadow-xl shadow-slate-900/10 disabled:opacity-60"
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Créer
+              </button>
+            </div>
+          </form>
+        </div>
       )}
 
       {/* Classes list */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-[2.5rem] border border-slate-200/50 shadow-sm overflow-hidden min-h-[400px]">
+        <div className="px-10 py-6 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
+          <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Cartographie des Classes</h2>
+          <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)] animate-pulse" />
+        </div>
+        
         {classes.length === 0 ? (
-          <div className="py-16 text-center text-slate-400">
-            <GraduationCap className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="text-sm font-medium">Aucune classe créée.</p>
-            <p className="text-xs mt-1">Créez votre première classe ci-dessus.</p>
+          <div className="py-24 text-center animate-in fade-in duration-700">
+            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <BookOpen className="w-10 h-10 text-slate-200" />
+            </div>
+            <h3 className="text-lg font-black uppercase tracking-widest text-slate-400">Aucune structure créée</h3>
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-slate-400 uppercase">Classe</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase">Niveau</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-slate-400 uppercase">Élèves</th>
-                {isDirector && <th className="px-4 py-3" />}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {classes.map(c => (
-                <tr key={c.id} className="hover:bg-slate-50/60 transition-colors">
-                  <td className="px-5 py-3">
-                    {editId === c.id ? (
-                      <input
-                        type="text"
-                        value={editForm.nom_classe}
-                        onChange={e => setEditForm(f => ({ ...f, nom_classe: e.target.value }))}
-                        className="border border-emerald-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 w-40"
-                        autoFocus
-                      />
-                    ) : (
-                      <span className="font-semibold text-slate-800">{c.nom_classe}</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    {editId === c.id ? (
-                      <select
-                        value={editForm.niveau}
-                        onChange={e => setEditForm(f => ({ ...f, niveau: e.target.value }))}
-                        className="border border-emerald-300 rounded-lg px-2 py-1 text-sm focus:outline-none"
-                      >
-                        {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
-                      </select>
-                    ) : (
-                      <span className="text-xs bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full font-medium">{c.niveau}</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <span className="inline-flex items-center gap-1 text-slate-600 text-xs">
-                      <Users className="w-3 h-3" />
-                      {c.nb_eleves}
-                    </span>
-                  </td>
-                  {isDirector && (
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-1">
-                        {editId === c.id ? (
-                          <>
-                            <button
-                              onClick={() => handleUpdate(c.id)}
-                              disabled={saving}
-                              className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors"
-                              title="Enregistrer"
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => setEditId(null)}
-                              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors"
-                              title="Annuler"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => startEdit(c)}
-                              className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-blue-600 transition-colors"
-                              title="Modifier"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(c.id, c.nb_eleves ?? 0)}
-                              className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors"
-                              title="Supprimer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </>
-                        )}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50/10">
+                  <th className="text-left px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Désignation</th>
+                  <th className="text-left px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Niveau Académique</th>
+                  <th className="text-center px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Effectif Actuel</th>
+                  {isDirector && <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Options</th>}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {classes.map(c => (
+                  <tr key={c.id} className="group hover:bg-slate-50/80 transition-all duration-300">
+                    <td className="px-10 py-5">
+                      {editId === c.id ? (
+                        <input
+                          type="text"
+                          value={editForm.nom_classe}
+                          onChange={e => setEditForm(f => ({ ...f, nom_classe: e.target.value }))}
+                          className="bg-white border-2 border-emerald-500 rounded-2xl px-5 py-3 text-sm font-black focus:ring-4 focus:ring-emerald-500/10 transition-all w-full max-w-[250px]"
+                          autoFocus
+                        />
+                      ) : (
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center group-hover:bg-blue-600 group-hover:rotate-3 transition-all duration-500 shadow-sm">
+                            <GraduationCap className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <span className="text-base font-black text-slate-900 uppercase tracking-tight group-hover:text-blue-700 transition-colors">{c.nom_classe}</span>
+                            <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-0.5">Section Scolaire</p>
+                          </div>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-5">
+                      {editId === c.id ? (
+                        <select
+                          value={editForm.niveau}
+                          onChange={e => setEditForm(f => ({ ...f, niveau: e.target.value }))}
+                          className="bg-white border-2 border-emerald-500 rounded-2xl px-4 py-3 text-sm font-black focus:ring-4 focus:ring-emerald-500/10 transition-all appearance-none"
+                        >
+                          {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
+                        </select>
+                      ) : (
+                        <span className="inline-flex items-center px-4 py-1.5 rounded-xl bg-blue-50 text-blue-700 text-[10px] font-black uppercase tracking-widest border border-blue-100 group-hover:bg-white group-hover:shadow-sm transition-all">
+                          {c.niveau}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-5 text-center">
+                      <div className="inline-flex items-center gap-2.5 px-4 py-2 bg-slate-50 rounded-2xl border border-slate-100 group-hover:bg-emerald-50 group-hover:border-emerald-100 transition-all">
+                        <Users className="w-4 h-4 text-slate-400 group-hover:text-emerald-500 transition-colors" />
+                        <span className="text-sm font-black text-slate-700 group-hover:text-emerald-700">{c.nb_eleves} élèves</span>
                       </div>
                     </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    {isDirector && (
+                      <td className="px-10 py-5 text-right">
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all duration-300">
+                          {editId === c.id ? (
+                            <>
+                              <button
+                                onClick={() => handleUpdate(c.id)}
+                                disabled={saving}
+                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-emerald-600 text-white hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/20"
+                                title="Sauvegarder"
+                              >
+                                <Check className="w-5 h-5" />
+                              </button>
+                              <button
+                                onClick={() => setEditId(null)}
+                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:bg-slate-50 transition-all shadow-sm"
+                                title="Annuler"
+                              >
+                                <X className="w-5 h-5" />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => startEdit(c)}
+                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all shadow-sm"
+                                title="Modifier"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(c.id, c.nb_eleves ?? 0)}
+                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all shadow-sm"
+                                title="Supprimer"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
