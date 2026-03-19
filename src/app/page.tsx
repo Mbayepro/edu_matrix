@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { GraduationCap, ArrowRight, ShieldCheck, BarChart3, Users, QrCode, MapPin, Phone, Mail, CheckCircle, Info, CreditCard } from 'lucide-react'
+import { GraduationCap, ArrowRight, ShieldCheck, BarChart3, Users, QrCode, MapPin, Phone, Mail, CheckCircle, Info, CreditCard, TrendingUp } from 'lucide-react'
 
 export default function LandingPage() {
   return (
@@ -175,19 +175,49 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0 bg-emerald-600" />
-        {/* Decorative circles */}
-        <div className="absolute top-0 left-0 w-64 h-64 bg-white/10 rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-amber-400/20 rounded-full translate-x-1/3 translate-y-1/3 blur-3xl opacity-50" />
-        
-        <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-12 text-center">
-            <StatItem number="5000+" label="Élèves inscrits" />
-            <StatItem number="200+" label="Écoles partenaires" />
-            <StatItem number="98%" label="Satisfaction" />
-            <StatItem number="24/7" label="Support local" />
+      {/* Subtle Stats Bar */}
+      <section className="py-12 bg-white border-y border-slate-100">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="flex items-center gap-4 group cursor-default">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 transition-transform group-hover:scale-110">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-xl font-black text-slate-900 leading-none mb-1">5000+</div>
+                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Élèves inscrits</div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 group cursor-default">
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-500 transition-transform group-hover:scale-110">
+                <GraduationCap className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-xl font-black text-slate-900 leading-none mb-1">200+</div>
+                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Écoles partenaires</div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 group cursor-default">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 transition-transform group-hover:scale-110">
+                <TrendingUp className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-xl font-black text-slate-900 leading-none mb-1">98%</div>
+                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Satisfaction</div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4 group cursor-default">
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-500 transition-transform group-hover:scale-110">
+                <Phone className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-xl font-black text-slate-900 leading-none mb-1">24/7</div>
+                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Support local</div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -277,15 +307,6 @@ function FeatureCard({ icon, title, description }: { icon: React.ReactNode, titl
         <h3 className="text-2xl font-black text-slate-900 mb-4 tracking-tight">{title}</h3>
         <p className="text-slate-500 leading-relaxed font-medium">{description}</p>
       </div>
-    </div>
-  )
-}
-
-function StatItem({ number, label }: { number: string, label: string }) {
-  return (
-    <div>
-      <div className="text-3xl md:text-5xl font-extrabold text-white mb-2">{number}</div>
-      <div className="text-xs text-emerald-100 font-bold uppercase tracking-widest">{label}</div>
     </div>
   )
 }
