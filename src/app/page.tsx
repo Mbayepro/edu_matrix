@@ -5,29 +5,38 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans">
       {/* Navbar */}
-      <nav className="border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="bg-emerald-600 p-1.5 rounded-lg">
+      <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-slate-200/50 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)]">
+        <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between py-4">
+          <div className="flex items-center gap-3 group cursor-pointer">
+            <div className="bg-emerald-600 p-2 rounded-xl shadow-lg shadow-emerald-600/20 transition-transform group-hover:scale-105">
               <GraduationCap className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold text-lg tracking-tight text-slate-900">EduMatrix</span>
+            <span className="font-black text-xl tracking-tight text-slate-900 group-hover:text-emerald-600 transition-colors">EduMatrix</span>
           </div>
-          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-500">
-            <Link href="#about" className="hover:text-emerald-600 transition-colors">À propos</Link>
-            <Link href="#features" className="hover:text-emerald-600 transition-colors">Fonctionnalités</Link>
-            <Link href="#contact" className="hover:text-emerald-600 transition-colors">Contact</Link>
+          
+          <div className="hidden lg:flex items-center gap-10">
+            {['À propos', 'Fonctionnalités', 'Contact'].map((item) => (
+              <Link 
+                key={item}
+                href={`#${item.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s/g, "")}`} 
+                className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 hover:text-emerald-600 transition-all relative group"
+              >
+                {item}
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-400 transition-all group-hover:w-full" />
+              </Link>
+            ))}
           </div>
+
           <div className="flex items-center gap-4">
             <Link 
               href="/login" 
-              className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors"
+              className="hidden sm:block px-5 py-2.5 text-xs font-black uppercase tracking-widest text-slate-600 hover:text-emerald-600 transition-colors"
             >
               Connexion
             </Link>
             <Link 
               href="/login" 
-              className="px-4 py-2 text-sm font-medium bg-amber-400 hover:bg-amber-500 text-slate-900 rounded-lg transition-colors font-bold"
+              className="px-6 py-3 text-xs font-black uppercase tracking-widest bg-slate-900 hover:bg-emerald-600 text-white rounded-xl transition-all shadow-xl shadow-slate-900/10 hover:shadow-emerald-600/20"
             >
               Espace Élève
             </Link>
@@ -184,7 +193,7 @@ export default function LandingPage() {
                 <Users className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-xl font-black text-slate-900 leading-none mb-1">5000+</div>
+                <div className="text-xl font-black text-slate-900 leading-none mb-1">500+</div>
                 <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Élèves inscrits</div>
               </div>
             </div>
@@ -194,7 +203,7 @@ export default function LandingPage() {
                 <GraduationCap className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-xl font-black text-slate-900 leading-none mb-1">200+</div>
+                <div className="text-xl font-black text-slate-900 leading-none mb-1">20+</div>
                 <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Écoles partenaires</div>
               </div>
             </div>
