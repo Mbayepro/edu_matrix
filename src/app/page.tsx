@@ -93,7 +93,7 @@ export default function LandingPage() {
       </section>
 
       {/* About Section */}
-      <section id="about" className="py-24 border-t border-slate-100 bg-emerald-50/30 relative overflow-hidden">
+      <section id="apropos" className="py-24 border-t border-slate-100 bg-emerald-50/30 relative overflow-hidden">
         {/* Abstract background shape */}
         <div className="absolute top-0 right-0 w-1/2 h-full bg-amber-400/5 -skew-x-12 translate-x-1/2 pointer-events-none" />
         
@@ -142,7 +142,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features Grid */}
-      <section id="features" className="py-24 bg-slate-50 relative overflow-hidden">
+      <section id="fonctionnalites" className="py-24 bg-slate-50 relative overflow-hidden">
         {/* Simple grid pattern */}
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
              style={{ backgroundImage: `radial-gradient(#065f46 1px, transparent 1px)`, backgroundSize: '30px 30px' }} />

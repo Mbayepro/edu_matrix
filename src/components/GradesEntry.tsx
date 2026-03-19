@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { Loader2, FileText } from 'lucide-react';
 
 interface Matiere {
   id: string;
@@ -160,73 +161,90 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
     loadEleves();
   }, [classeId]);
 
+  // Charger les notes existantes
+  useEffect(() => {
+    const loadNotes = async () => {
+      if (evaluations.length === 0) return;
+      
+      const { data, error } = await supabase
+        .from('notes')
+        .select('*')
+        .in('evaluation_id', evaluations.map(e => e.id));
+
+      if (error) {
+        console.error('Erreur lors du chargement des notes:', error);
+        return;
+      }
+
+      setNotes(data || []);
+    };
+
+    loadNotes();
+  }, [evaluations]);
+
   // Gérer la saisie d'une note
   const handleNoteChange = async (eleveId: string, evaluationId: string, value: string) => {
-    const noteValue = parseFloat(value);
+    // Si la valeur est vide, on peut soit laisser tel quel soit traiter comme null
+    if (value === '') return;
     
-    // Validation : la note doit être entre 0 et 20
-    if (isNaN(noteValue) || noteValue < 0 || noteValue > 20) {
-      return;
-    }
-
+    const noteValue = parseFloat(value.replace(',', '.'));
+    
     const evaluation = evaluations.find(ev => ev.id === evaluationId);
     if (!evaluation) return;
 
-    // Vérifier que la note ne dépasse pas le barème
-    const noteFinale = Math.min(noteValue, evaluation.bareme);
+    // Validation : la note doit être entre 0 et le barème
+    if (isNaN(noteValue) || noteValue < 0 || noteValue > evaluation.bareme) {
+      // Optionnellement afficher un toast ici
+      return;
+    }
+
+    // Mettre à jour l'état local immédiatement (Optimistic Update)
+    const tempNote = {
+      id: `temp-${Date.now()}`,
+      evaluation_id: evaluationId,
+      eleve_id: eleveId,
+      note: noteValue
+    };
+
+    setNotes(prev => {
+      const existingIndex = prev.findIndex(
+        n => n.evaluation_id === evaluationId && n.eleve_id === eleveId
+      );
+      if (existingIndex >= 0) {
+        const updated = [...prev];
+        updated[existingIndex] = tempNote;
+        return updated;
+      }
+      return [...prev, tempNote];
+    });
 
     // Upsert de la note
+    const { data: { user } } = await supabase.auth.getUser();
     const { error } = await supabase
       .from('notes')
       .upsert({
         eleve_id: eleveId,
         evaluation_id: evaluationId,
-        note: noteFinale,
-        professeur_id: (await supabase.auth.getUser()).data.user?.id // ID du professeur connecté
+        note: noteValue,
+        professeur_id: user?.id
       }, {
         onConflict: 'eleve_id,evaluation_id'
       });
 
     if (error) {
       console.error('Erreur lors de la sauvegarde de la note:', error);
-      return;
     }
-
-    // Mettre à jour l'état local
-    setNotes(prev => {
-      const existingIndex = prev.findIndex(
-        n => n.evaluation_id === evaluationId && n.eleve_id === eleveId
-      );
-      
-      if (existingIndex >= 0) {
-        const updated = [...prev];
-        updated[existingIndex] = {
-          ...updated[existingIndex],
-          note: noteFinale
-        };
-        return updated;
-      } else {
-        return [...prev, {
-          id: Date.now().toString(),
-          evaluation_id: evaluationId,
-          eleve_id: eleveId,
-          note: noteFinale
-        }];
-      }
-    });
   };
 
   // Obtenir la note d'un élève pour une évaluation
-  const getNote = (eleveId: string, evaluationId: string): number => {
+  const getNote = (eleveId: string, evaluationId: string): number | null => {
     const note = notes.find(n => n.eleve_id === eleveId && n.evaluation_id === evaluationId);
-    return note?.note || 0;
+    return note ? note.note : null;
   };
 
   // Calculer la moyenne d'un élève pour une matière
   const calculerMoyenneMatiere = (eleveId: string, matiereId: string): number => {
-    const matiereEvals = evaluations.filter(ev => 
-      matieres.find(m => m.id === matiereId)?.nom === ev.matiere_id
-    );
+    const matiereEvals = evaluations.filter(ev => ev.matiere_id === matiereId);
     
     if (matiereEvals.length === 0) return 0;
 
@@ -235,111 +253,155 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
 
     matiereEvals.forEach(ev => {
       const note = getNote(eleveId, ev.id);
-      if (note > 0) {
-        sommePonderee += note * ev.coef;
-        sommeCoefficients += ev.coef;
+      if (note !== null) {
+        sommePonderee += note * (ev.coef || 1);
+        sommeCoefficients += (ev.coef || 1);
       }
     });
 
-    return sommeCoefficients > 0 ? Math.round((sommePonderee / sommeCoefficients) * 100) / 100 : 0;
+    return sommeCoefficients > 0 ? sommePonderee / sommeCoefficients : 0;
   };
 
   if (loading) {
-    return <div>Chargement...</div>;
+    return (
+      <div className="flex items-center justify-center p-20">
+        <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+      </div>
+    );
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold">
-          Saisie des Notes - {niveau?.nom} {serie?.code && `(${serie.code})`}
-        </h2>
-        <p className="text-gray-600">Trimestre {trimestre}</p>
+    <div className="space-y-10 pb-20">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-600/10 flex items-center justify-center">
+              <FileText className="w-5 h-5 text-emerald-600" />
+            </div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none">Saisie des Notes</h1>
+          </div>
+          <p className="text-sm text-slate-500 font-medium max-w-2xl tracking-tight">
+            {niveau?.nom} {serie?.code && `(${serie.code})`} • Trimestre {trimestre}
+          </p>
+        </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white border border-gray-300">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-2 border-b text-left">Élève</th>
-              {matieres.map(matiere => (
-                <th key={matiere.id} className="px-4 py-2 border-b text-center">
-                  <div>
-                    <div className="font-semibold">{matiere.nom}</div>
-                    <div className="text-xs text-gray-500">Coef: {matiere.coefficient}</div>
-                  </div>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {eleves.map(eleve => (
-              <tr key={eleve.id} className="hover:bg-gray-50">
-                <td className="px-4 py-2 border-b">
-                  <div className="font-medium">{eleve.nom} {eleve.prenom}</div>
-                  <div className="text-xs text-gray-500">{eleve.matricule}</div>
-                </td>
-                {matieres.map(matiere => {
-                  const moyenne = calculerMoyenneMatiere(eleve.id, matiere.id);
-                  return (
-                    <td key={matiere.id} className="px-4 py-2 border-b text-center">
-                      <div className="text-sm font-medium text-blue-600">
-                        {moyenne.toFixed(2)}
-                      </div>
-                    </td>
-                  );
-                })}
+      {/* Recap Table */}
+      <div className="bg-white rounded-[2.5rem] border border-slate-200/60 shadow-sm overflow-hidden transition-all hover:shadow-xl hover:shadow-emerald-900/5">
+        <div className="px-10 py-6 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
+          <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Récapitulatif des Moyennes</h2>
+          <div className="flex items-center gap-2">
+             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+             <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Calcul automatique</span>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-100 bg-slate-50/10">
+                <th className="px-10 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Élève</th>
+                {matieres.map(matiere => (
+                  <th key={matiere.id} className="px-6 py-5 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    {matiere.nom}
+                    <div className="text-[9px] opacity-60">Coef: {matiere.coefficient}</div>
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {eleves.map(eleve => (
+                <tr key={eleve.id} className="group hover:bg-slate-50/50 transition-colors">
+                  <td className="px-10 py-5">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-black text-slate-400 text-xs">
+                        {eleve.nom[0]}{eleve.prenom[0]}
+                      </div>
+                      <div>
+                        <div className="font-black text-slate-900 uppercase">{eleve.nom} {eleve.prenom}</div>
+                        <div className="text-[10px] text-slate-400 font-black tracking-widest">{eleve.matricule}</div>
+                      </div>
+                    </div>
+                  </td>
+                  {matieres.map(matiere => {
+                    const moyenne = calculerMoyenneMatiere(eleve.id, matiere.id);
+                    const cycle = niveau?.cycle || 'moyen';
+                    const max = cycle === 'primaire' ? 10 : 20;
+                    return (
+                      <td key={matiere.id} className="px-6 py-5 text-center">
+                        <div className={`text-base font-black tracking-tighter ${moyenne >= (max/2) ? 'text-emerald-600' : 'text-red-500'}`}>
+                          {moyenne.toFixed(2)}
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <div className="mt-6">
-        <h3 className="text-lg font-semibold mb-4">Détail des évaluations</h3>
-        <div className="space-y-4">
+      {/* Details Sections */}
+      <div className="space-y-8">
+        <h3 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+           <div className="w-2 h-8 bg-amber-400 rounded-full" />
+           Saisie par Évaluation
+        </h3>
+        
+        <div className="grid grid-cols-1 gap-8">
           {matieres.map(matiere => (
-            <div key={matiere.id} className="border rounded-lg p-4">
-              <h4 className="font-medium mb-2">{matiere.nom} (Coef: {matiere.coefficient})</h4>
+            <div key={matiere.id} className="bg-white rounded-[2.5rem] border border-slate-200/60 shadow-sm overflow-hidden group hover:border-emerald-200 transition-all">
+              <div className="px-10 py-6 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
+                <h4 className="font-black text-slate-900 uppercase tracking-tight">{matiere.nom}</h4>
+                <div className="px-4 py-1 rounded-full bg-white border border-slate-200 text-[10px] font-black text-slate-500 uppercase tracking-widest shadow-sm">
+                  Coefficient: {matiere.coefficient}
+                </div>
+              </div>
               <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
+                <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-1">Élève</th>
+                    <tr className="border-b border-slate-100">
+                      <th className="px-10 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Élève</th>
                       {evaluations
                         .filter(ev => ev.matiere_id === matiere.id)
                         .map(ev => (
-                          <th key={ev.id} className="px-2 py-1 text-center">
-                            <div>{ev.type}</div>
-                            <div className="text-xs text-gray-500">/{ev.bareme}</div>
+                          <th key={ev.id} className="px-6 py-5 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            <div className="text-slate-900">{ev.type.toUpperCase()}</div>
+                            <div className="text-[9px] opacity-60">Barème: /{ev.bareme}</div>
                           </th>
                         ))}
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-50">
                     {eleves.map(eleve => (
-                      <tr key={eleve.id} className="border-b">
-                        <td className="py-1">{eleve.nom} {eleve.prenom}</td>
+                      <tr key={eleve.id} className="hover:bg-slate-50/30 transition-colors">
+                        <td className="px-10 py-4 font-bold text-slate-700 uppercase text-xs">{eleve.nom} {eleve.prenom}</td>
                         {evaluations
                           .filter(ev => ev.matiere_id === matiere.id)
-                          .map(ev => (
-                            <td key={ev.id} className="px-2 py-1 text-center">
-                              <input
-                                type="number"
-                                min="0"
-                                max={ev.bareme}
-                                step="0.25"
-                                value={getNote(eleve.id, ev.id) || ''}
-                                onChange={(e) => handleNoteChange(eleve.id, ev.id, e.target.value)}
-                                className="w-16 px-1 py-0.5 text-center border rounded"
-                              />
-                            </td>
-                          ))}
+                          .map(ev => {
+                            const val = getNote(eleve.id, ev.id);
+                            return (
+                              <td key={ev.id} className="px-6 py-4 text-center">
+                                <input
+                                  type="text"
+                                  placeholder="--"
+                                  value={val !== null ? val.toString() : ''}
+                                  onChange={(e) => handleNoteChange(eleve.id, ev.id, e.target.value)}
+                                  className={`w-16 h-10 bg-slate-50 border-none rounded-xl text-center text-sm font-black transition-all focus:ring-4 focus:ring-emerald-500/10 focus:bg-white ${val !== null ? (val >= (ev.bareme/2) ? 'text-emerald-700' : 'text-red-600') : 'text-slate-400'}`}
+                                />
+                              </td>
+                            );
+                          })}
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
+              {evaluations.filter(ev => ev.matiere_id === matiere.id).length === 0 && (
+                <div className="p-10 text-center">
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Aucune évaluation programmée pour cette matière</p>
+                </div>
+              )}
             </div>
           ))}
         </div>

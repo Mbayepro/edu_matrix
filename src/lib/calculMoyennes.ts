@@ -234,20 +234,26 @@ export class CalculateurMoyennes {
   /**
    * Détermine la mention selon le barème sénégalais
    */
-  private static determinerMention(moyenne: number, cycle?: string): string {
+  private static determinerMention(moyenneSur20: number, cycle?: string): string {
+    const moyenne = cycle === 'primaire' ? moyenneSur20 / 2 : moyenneSur20
+
     if (cycle === 'primaire') {
+      if (moyenne < 4.5) return 'Médiocre'
       if (moyenne < 5) return 'Insuffisant'
       if (moyenne < 6) return 'Passable'
       if (moyenne < 7) return 'Assez bien'
       if (moyenne < 8) return 'Bien'
-      return 'Très bien'
+      if (moyenne < 9) return 'Très bien'
+      return 'Excellent'
     }
 
+    if (moyenne < 8) return 'Médiocre'
     if (moyenne < 10) return 'Insuffisant'
     if (moyenne < 12) return 'Passable'
     if (moyenne < 14) return 'Assez bien'
     if (moyenne < 16) return 'Bien'
-    return 'Très bien'
+    if (moyenne < 18) return 'Très bien'
+    return 'Excellent'
   }
 
   /**

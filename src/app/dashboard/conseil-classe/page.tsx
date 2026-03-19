@@ -52,14 +52,23 @@ export default function ConseilClassePage() {
     if (ecoleId) loadClasses()
   }, [ecoleId])
 
+  const [currentClasse, setCurrentClasse] = useState<any>(null)
+  
   async function loadClasses() {
     const { data } = await supabase
       .from('classes')
-      .select('*')
+      .select('*, niveaux(nom, cycle)')
       .eq('ecole_id', ecoleId)
       .order('nom_classe')
     setClasses(data ?? [])
   }
+
+  useEffect(() => {
+    if (selectedClasse) {
+      const cls = classes.find(c => c.id === selectedClasse)
+      setCurrentClasse(cls)
+    }
+  }, [selectedClasse, classes])
 
   async function loadData() {
     if (!selectedClasse) return
@@ -84,8 +93,6 @@ export default function ConseilClassePage() {
 
   async function handleEditDecision(b: BulletinData) {
     setEditingEleve(b)
-    // On utilise bio pour l'appréciation et un champ custom pour la décision si dispo
-    // Pour l'instant on simule avec des champs existants ou on prépare le terrain
     setDecision({
       appreciation: (b.eleve as any).appreciation_trimestre || '',
       decision: (b.eleve as any).decision_conseil || ''
@@ -96,14 +103,9 @@ export default function ConseilClassePage() {
     if (!editingEleve || !ecoleId) return
     setSaving(true)
     try {
-      // Dans une vraie app on aurait une table 'decisions_conseil'
-      // Ici on va updater la table eleves avec des métadonnées ou des colonnes dédiées
-      // On utilise un champ JSON ou des colonnes si elles existent
       const { error } = await supabase
         .from('eleves')
         .update({
-          // Note: Ces colonnes doivent exister ou être ajoutées via migration
-          // En attendant, on simule l'enregistrement réussi
           appreciation_trimestre: decision.appreciation,
           decision_conseil: decision.decision
         })
@@ -121,12 +123,12 @@ export default function ConseilClassePage() {
     }
   }
 
-  const isPrimary = bulletins[0]?.niveau?.cycle === 'primaire'
+  const isPrimary = (currentClasse?.niveaux?.cycle === 'primaire')
   const stats = {
     moyenneClasse: bulletins.length ? bulletins.reduce((a, b) => a + b.moyenne_generale, 0) / bulletins.length : 0,
-    reussite: bulletins.filter(b => b.moyenne_generale >= (isPrimary ? 5 : 10)).length,
-    echecs: bulletins.filter(b => b.moyenne_generale < (isPrimary ? 5 : 10)).length,
-    felicitations: bulletins.filter(b => b.moyenne_generale >= (isPrimary ? 7 : 14)).length,
+    reussite: bulletins.filter(b => b.moyenne_generale >= (isPrimary ? 5 * 2 : 10)).length,
+    echecs: bulletins.filter(b => b.moyenne_generale < (isPrimary ? 5 * 2 : 10)).length,
+    felicitations: bulletins.filter(b => b.moyenne_generale >= (isPrimary ? 7 * 2 : 14)).length,
   }
 
   const filteredBulletins = bulletins.filter(b => 
@@ -217,9 +219,11 @@ export default function ConseilClassePage() {
                 <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-110" />
                 <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600/60 mb-3 ml-1">Taux de Réussite</p>
                 <div className="flex items-center gap-4">
-                    <span className="text-3xl font-black text-emerald-600 tracking-tighter leading-none">{((stats.reussite / bulletins.length) * 100).toFixed(0)}%</span>
+                    <span className="text-3xl font-black text-emerald-600 tracking-tighter leading-none">
+                      {bulletins.length > 0 ? ((stats.reussite / bulletins.length) * 100).toFixed(0) : '0'}%
+                    </span>
                     <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-emerald-500 shadow-lg shadow-emerald-500/20" style={{ width: `${(stats.reussite / bulletins.length) * 100}%` }} />
+                        <div className="h-full bg-emerald-500 shadow-lg shadow-emerald-500/20" style={{ width: `${bulletins.length > 0 ? (stats.reussite / bulletins.length) * 100 : 0}%` }} />
                     </div>
                 </div>
             </div>
