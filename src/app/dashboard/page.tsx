@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { useProfile } from '@/hooks/useProfile'
 import type { Profile, Ecole } from '@/lib/supabase'
@@ -41,20 +42,27 @@ function StatCard({
   subtitle?: string
 }) {
   const c = {
-    emerald: 'bg-emerald-50 text-emerald-600',
-    blue:    'bg-blue-50 text-blue-600',
-    amber:   'bg-amber-50 text-amber-600',
-    violet:  'bg-violet-50 text-violet-600',
+    emerald: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
+    blue:    'text-blue-500 bg-blue-500/10 border-blue-500/20',
+    amber:   'text-amber-500 bg-amber-500/10 border-amber-500/20',
+    violet:  'text-violet-500 bg-violet-500/10 border-violet-500/20',
   }[color]
 
   return (
-    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-      <div className={`inline-flex p-2.5 rounded-xl mb-3 ${c}`}>
+    <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 group">
+      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 border transition-transform duration-300 group-hover:scale-110 ${c}`}>
         <Icon className="w-5 h-5" />
       </div>
-      <p className="text-2xl font-bold text-slate-800">{value.toLocaleString('fr-FR')}</p>
-      <p className="text-xs font-medium text-slate-500 mt-0.5">{label}</p>
-      {subtitle && <p className="text-[10px] text-slate-400 mt-0.5">{subtitle}</p>}
+      <div className="space-y-1">
+        <h3 className="text-3xl font-black text-slate-900 tracking-tight">{value.toLocaleString('fr-FR')}</h3>
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+        {subtitle && (
+          <div className="flex items-center gap-1.5 mt-2">
+            <span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
+            <p className="text-[10px] text-slate-400 font-medium">{subtitle}</p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -204,24 +212,34 @@ export default function DashboardPage() {
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
 
-      {/* Banner */}
-      <div className="relative bg-gradient-to-r from-slate-900 to-emerald-900 rounded-2xl p-5 lg:p-6 text-white overflow-hidden">
-        <div className="absolute inset-0 opacity-10"
-          style={{ backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`, backgroundSize: '32px 32px' }} />
-        <div className="relative flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <p className="text-slate-400 text-sm">Bonjour,</p>
-            <h1 className="text-xl lg:text-2xl font-bold">{profile?.prenom} {profile?.nom}</h1>
-            <p className="text-slate-400 text-sm mt-1">{ecole?.nom} · {ecole?.ville}</p>
-          </div>
-          <div className="flex gap-3">
-            <div className="bg-white/10 rounded-xl px-4 py-3 text-center backdrop-blur-sm border border-white/10">
-              <p className="text-xl font-bold">{stats?.presencesAujourd ?? 0}</p>
-              <p className="text-[10px] text-slate-300 mt-0.5">présences<br/>aujourd'hui</p>
+      {/* Premium Banner */}
+      <div className="relative bg-slate-950 rounded-[2.5rem] p-8 lg:p-10 text-white overflow-hidden shadow-2xl shadow-emerald-900/20 border border-white/5">
+        {/* Animated background elements */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-600/20 rounded-full blur-[120px] -mr-48 -mt-48" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-400/10 rounded-full blur-[100px] -ml-32 -mb-32" />
+        
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="flex-1 text-center md:text-left">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-4">
+              <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+              Session en cours
             </div>
-            <div className="bg-white/10 rounded-xl px-4 py-3 text-center backdrop-blur-sm border border-white/10">
-              <p className="text-xl font-bold text-amber-300">{stats?.elevesImpayes ?? 0}</p>
-              <p className="text-[10px] text-slate-300 mt-0.5">impayés</p>
+            <h1 className="text-3xl lg:text-4xl font-black tracking-tight mb-2">
+              Ravi de vous revoir, <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-amber-300">{profile?.prenom}!</span>
+            </h1>
+            <p className="text-slate-400 text-sm font-medium max-w-sm mx-auto md:mx-0">
+              Voici ce qui se passe aujourd&apos;hui à <span className="text-slate-200 font-bold">{ecole?.nom}</span>.
+            </p>
+          </div>
+          
+          <div className="flex gap-4">
+            <div className="bg-white/5 backdrop-blur-md rounded-3xl p-6 border border-white/10 text-center min-w-[120px]">
+              <p className="text-3xl font-black text-emerald-400">{stats?.presencesAujourd ?? 0}</p>
+              <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1">Présences</p>
+            </div>
+            <div className="bg-white/5 backdrop-blur-md rounded-3xl p-6 border border-white/10 text-center min-w-[120px]">
+              <p className="text-3xl font-black text-amber-400">{stats?.elevesImpayes ?? 0}</p>
+              <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1 text-amber-500">Impayés</p>
             </div>
           </div>
         </div>
@@ -236,48 +254,56 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Activity className="w-4 h-4 text-emerald-600" />
-            <h2 className="font-semibold text-slate-800 text-sm">Présences — 7 derniers jours</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center">
+                <Activity className="w-4 h-4 text-emerald-600" />
+              </div>
+              <h2 className="font-bold text-slate-900 text-sm">Présences — 7 jours</h2>
+            </div>
           </div>
           {presenceChart.every((d) => d.present === 0 && d.absent === 0) ? (
-            <div className="flex items-center justify-center h-40 text-slate-400 text-sm">
+            <div className="flex items-center justify-center h-48 text-slate-400 text-sm italic">
               Aucune donnée disponible.
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={presenceChart} barGap={2} barCategoryGap="30%">
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="jour" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={presenceChart} barGap={4} barCategoryGap="40%">
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="jour" tick={{ fontSize: 11, fill: '#64748b', fontWeight: 'bold' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
                 <Tooltip content={<ChartTooltip />} />
-                <Bar dataKey="present" name="Présents" fill="#059669" radius={[4,4,0,0]} />
-                <Bar dataKey="absent"  name="Absents"  fill="#fca5a5" radius={[4,4,0,0]} />
+                <Bar dataKey="present" name="Présents" fill="#10b981" radius={[6,6,0,0]} />
+                <Bar dataKey="absent"  name="Absents"  fill="#fbbf24" radius={[6,6,0,0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="w-4 h-4 text-blue-600" />
-            <h2 className="font-semibold text-slate-800 text-sm">Moyennes par classe</h2>
+        <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-blue-600" />
+              </div>
+              <h2 className="font-bold text-slate-900 text-sm">Moyennes par classe</h2>
+            </div>
           </div>
           {notesChart.length === 0 ? (
-            <div className="flex items-center justify-center h-40 text-slate-400 text-sm">
+            <div className="flex items-center justify-center h-48 text-slate-400 text-sm italic">
               Aucune note enregistrée.
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={180}>
+            <ResponsiveContainer width="100%" height={220}>
               <LineChart data={notesChart}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="classe" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <YAxis domain={[0, 20]} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="classe" tick={{ fontSize: 10, fill: '#64748b', fontWeight: 'bold' }} axisLine={false} tickLine={false} />
+                <YAxis domain={[0, 20]} tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
                 <Tooltip content={<ChartTooltip />} />
-                <Line type="monotone" dataKey="moyenne" name="Moyenne" stroke="#3b82f6" strokeWidth={2.5}
-                  dot={{ fill: '#3b82f6', strokeWidth: 0, r: 4 }} />
+                <Line type="monotone" dataKey="moyenne" name="Moyenne" stroke="#3b82f6" strokeWidth={4}
+                  dot={{ fill: '#3b82f6', strokeWidth: 2, r: 6, stroke: '#fff' }} />
               </LineChart>
             </ResponsiveContainer>
           )}
@@ -285,51 +311,56 @@ export default function DashboardPage() {
       </div>
 
       {/* Bottom */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-50">
-            <h2 className="font-semibold text-slate-800 text-sm">Derniers élèves inscrits</h2>
-            <a href="/dashboard/eleves" className="text-xs text-emerald-600 hover:underline flex items-center gap-1">
-              Voir tous <ChevronRight className="w-3 h-3" />
-            </a>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-5 border-b border-slate-50">
+            <h2 className="font-bold text-slate-900 text-sm">Dernières inscriptions</h2>
+            <Link href="/dashboard/eleves" className="px-3 py-1.5 rounded-xl bg-slate-50 text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:bg-emerald-50 transition-colors">
+              Voir tout
+            </Link>
           </div>
           {recentEleves.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 text-sm">Aucun élève inscrit.</div>
+            <div className="p-12 text-center text-slate-400 text-sm italic">Aucun élève inscrit.</div>
           ) : (
             <ul className="divide-y divide-slate-50">
               {recentEleves.map((e) => (
-                <li key={e.id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50/60 transition-colors">
-                  <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0">
+                <li key={e.id} className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50/50 transition-colors group">
+                  <div className="w-10 h-10 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl flex items-center justify-center text-emerald-600 text-sm font-black transition-transform group-hover:scale-110">
                     {e.prenom[0]?.toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-800 truncate">{e.prenom} {e.nom}</p>
-                    <p className="text-xs text-slate-400">{(e.classe as any)?.nom_classe ?? '—'}</p>
+                    <p className="text-sm font-bold text-slate-900 truncate group-hover:text-emerald-600 transition-colors">{e.prenom} {e.nom}</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{(e.classe as any)?.nom_classe ?? 'Niveau non défini'}</p>
                   </div>
-                  <span className="text-xs font-mono text-slate-400 shrink-0">{e.matricule}</span>
+                  <div className="text-right">
+                    <p className="text-[10px] font-mono font-bold text-slate-400">{e.matricule}</p>
+                    <div className="w-8 h-1 bg-emerald-100 rounded-full mt-1 ml-auto group-hover:w-12 transition-all" />
+                  </div>
                 </li>
               ))}
             </ul>
           )}
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-          <h2 className="font-semibold text-slate-800 text-sm mb-4">Accès rapide</h2>
-          <div className="space-y-1">
+        <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6">
+          <h2 className="font-bold text-slate-900 text-sm mb-6 uppercase tracking-widest">Raccourcis</h2>
+          <div className="space-y-3">
             {[
-              { label: 'Inscrire un élève',    href: '/dashboard/eleves/nouveau',   icon: Users },
-              { label: 'Saisir des notes',      href: '/dashboard/notes',            icon: TrendingUp },
-              { label: 'Marquer les présences', href: '/dashboard/presences',        icon: UserCheck },
-              { label: 'Créer une classe',      href: '/dashboard/classes/nouvelle', icon: BookOpen },
+              { label: 'Nouvel élève',      href: '/dashboard/eleves/nouveau',   icon: Users,        c: 'text-emerald-600 bg-emerald-50' },
+              { label: 'Saisir Notes',      href: '/dashboard/notes',            icon: TrendingUp,   c: 'text-blue-600 bg-blue-50' },
+              { label: 'Présences',         href: '/dashboard/presences',        icon: UserCheck,    c: 'text-amber-600 bg-amber-50' },
+              { label: 'Configuration',      href: '/dashboard/parametres',       icon: BookOpen,     c: 'text-violet-600 bg-violet-50' },
             ].map((a) => (
-              <a key={a.label} href={a.href}
-                className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-emerald-50 group transition-colors">
-                <div className="w-8 h-8 rounded-lg bg-slate-100 group-hover:bg-emerald-100 flex items-center justify-center shrink-0 transition-colors">
-                  <a.icon className="w-4 h-4 text-slate-500 group-hover:text-emerald-600 transition-colors" />
+              <Link key={a.label} href={a.href}
+                className="flex items-center gap-4 p-3 rounded-2xl border border-transparent hover:border-slate-100 hover:bg-slate-50/50 group transition-all">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:rotate-6 ${a.c}`}>
+                  <a.icon className="w-5 h-5" />
                 </div>
-                <span className="text-sm text-slate-600 group-hover:text-slate-900 flex-1">{a.label}</span>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-emerald-400 transition-colors" />
-              </a>
+                <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 flex-1">{a.label}</span>
+                <div className="w-6 h-6 rounded-full bg-white border border-slate-100 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                </div>
+              </Link>
             ))}
           </div>
         </div>
