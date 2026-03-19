@@ -8,7 +8,7 @@ export default function LandingPage() {
       <nav className="border-b border-slate-800/60 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="bg-emerald-500 p-1.5 rounded-lg">
+            <div className="bg-emerald-600 p-1.5 rounded-lg">
               <GraduationCap className="w-5 h-5 text-white" />
             </div>
             <span className="font-bold text-lg tracking-tight">EduMatrix</span>
@@ -27,7 +27,7 @@ export default function LandingPage() {
             </Link>
             <Link 
               href="/login" 
-              className="px-4 py-2 text-sm font-medium bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-medium bg-amber-400 hover:bg-amber-500 text-slate-900 rounded-lg transition-colors font-bold"
             >
               Espace Élève
             </Link>
@@ -43,10 +43,10 @@ export default function LandingPage() {
         </div>
 
         <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800/50 border border-slate-700/50 text-xs font-medium text-emerald-400 mb-8 animate-fade-in">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-medium text-amber-400 mb-8 animate-fade-in">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
             </span>
             Nouvelle version 1.0 disponible
           </div>
@@ -62,10 +62,10 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link 
               href="/login" 
-              className="px-8 py-3.5 text-base font-semibold bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+              className="px-8 py-3.5 text-base font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-all shadow-lg shadow-emerald-600/20 flex items-center gap-2"
             >
               Commencer maintenant
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-4 h-4 text-amber-400" />
             </Link>
             <Link 
               href="#about" 
@@ -82,19 +82,19 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div className="relative">
-              <div className="aspect-square bg-gradient-to-br from-emerald-500/20 to-blue-500/20 rounded-3xl border border-slate-800 flex items-center justify-center p-12">
-                <Info className="w-full h-full text-emerald-500/10 absolute top-0 left-0 -z-10" />
+              <div className="aspect-square bg-gradient-to-br from-emerald-600/20 to-amber-500/20 rounded-3xl border border-slate-800 flex items-center justify-center p-12">
+                <Info className="w-full h-full text-emerald-600/10 absolute top-0 left-0 -z-10" />
                 <div className="space-y-6">
                   <div className="flex items-center gap-4 bg-slate-800/80 backdrop-blur p-4 rounded-2xl border border-slate-700 shadow-xl">
-                    <CheckCircle className="w-6 h-6 text-emerald-400 flex-shrink-0" />
+                    <CheckCircle className="w-6 h-6 text-emerald-500 flex-shrink-0" />
                     <p className="text-sm font-medium">Digitalisation complète du cycle scolaire</p>
                   </div>
                   <div className="flex items-center gap-4 bg-slate-800/80 backdrop-blur p-4 rounded-2xl border border-slate-700 shadow-xl ml-8">
-                    <CheckCircle className="w-6 h-6 text-blue-400 flex-shrink-0" />
+                    <CheckCircle className="w-6 h-6 text-amber-400 flex-shrink-0" />
                     <p className="text-sm font-medium">Adapté aux échelles de notes du Sénégal</p>
                   </div>
                   <div className="flex items-center gap-4 bg-slate-800/80 backdrop-blur p-4 rounded-2xl border border-slate-700 shadow-xl">
-                    <CheckCircle className="w-6 h-6 text-purple-400 flex-shrink-0" />
+                    <CheckCircle className="w-6 h-6 text-emerald-400 flex-shrink-0" />
                     <p className="text-sm font-medium">Automatisation des bulletins de notes</p>
                   </div>
                 </div>
@@ -128,7 +128,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid md:grid-cols-3 gap-8">
             <FeatureCard 
-              icon={<BarChart3 className="w-6 h-6 text-blue-400" />}
+              icon={<BarChart3 className="w-6 h-6 text-amber-400" />}
               title="Suivi des performances"
               description="Visualisez les moyennes, classements et progressions des élèves avec des graphiques intuitifs et des rapports détaillés."
             />
@@ -143,17 +143,17 @@ export default function LandingPage() {
               description="Suivez les frais de scolarité, gérez les impayés et générez des reçus professionnels en un clic."
             />
             <FeatureCard 
-              icon={<GraduationCap className="w-6 h-6 text-indigo-400" />}
+              icon={<GraduationCap className="w-6 h-6 text-emerald-400" />}
               title="Bulletins Automatisés"
               description="Générez des bulletins de notes conformes aux normes sénégalaises en quelques secondes pour toute l'école."
             />
             <FeatureCard 
-              icon={<Users className="w-6 h-6 text-pink-400" />}
+              icon={<Users className="w-6 h-6 text-amber-400" />}
               title="Espace Enseignants"
               description="Un outil dédié pour simplifier la saisie des notes, la gestion des cours et l'organisation du temps scolaire."
             />
             <FeatureCard 
-              icon={<ShieldCheck className="w-6 h-6 text-purple-400" />}
+              icon={<ShieldCheck className="w-6 h-6 text-emerald-400" />}
               title="Sécurité & Confidentialité"
               description="Vos données sont chiffrées et protégées. Accès sécurisé par rôle pour garantir que chacun ne voit que ce qui le concerne."
             />
@@ -179,7 +179,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
             <div>
               <div className="flex items-center gap-2 mb-6">
-                <div className="bg-emerald-500 p-1.5 rounded-lg">
+                <div className="bg-emerald-600 p-1.5 rounded-lg">
                   <GraduationCap className="w-5 h-5 text-white" />
                 </div>
                 <span className="font-bold text-xl tracking-tight text-white">EduMatrix</span>
@@ -192,10 +192,10 @@ export default function LandingPage() {
             <div>
               <h4 className="text-white font-semibold mb-6 uppercase tracking-wider text-xs">Navigation</h4>
               <ul className="space-y-4 text-sm text-slate-400">
-                <li><Link href="#" className="hover:text-emerald-400 transition-colors">Accueil</Link></li>
-                <li><Link href="#about" className="hover:text-emerald-400 transition-colors">À propos</Link></li>
-                <li><Link href="#features" className="hover:text-emerald-400 transition-colors">Fonctionnalités</Link></li>
-                <li><Link href="/login" className="hover:text-emerald-400 transition-colors">Espace réservé</Link></li>
+                <li><Link href="#" className="hover:text-amber-400 transition-colors">Accueil</Link></li>
+                <li><Link href="#about" className="hover:text-amber-400 transition-colors">À propos</Link></li>
+                <li><Link href="#features" className="hover:text-amber-400 transition-colors">Fonctionnalités</Link></li>
+                <li><Link href="/login" className="hover:text-amber-400 transition-colors">Espace réservé</Link></li>
               </ul>
             </div>
 
@@ -203,16 +203,16 @@ export default function LandingPage() {
               <h4 className="text-white font-semibold mb-6 uppercase tracking-wider text-xs">Contact</h4>
               <ul className="space-y-4 text-sm text-slate-400">
                 <li className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-emerald-500 shrink-0" />
+                  <MapPin className="w-5 h-5 text-amber-400 shrink-0" />
                   <span>Dakar yeumbeul/ASECNA</span>
                 </li>
                 <li className="flex items-center gap-3">
-                  <Phone className="w-5 h-5 text-emerald-500 shrink-0" />
+                  <Phone className="w-5 h-5 text-amber-400 shrink-0" />
                   <span>770362616 / 774628987</span>
                 </li>
                 <li className="flex items-center gap-3">
-                  <Mail className="w-5 h-5 text-emerald-500 shrink-0" />
-                  <Link href="mailto:edumatrix445@gmail.com" className="hover:text-emerald-400 transition-colors">
+                  <Mail className="w-5 h-5 text-amber-400 shrink-0" />
+                  <Link href="mailto:edumatrix445@gmail.com" className="hover:text-amber-400 transition-colors">
                     edumatrix445@gmail.com
                   </Link>
                 </li>
