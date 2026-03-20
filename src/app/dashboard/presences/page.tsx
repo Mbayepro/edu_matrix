@@ -216,40 +216,37 @@ export default function PresencesPage() {
           {/* Right Col: Class List */}
           <div className="lg:col-span-7">
             <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm overflow-hidden h-full flex flex-col transition-all duration-500 hover:shadow-xl hover:shadow-emerald-900/5">
-              <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50 space-y-4">
+              <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
-                      <UserCheck className="w-5 h-5" />
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600">
+                      <UserCheck className="w-4 h-4" />
                     </div>
                     <div>
-                      <h2 className="text-base font-black text-slate-900 leading-tight">Appel de la Classe</h2>
-                      <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-0.5">Mise à jour en temps réel</p>
+                      <h2 className="text-sm font-black text-slate-800 leading-tight">Appel de la Classe</h2>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end">
-                    <div className="bg-slate-900 text-white font-black px-4 py-1.5 rounded-xl text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-slate-900/10">
-                      {eleves.filter(e => e.statut).length} / {eleves.length}
-                    </div>
+                  <div className="bg-slate-900 text-white font-black px-3 py-1 rounded-lg text-[9px] uppercase tracking-widest shadow-lg shadow-slate-900/10">
+                    {eleves.filter(e => e.statut).length} / {eleves.length}
                   </div>
                 </div>
                 
-                {/* Search Bar */}
+                {/* Search Bar - More Compact */}
                 <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <span className="text-slate-400 text-xs font-black uppercase tracking-widest">S</span>
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest">S</span>
                   </div>
                   <input
                     type="text"
-                    placeholder="Rechercher un élève..."
+                    placeholder="Rechercher..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm font-medium focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all shadow-sm"
+                    className="w-full bg-white border border-slate-200 rounded-xl py-2 pl-8 pr-4 text-xs font-medium focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all shadow-sm"
                   />
                 </div>
               </div>
 
-              <div className="p-0 flex-1 overflow-y-auto max-h-[600px] bg-slate-50/50">
+              <div className="p-0 flex-1 overflow-y-auto max-h-[500px] bg-slate-50/50 scrollbar-thin scrollbar-thumb-slate-200">
                 {eleves.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-48 text-slate-400">
                     <AlertCircle className="w-8 h-8 mb-2 text-slate-300" />
