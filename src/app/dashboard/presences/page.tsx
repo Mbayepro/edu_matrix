@@ -29,6 +29,7 @@ export default function PresencesPage() {
   const [selectedClasseId, setSelectedClasseId] = useState('')
   const [eleves, setEleves] = useState<ElevePresence[]>([])
   const [marking, setMarking] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
     if (ecoleId) {
@@ -139,6 +140,11 @@ export default function PresencesPage() {
     )
   }
 
+  const filteredEleves = eleves.filter(e => 
+    `${e.prenom} ${e.nom}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (e.matricule?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+  )
+
   const statutColors = {
     présent: 'bg-emerald-50 text-emerald-600 border-emerald-200',
     absent: 'bg-red-50 text-red-600 border-red-200',
@@ -210,20 +216,36 @@ export default function PresencesPage() {
           {/* Right Col: Class List */}
           <div className="lg:col-span-7">
             <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm overflow-hidden h-full flex flex-col transition-all duration-500 hover:shadow-xl hover:shadow-emerald-900/5">
-              <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
-                    <UserCheck className="w-5 h-5" />
+              <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600">
+                      <UserCheck className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-black text-slate-900 leading-tight">Appel de la Classe</h2>
+                      <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-0.5">Mise à jour en temps réel</p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-base font-black text-slate-900 leading-tight">Appel de la Classe</h2>
-                    <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-0.5">Mise à jour en temps réel</p>
+                  <div className="flex flex-col items-end">
+                    <div className="bg-slate-900 text-white font-black px-4 py-1.5 rounded-xl text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-slate-900/10">
+                      {eleves.filter(e => e.statut).length} / {eleves.length}
+                    </div>
                   </div>
                 </div>
-                <div className="flex flex-col items-end">
-                   <div className="bg-slate-900 text-white font-black px-4 py-1.5 rounded-xl text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-slate-900/10">
-                    {eleves.filter(e => e.statut).length} / {eleves.length}
+                
+                {/* Search Bar */}
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <span className="text-slate-400 text-xs font-black uppercase tracking-widest">S</span>
                   </div>
+                  <input
+                    type="text"
+                    placeholder="Rechercher un élève..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm font-medium focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all shadow-sm"
+                  />
                 </div>
               </div>
 
@@ -235,7 +257,7 @@ export default function PresencesPage() {
                   </div>
                 ) : (
                   <ul className="divide-y divide-slate-100">
-                    {eleves.map((eleve) => (
+                    {filteredEleves.map((eleve) => (
                       <li key={eleve.id} className="px-8 py-5 hover:bg-white transition-all duration-300 group flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-2xl flex items-center justify-center font-black text-xs shrink-0 uppercase border border-slate-200/50 group-hover:scale-110 transition-transform duration-500">
