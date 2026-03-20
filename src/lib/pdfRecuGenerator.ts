@@ -95,7 +95,7 @@ async function buildRecuDoc(
         paiement.frais_libelle,
         paiement.mode_paiement,
         paiement.reference || '-',
-        `${paiement.montant.toLocaleString('fr-FR')} F`,
+        `${paiement.montant.toLocaleString('fr-FR').replace(/\u00a0/g, ' ').replace(/\u202f/g, ' ')} F`,
       ]],
       theme: 'grid',
       headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold' },

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Loader2, FileText, Plus, X, Calendar, Save } from 'lucide-react';
+import { Loader2, FileText, Plus, X, Calendar, Save, Trash2, Edit2 } from 'lucide-react';
 
 interface Matiere {
   id: string;
@@ -181,6 +181,44 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
           .eq('trimestre', trimestre)
           .order('date', { ascending: true });
         setEvaluations(updatedEvals || []);
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteEvaluation = async (evalId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette évaluation ainsi que toutes les notes associées ?')) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('evaluations')
+        .delete()
+        .eq('id', evalId);
+
+      if (!error) {
+        setEvaluations(prev => prev.filter(ev => ev.id !== evalId));
+        setNotes(prev => prev.filter(n => n.evaluation_id !== evalId));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateEvaluation = async (ev: Evaluation) => {
+    const newBareme = prompt('Nouveau Barème (ex: 20)?', ev.bareme.toString());
+    if (newBareme === null || isNaN(Number(newBareme))) return;
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('evaluations')
+        .update({ bareme: Number(newBareme) })
+        .eq('id', ev.id);
+
+      if (!error) {
+        setEvaluations(prev => prev.map(e => e.id === ev.id ? { ...e, bareme: Number(newBareme) } : e));
       }
     } finally {
       setSaving(false);
@@ -426,8 +464,14 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
                       {evaluations
                         .filter(ev => ev.matiere_id === matiere.id)
                         .map(ev => (
-                          <th key={ev.id} className="px-6 py-5 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                            <div className="text-slate-900">{ev.type.toUpperCase()}</div>
+                          <th key={ev.id} className="px-6 py-5 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest relative group/header">
+                            <div className="text-slate-900 flex items-center justify-center gap-1">
+                              {ev.type.toUpperCase()}
+                              <div className="flex items-center opacity-0 group-hover/header:opacity-100 transition-opacity">
+                                <button onClick={() => updateEvaluation(ev)} className="p-1 hover:text-blue-600"><Edit2 className="w-3 h-3" /></button>
+                                <button onClick={() => deleteEvaluation(ev.id)} className="p-1 hover:text-red-600"><Trash2 className="w-3 h-3" /></button>
+                              </div>
+                            </div>
                             <div className="text-[9px] opacity-60">Barème: /{ev.bareme}</div>
                           </th>
                         ))}
