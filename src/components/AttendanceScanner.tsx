@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import {
   QrCode, CheckCircle2, AlertCircle, Clock,
-  Loader2, UserCheck, X, RefreshCw
+  Loader2, UserCheck, X, RefreshCw, Camera
 } from 'lucide-react'
 
 interface ScanResult {
@@ -14,7 +14,10 @@ interface ScanResult {
   message: string
   studentName?: string
   matricule?: string
+  statutPaiement?: string
 }
+
+import CameraQRCodeScanner from './CameraQRCodeScanner'
 
 interface OfflineAttendanceEvent {
   eleve_id: string
@@ -32,7 +35,7 @@ async function processAttendance(studentId: string, classeId: string): Promise<S
     // 1. Fetch student
     let { data: eleve, error: eleveError } = await supabase
       .from('eleves')
-      .select('id, prenom, nom, matricule, classe_id')
+      .select('id, prenom, nom, matricule, classe_id, statut_paiement')
       .eq('id', studentId)
       .single()
 
@@ -40,7 +43,7 @@ async function processAttendance(studentId: string, classeId: string): Promise<S
     if (eleveError || !eleve) {
       const { data: eleveByMatricule, error: matError } = await supabase
         .from('eleves')
-        .select('id, prenom, nom, matricule, classe_id')
+        .select('id, prenom, nom, matricule, classe_id, statut_paiement')
         .eq('matricule', studentId)
         .single()
       
@@ -50,6 +53,8 @@ async function processAttendance(studentId: string, classeId: string): Promise<S
       eleve = eleveByMatricule
     }
 
+    // CRITICAL: Use the resolved UUID from the database, not the input string (which might be a matricule)
+    const realStudentId = eleve.id
     const today = new Date().toISOString().split('T')[0]
     const now   = new Date().toTimeString().split(' ')[0]
 
@@ -57,9 +62,9 @@ async function processAttendance(studentId: string, classeId: string): Promise<S
     const { data: existing } = await supabase
       .from('presences')
       .select('id, statut, heure')
-      .eq('eleve_id', studentId)
+      .eq('eleve_id', realStudentId)
       .eq('date', today)
-      .single()
+      .maybeSingle() // Use maybeSingle to avoid 406 errors if not found
 
     if (existing) {
       return {
@@ -67,6 +72,7 @@ async function processAttendance(studentId: string, classeId: string): Promise<S
         message: `Présence déjà enregistrée à ${existing.heure.slice(0, 5)}`,
         studentName: `${eleve.prenom} ${eleve.nom}`,
         matricule:   eleve.matricule ?? undefined,
+        statutPaiement: eleve.statut_paiement,
       }
     }
 
@@ -79,7 +85,7 @@ async function processAttendance(studentId: string, classeId: string): Promise<S
     const { error: insertError } = await supabase
       .from('presences')
       .insert({
-        eleve_id:  studentId,
+        eleve_id:  realStudentId,
         classe_id: eleve.classe_id,
         date:      today,
         heure:     now,
@@ -95,8 +101,10 @@ async function processAttendance(studentId: string, classeId: string): Promise<S
         : `Présence confirmée à ${now.slice(0,5)}`,
       studentName: `${eleve.prenom} ${eleve.nom}`,
       matricule:   eleve.matricule ?? undefined,
+      statutPaiement: eleve.statut_paiement,
     }
-  } catch {
+  } catch (error) {
+    console.error('Error in processAttendance:', error)
     return { status: 'error', message: 'Erreur lors de l\'enregistrement. Réessayez.' }
   }
 }
@@ -144,6 +152,19 @@ function ScanResultCard({ result, onReset }: { result: ScanResult; onReset: () =
             <p className="text-sm font-mono text-slate-500 mb-1">{result.matricule}</p>
           )}
           <p className={`text-sm ${c.titleColor}`}>{result.message}</p>
+          
+          {result.statutPaiement && (
+            <div className="mt-3 pt-3 border-t border-black/5 flex items-center justify-between">
+              <span className="text-[10px] uppercase font-black tracking-widest text-slate-400">Paiement</span>
+              <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest ${
+                result.statutPaiement === 'payé' ? 'bg-emerald-100 text-emerald-700' :
+                result.statutPaiement === 'partiel' ? 'bg-amber-100 text-amber-700' :
+                'bg-red-100 text-red-700'
+              }`}>
+                {result.statutPaiement}
+              </span>
+            </div>
+          )}
         </div>
       </div>
       <button
@@ -168,6 +189,7 @@ export default function AttendanceScanner({ classeId }: { classeId: string }) {
   const [todayCount, setTodayCount] = useState(0)
   const [isOnline, setIsOnline]   = useState(true)
   const [pendingOffline, setPendingOffline] = useState(0)
+  const [showCamera, setShowCamera] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -331,8 +353,15 @@ export default function AttendanceScanner({ classeId }: { classeId: string }) {
             <QrCode className="w-12 h-12 text-slate-300" />
             <p className="text-sm text-slate-500 text-center px-4">
               Pointez le scanner QR vers la carte de l'élève,<br />
-              ou entrez l'identifiant manuellement ci-dessous.
+              ou utilisez la caméra de votre téléphone.
             </p>
+            <button
+              onClick={() => setShowCamera(true)}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 text-sm shadow-lg shadow-emerald-600/20 transition-all active:scale-95"
+            >
+              <Camera className="w-4 h-4" />
+              Ouvrir la Caméra
+            </button>
           </div>
 
           <div className="flex gap-2">
@@ -363,6 +392,17 @@ export default function AttendanceScanner({ classeId }: { classeId: string }) {
 
       {/* Result */}
       {result && <ScanResultCard result={result} onReset={reset} />}
+
+      {/* Camera Mode Overlay */}
+      {showCamera && (
+        <CameraQRCodeScanner 
+          onScan={(id) => {
+            handleScan(id)
+            setShowCamera(false)
+          }}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
     </div>
   )
 }
