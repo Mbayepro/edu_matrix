@@ -5,10 +5,12 @@ export interface MoyenneMatiere {
   matiere_id: string
   matiere_nom: string
   coefficient: number
-  moyenne: number
+  moyenne: number // Toujours sur 20 en interne
   bareme: number
   appreciation?: string
   nombre_evaluations: number
+  is_bonus?: boolean
+  points_bonus?: number
 }
 
 export interface BulletinData {
@@ -18,7 +20,7 @@ export interface BulletinData {
   trimestre: number
   annee_scolaire: string
   matieres: MoyenneMatiere[]
-  moyenne_generale: number
+  moyenne_generale: number // Toujours sur 20 en interne
   mention: string
   rang?: number
   total_eleves?: number
@@ -37,205 +39,174 @@ export class CalculateurMoyennes {
       .from('coefficients_matieres')
       .select(`
         *,
-        matiere:matieres(id, nom, code_matiere, cycle),
+        matiere:matieres(id, nom, code_matiere, cycle, est_bonus),
         niveau:niveaux(id, code, nom, cycle),
         serie:series(id, code, nom)
       `)
       .eq('ecole_id', ecole_id)
       .eq('niveau_id', niveau_id)
-      .eq('is_obligatoire', true)
       .or(`serie_id.eq.${serie_id || ''},serie_id.is.null`)
-      .order('matiere.nom')
+      .order('matiere(nom)')
 
     if (error) throw error
     return data || []
   }
 
   /**
-   * Calcule la moyenne par matière pour un élève et un trimestre
-   */
-  static async calculerMoyenneMatiere(
-    eleve_id: string,
-    matiere_id: string,
-    trimestre: number
-  ): Promise<{ moyenne: number; bareme: number; nombre_evaluations: number }> {
-    const { data: notes, error } = await supabase
-      .from('v_moyennes_matieres')
-      .select('moyenne_matiere, nombre_evaluations, bareme_moyen') // On suppose que la vue renvoie le barème moyen ou on le calcule
-      .eq('eleve_id', eleve_id)
-      .eq('matiere_id', matiere_id)
-      .eq('trimestre', trimestre)
-      .single()
-
-    if (error || !notes) {
-      return { moyenne: 0, bareme: 20, nombre_evaluations: 0 }
-    }
-
-    return {
-      moyenne: Number(notes.moyenne_matiere),
-      bareme: Number(notes.bareme_moyen || 20),
-      nombre_evaluations: notes.nombre_evaluations
-    }
-  }
-
-  /**
-   * Génère le bulletin complet d'un élève pour un trimestre
-   */
-  static async genererBulletin(
-    eleve_id: string,
-    trimestre: number,
-    annee_scolaire: string = '2024-2025'
-  ): Promise<BulletinData> {
-    // Récupérer les informations de l'élève avec sa classe
-    const { data: eleveData, error: eleveError } = await supabase
-      .from('eleves')
-      .select(`
-        *,
-        classe:classes(
-          *,
-          niveau_info:niveaux(*),
-          serie_info:series(*)
-        )
-      `)
-      .eq('id', eleve_id)
-      .single()
-
-    if (eleveError || !eleveData) {
-      throw new Error('Élève non trouvé')
-    }
-
-    const eleve = eleveData
-    const classe = eleve.classe!
-    const niveau = classe.niveau_info!
-    const serie = classe.serie_info
-
-    // Récupérer les coefficients pour ce niveau/série
-    const coefficients = await this.getCoefficientsMatieres(
-      eleve.ecole_id,
-      niveau.id,
-      serie?.id
-    )
-
-    // Calculer les moyennes par matière
-    const matieres: MoyenneMatiere[] = []
-    let totalPoints = 0
-    let totalCoefficients = 0
-
-    for (const coeff of coefficients) {
-      const { moyenne, bareme, nombre_evaluations } = await this.calculerMoyenneMatiere(
-        eleve_id,
-        coeff.matiere_id,
-        trimestre
-      )
-
-      // Générer l'appréciation (normalisée sur 20 pour la mention)
-      const moyenneNormalisee = (moyenne / bareme) * 20
-      const appreciation = this.genererAppreciation(moyenneNormalisee)
-
-      const moyenneMatiere: MoyenneMatiere = {
-        matiere_id: coeff.matiere_id,
-        matiere_nom: coeff.matiere!.nom,
-        coefficient: coeff.coefficient,
-        moyenne,
-        bareme,
-        appreciation,
-        nombre_evaluations
-      }
-
-      matieres.push(moyenneMatiere)
-
-      // Ajouter au calcul de la moyenne générale (pondérée et normalisée sur 20)
-      if (nombre_evaluations > 0) {
-        totalPoints += moyenneNormalisee * coeff.coefficient
-        totalCoefficients += coeff.coefficient
-      }
-    }
-
-    // Calculer la moyenne générale
-    const moyenne_generale = totalCoefficients > 0 ? totalPoints / totalCoefficients : 0
-
-    // Toujours garder la moyenne sur 20 en interne, la division par 2 (pour le primaire) se fera à l'affichage
-    const moyenneFinale = moyenne_generale;
-
-    // Déterminer la mention selon le barème sénégalais (en passant le cycle)
-    const mention = this.determinerMention(moyenneFinale, niveau.cycle)
-
-    return {
-      eleve,
-      niveau,
-      serie,
-      trimestre,
-      annee_scolaire,
-      matieres,
-      moyenne_generale: Math.round(moyenneFinale * 100) / 100,
-      mention
-    }
-  }
-
-  /**
-   * Génère les bulletins pour tous les élèves d'une classe
+   * GÉNÉRATION OPTIMISÉE POUR UNE CLASSE ENTIÈRE
+   * Réduit les appels DB de 600 à environ 4 requêtes globales.
    */
   static async genererBulletinsClasse(
     classe_id: string,
     trimestre: number,
     annee_scolaire: string = '2024-2025'
   ): Promise<BulletinData[]> {
-    // Récupérer tous les élèves de la classe
-    const { data: eleves, error } = await supabase
-      .from('eleves')
-      .select('id')
-      .eq('classe_id', classe_id)
-      .order('nom, prenom')
+    // 1. Charger tout le nécessaire en parallèle
+    const [
+      { data: classeData, error: clErr },
+      { data: eleves, error: elErr },
+      { data: allNotes, error: ntErr }
+    ] = await Promise.all([
+      supabase.from('classes').select('*, niveau:niveaux(*), serie:series(*)').eq('id', classe_id).single(),
+      supabase.from('eleves').select('*').eq('classe_id', classe_id).order('nom, prenom'),
+      supabase.from('notes').select('*, evaluation:evaluations!inner(*)').eq('evaluation.classe_id', classe_id).eq('evaluation.trimestre', trimestre)
+    ])
 
-    if (error || !eleves) {
-      throw new Error('Impossible de récupérer les élèves de la classe')
-    }
+    if (clErr || elErr || ntErr) throw new Error("Erreur lors de la récupération groupée des données.")
+    if (!eleves || eleves.length === 0) return []
 
-    // Générer les bulletins en parallèle (en filtrant les null)
-    const validEleves = eleves.filter((e: any) => e && e.id)
-    
-    const bulletins = await Promise.all(
-      validEleves.map((eleve: any) => 
-        this.genererBulletin(eleve.id, trimestre, annee_scolaire).catch(e => {
-          console.error(`Erreur pour l'élève ${eleve.id}:`, e)
-          return null
-        })
-      )
-    )
+    const classe = classeData as any
+    const niveau = classe.niveau
+    const serie = classe.serie
 
-    // Filtrer les bulletins qui ont échoué (null)
-    const bulletinsValides = bulletins.filter((b): b is BulletinData => b !== null)
+    // 2. Charger les coefficients une seule fois
+    const coefficients = await this.getCoefficientsMatieres(classe.ecole_id, niveau.id, serie?.id)
 
-    // Calculer les rangs
-    const bulletinsAvecRangs = this.calculerRangs(bulletinsValides)
+    // 3. Calculer les bulletins élève par élève
+    const bulletins: BulletinData[] = eleves.map((eleve: any) => {
+      const studentNotes = (allNotes || []).filter((n: any) => n.eleve_id === eleve.id)
+      
+      let totalPoints = 0
+      let totalCoefficients = 0
+      const matieresCalculated: MoyenneMatiere[] = []
 
-    return bulletinsAvecRangs
-  }
+      for (const coeff of coefficients) {
+        const matiereNotes = studentNotes.filter((n: any) => n.evaluation.matiere_id === coeff.matiere_id)
+        if (matiereNotes.length === 0) {
+          continue 
+        }
 
-  /**
-   * Calcule les rangs des élèves dans une classe
-   */
-  private static calculerRangs(bulletins: BulletinData[]): BulletinData[] {
-    // Trier par moyenne générale décroissante
-    const sorted = [...bulletins].sort((a, b) => b.moyenne_generale - a.moyenne_generale)
-    
-    // Assigner les rangs
-    sorted.forEach((bulletin, index) => {
-      bulletin.rang = index + 1
+        const isBonus = (coeff.matiere as any)?.est_bonus || false
+        const cycle = niveau.cycle
+
+        // --- CALCUL SÉNÉGALAIS (MCC + COMP) / 2 ---
+        const notesCC = matiereNotes.filter((n: any) => n.evaluation.type !== 'composition')
+        const noteComp = matiereNotes.find((n: any) => n.evaluation.type === 'composition')
+
+        const normaliser = (n: any) => (Number(n.note) / Number(n.evaluation.bareme || 20)) * 20
+
+        let moyenneMatiere = 0
+        if (cycle === 'primaire') {
+          // Primaire : Moyenne arithmétique simple
+          moyenneMatiere = notesCC.concat(noteComp ? [noteComp] : []).reduce((acc: number, n: any) => acc + normaliser(n), 0) / matiereNotes.length
+        } else {
+          // Moyen/Secondaire : (MCC + Comp) / 2
+          let mcc = 0
+          if (notesCC.length > 0) {
+            // Moyenne pondérée du CC
+            const sumCC = notesCC.reduce((acc: number, n: any) => acc + (normaliser(n) * Number(n.evaluation.coef || 1)), 0)
+            const sumCoeffCC = notesCC.reduce((acc: number, n: any) => acc + Number(n.evaluation.coef || 1), 0)
+            mcc = sumCC / sumCoeffCC
+          }
+
+          const comp = noteComp ? normaliser(noteComp) : null
+
+          if (notesCC.length > 0 && comp !== null) {
+            moyenneMatiere = (mcc + comp) / 2
+          } else if (notesCC.length > 0) {
+            moyenneMatiere = mcc
+          } else if (comp !== null) {
+            moyenneMatiere = comp
+          }
+        }
+
+        const appPath = this.genererAppreciation(moyenneMatiere)
+        const matiereResult: MoyenneMatiere = {
+          matiere_id: coeff.matiere_id,
+          matiere_nom: coeff.matiere!.nom,
+          coefficient: Number(coeff.coefficient),
+          moyenne: Math.round(moyenneMatiere * 100) / 100,
+          bareme: 20,
+          appreciation: appPath,
+          nombre_evaluations: matiereNotes.length,
+          is_bonus: isBonus
+        }
+
+        if (isBonus) {
+          matiereResult.points_bonus = Math.max(0, moyenneMatiere - 10) * Number(coeff.coefficient)
+          totalPoints += matiereResult.points_bonus
+        } else {
+          totalPoints += moyenneMatiere * Number(coeff.coefficient)
+          totalCoefficients += Number(coeff.coefficient)
+        }
+
+        matieresCalculated.push(matiereResult)
+      }
+
+      const mg = totalCoefficients > 0 ? totalPoints / totalCoefficients : 0
+
+      return {
+        eleve,
+        niveau,
+        serie,
+        trimestre,
+        annee_scolaire,
+        matieres: matieresCalculated,
+        moyenne_generale: Math.round(mg * 100) / 100,
+        mention: this.determinerMention(mg, niveau.cycle)
+      }
     })
 
-    // Retourner avec le total d'élèves
-    return sorted.map(bulletin => ({
-      ...bulletin,
-      total_eleves: bulletins.length
-    }))
+    // 4. Calculer les rangs sur l'ensemble des bulletins
+    return this.calculerRangs(bulletins)
   }
 
   /**
-   * Détermine la mention selon le barème sénégalais
+   * Calcule le bulletin individuel (réutilise la méthode de classe pour assurer la cohérence)
    */
+  static async genererBulletin(
+    eleve_id: string,
+    trimestre: number,
+    annee_scolaire: string = '2024-2025'
+  ): Promise<BulletinData> {
+    const { data: eleve } = await supabase.from('eleves').select('classe_id').eq('id', eleve_id).single()
+    if (!eleve) throw new Error("Élève introuvable")
+    
+    const allInClass = await this.genererBulletinsClasse(eleve.classe_id, trimestre, annee_scolaire)
+    const result = allInClass.find(b => b.eleve.id === eleve_id)
+    if (!result) throw new Error("Calcul échoué")
+    return result
+  }
+
+  private static calculerRangs(bulletins: BulletinData[]): BulletinData[] {
+    const sorted = [...bulletins].sort((a, b) => b.moyenne_generale - a.moyenne_generale)
+    
+    // Gérer les ex-æquo proprement
+    let rank = 1
+    for (let i = 0; i < sorted.length; i++) {
+      if (i > 0 && sorted[i].moyenne_generale < sorted[i-1].moyenne_generale) {
+        rank = i + 1
+      }
+      sorted[i].rang = rank
+      sorted[i].total_eleves = bulletins.length
+    }
+
+    return sorted
+  }
+
   private static determinerMention(moyenneSur20: number, cycle?: string): string {
     const moyenne = cycle === 'primaire' ? moyenneSur20 / 2 : moyenneSur20
+    const thresholdBase = cycle === 'primaire' ? 5 : 10
 
     if (cycle === 'primaire') {
       if (moyenne < 4.5) return 'Médiocre'
@@ -256,73 +227,16 @@ export class CalculateurMoyennes {
     return 'Excellent'
   }
 
-  /**
-   * Génère l'appréciation selon la note
-   */
-  private static genererAppreciation(note: number): string {
-    if (note >= 16) return 'Excellent'
-    if (note >= 14) return 'Très bon'
-    if (note >= 12) return 'Bon'
-    if (note >= 10) return 'Passable'
-    if (note >= 8) return 'Insuffisant'
+  private static genererAppreciation(noteSur20: number): string {
+    if (noteSur20 >= 16) return 'Excellent'
+    if (noteSur20 >= 14) return 'Très bon'
+    if (noteSur20 >= 12) return 'Bon'
+    if (noteSur20 >= 10) return 'Passable'
+    if (noteSur20 >= 8) return 'Insuffisant'
     return 'Très insuffisant'
   }
 
-  /**
-   * Valide une note (entre 0 et 20)
-   */
-  static validerNote(note: number): boolean {
-    return note >= 0 && note <= 20
-  }
-
-  /**
-   * Arrondit une note selon les règles sénégalaises
-   */
   static arrondirNote(note: number): number {
     return Math.round(note * 100) / 100
-  }
-
-  /**
-   * Vérifie si une matière est obligatoire pour un niveau/série
-   */
-  static async isMatiereObligatoire(
-    matiere_id: string,
-    niveau_id: string,
-    serie_id?: string
-  ): Promise<boolean> {
-    const { data, error } = await supabase
-      .from('coefficients_matieres')
-      .select('is_obligatoire')
-      .eq('matiere_id', matiere_id)
-      .eq('niveau_id', niveau_id)
-      .eq('is_obligatoire', true)
-      .or(`serie_id.eq.${serie_id || ''},serie_id.is.null`)
-      .single()
-
-    if (error || !data) return false
-    return data.is_obligatoire
-  }
-
-  /**
-   * Récupère les matières disponibles pour un niveau/série
-   */
-  static async getMatieresDisponibles(
-    ecole_id: string,
-    niveau_id: string,
-    serie_id?: string
-  ): Promise<Matiere[]> {
-    const { data, error } = await supabase
-      .from('coefficients_matieres')
-      .select(`
-        matiere:matieres(*)
-      `)
-      .eq('ecole_id', ecole_id)
-      .eq('niveau_id', niveau_id)
-      .eq('is_obligatoire', true)
-      .or(`serie_id.eq.${serie_id || ''},serie_id.is.null`)
-
-    if (error) throw error
-    
-    return data?.map((cm: any) => cm.matiere).filter(Boolean) as Matiere[]
   }
 }

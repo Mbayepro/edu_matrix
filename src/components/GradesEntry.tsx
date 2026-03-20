@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Loader2, FileText } from 'lucide-react';
+import { Loader2, FileText, Plus, X, Calendar, Save } from 'lucide-react';
 
 interface Matiere {
   id: string;
@@ -48,6 +48,15 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [showNewEvalModal, setShowNewEvalModal] = useState(false);
+  const [selectedMatiereId, setSelectedMatiereId] = useState<string>('');
+  const [newEval, setNewEval] = useState({
+    type: 'controle' as 'controle' | 'devoir' | 'composition',
+    date: new Date().toISOString().split('T')[0],
+    coef: 1,
+    bareme: 20,
+  });
   const [niveau, setNiveau] = useState<Niveau | null>(null);
   const [serie, setSerie] = useState<Serie | null>(null);
 
@@ -138,6 +147,45 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
 
     loadEvaluations();
   }, [classeId, trimestre]);
+
+  const createEvaluation = async () => {
+    if (!selectedMatiereId || !classeId) return;
+    
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: prof } = await supabase.from('profiles').select('ecole_id').eq('user_id', user?.id).single();
+
+      const { data, error } = await supabase
+        .from('evaluations')
+        .insert({
+          ecole_id: prof?.ecole_id,
+          classe_id: classeId,
+          matiere_id: selectedMatiereId,
+          trimestre: trimestre,
+          type: newEval.type,
+          date: newEval.date,
+          coef: 1, // Fixé à 1 selon la nouvelle règle sénégalaise
+          bareme: newEval.bareme,
+        })
+        .select()
+        .single();
+
+      if (!error && data) {
+        setShowNewEvalModal(false);
+        // Recharger les évaluations
+        const { data: updatedEvals } = await supabase
+          .from('evaluations')
+          .select('*')
+          .eq('classe_id', classeId)
+          .eq('trimestre', trimestre)
+          .order('date', { ascending: true });
+        setEvaluations(updatedEvals || []);
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // Charger les élèves de la classe
   const [eleves, setEleves] = useState<any[]>([]);
@@ -353,8 +401,21 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
             <div key={matiere.id} className="bg-white rounded-[2.5rem] border border-slate-200/60 shadow-sm overflow-hidden group hover:border-emerald-200 transition-all">
               <div className="px-10 py-6 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
                 <h4 className="font-black text-slate-900 uppercase tracking-tight">{matiere.nom}</h4>
-                <div className="px-4 py-1 rounded-full bg-white border border-slate-200 text-[10px] font-black text-slate-500 uppercase tracking-widest shadow-sm">
-                  Coefficient: {matiere.coefficient}
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      setSelectedMatiereId(matiere.id);
+                      setNewEval(prev => ({ ...prev, bareme: niveau?.cycle === 'primaire' ? 10 : 20 }));
+                      setShowNewEvalModal(true);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 transition-all"
+                  >
+                    <Plus className="w-3 h-3" />
+                    Nouvelle Évaluation
+                  </button>
+                  <div className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-[10px] font-black text-slate-500 uppercase tracking-widest shadow-sm">
+                    Coefficient: {matiere.coefficient}
+                  </div>
                 </div>
               </div>
               <div className="overflow-x-auto">
@@ -406,6 +467,75 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
           ))}
         </div>
       </div>
+
+      {showNewEvalModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-[2.5rem] p-10 w-full max-w-lg shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16" />
+            <div className="relative z-10 text-left">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-600/10 flex items-center justify-center text-emerald-600">
+                  <Plus className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">Nouvelle Évaluation</h3>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">
+                    {matieres.find(m => m.id === selectedMatiereId)?.nom} — Trimestre {trimestre}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Nature de l&apos;épreuve</label>
+                  <select
+                    value={newEval.type}
+                    onChange={(e) => setNewEval(prev => ({ ...prev, type: e.target.value as any }))}
+                    className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all shadow-sm"
+                  >
+                    <option value="controle">Contrôle de classe</option>
+                    <option value="devoir">Devoir surveillé</option>
+                    <option value="composition">Composition trimestrielle</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Date</label>
+                  <input
+                    type="date"
+                    value={newEval.date}
+                    onChange={(e) => setNewEval(prev => ({ ...prev, date: e.target.value }))}
+                    className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all shadow-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Barème</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={newEval.bareme}
+                    onChange={(e) => setNewEval(prev => ({ ...prev, bareme: Number(e.target.value) }))}
+                    className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all shadow-sm"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 mt-10">
+                <button
+                  onClick={() => setShowNewEvalModal(false)}
+                  className="flex-1 px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={createEvaluation}
+                  disabled={saving}
+                  className="flex-[2] py-4 bg-slate-900 hover:bg-emerald-600 text-white rounded-xl text-sm font-black transition-all shadow-xl shadow-slate-900/10 flex items-center justify-center gap-2"
+                >
+                  {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Créer l\'évaluation'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

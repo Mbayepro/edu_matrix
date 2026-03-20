@@ -30,14 +30,24 @@ const OFFLINE_KEY = 'edumatrix_offline_attendance'
 async function processAttendance(studentId: string, classeId: string): Promise<ScanResult> {
   try {
     // 1. Fetch student
-    const { data: eleve, error: eleveError } = await supabase
+    let { data: eleve, error: eleveError } = await supabase
       .from('eleves')
       .select('id, prenom, nom, matricule, classe_id')
       .eq('id', studentId)
       .single()
 
+    // Fallback: search by matricule if not found by UUID
     if (eleveError || !eleve) {
-      return { status: 'not_found', message: 'Élève introuvable dans le système.' }
+      const { data: eleveByMatricule, error: matError } = await supabase
+        .from('eleves')
+        .select('id, prenom, nom, matricule, classe_id')
+        .eq('matricule', studentId)
+        .single()
+      
+      if (matError || !eleveByMatricule) {
+        return { status: 'not_found', message: 'Élève introuvable dans le système.' }
+      }
+      eleve = eleveByMatricule
     }
 
     const today = new Date().toISOString().split('T')[0]

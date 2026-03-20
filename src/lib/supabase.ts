@@ -97,6 +97,7 @@ export interface Matiere {
   // Nouveaux champs
   cycle?: 'primaire' | 'moyen' | 'secondaire'
   code_matiere?: string // Code officiel du ministère
+  est_bonus?: boolean
   // Joined fields
   coefficients?: CoefficientMatiere[]
 }

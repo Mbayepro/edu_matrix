@@ -22,6 +22,7 @@ export default function BulletinsPage() {
   const [classes, setClasses] = useState<Classe[]>([])
   const [selectedClasse, setSelectedClasse] = useState<string>('')
   const [selectedTrimestre, setSelectedTrimestre] = useState<1 | 2 | 3>(1)
+  const [anneeScolaire, setAnneeScolaire] = useState('2024-2025')
   const [bulletins, setBulletins] = useState<BulletinData[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingBulletins, setLoadingBulletins] = useState(false)
@@ -40,10 +41,10 @@ export default function BulletinsPage() {
   }, [ecoleId])
 
   useEffect(() => {
-    if (selectedClasse && selectedTrimestre) {
+    if (selectedClasse && selectedTrimestre && anneeScolaire) {
       loadBulletins()
     }
-  }, [selectedClasse, selectedTrimestre])
+  }, [selectedClasse, selectedTrimestre, anneeScolaire])
 
   async function init() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -97,7 +98,7 @@ export default function BulletinsPage() {
       const bulletinsData = await CalculateurMoyennes.genererBulletinsClasse(
         selectedClasse,
         selectedTrimestre,
-        '2024-2025'
+        anneeScolaire
       )
       setBulletins(bulletinsData)
     } catch (error) {
@@ -186,7 +187,7 @@ export default function BulletinsPage() {
       mention: getMention(moyenneGenerale),
       matieres: matieresData,
       trimestre,
-      annee_scolaire: '2024-2025',
+      annee_scolaire: anneeScolaire,
     }
   }
 
@@ -285,16 +286,29 @@ export default function BulletinsPage() {
                     <th>Matière</th>
                     <th>Coefficient</th>
                     <th>Moyenne</th>
+                    <th>Observation</th>
                 </tr>
             </thead>
             <tbody>
-                ${bulletin.matieres.map(matiere => `
+                ${bulletin.matieres.map(matiere => {
+                  const isBonus = matiere.is_bonus;
+                  const displayMoyenne = bulletin.niveau?.cycle === 'primaire' ? matiere.moyenne / 2 : matiere.moyenne;
+                  const displayBareme = bulletin.niveau?.cycle === 'primaire' ? 10 : 20;
+                  
+                  return `
                     <tr>
-                        <td>${matiere.matiere_nom}</td>
-                        <td>${matiere.coefficient}</td>
-                        <td class="moyenne">${matiere.moyenne} / ${matiere.bareme}</td>
+                        <td>${matiere.matiere_nom} ${isBonus ? '<small style="color: #6366f1; font-weight: bold;">(BONUS)</small>' : ''}</td>
+                        <td>${isBonus ? '-' : matiere.coefficient}</td>
+                        <td class="moyenne">
+                          ${isBonus 
+                            ? `<span style="color: #6366f1; font-weight: bold;">+${(matiere.points_bonus || 0).toFixed(2)} pts</span>` 
+                            : `${displayMoyenne.toFixed(2)} / ${displayBareme}`
+                          }
+                        </td>
+                        <td style="font-size: 12px; color: #6b7280;">${matiere.appreciation}</td>
                     </tr>
-                `).join('')}
+                  `;
+                }).join('')}
             </tbody>
         </table>
 
@@ -408,7 +422,12 @@ export default function BulletinsPage() {
                 </div>
                 <div>
                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600/60">Session</p>
-                   <p className="text-sm font-black text-emerald-900 leading-tight">Année 2024-2025</p>
+                   <input 
+                      type="text" 
+                      value={anneeScolaire} 
+                      onChange={(e) => setAnneeScolaire(e.target.value)}
+                      className="bg-transparent border-none p-0 text-sm font-black text-emerald-900 leading-tight focus:ring-0 w-24 outline-none"
+                   />
                 </div>
              </div>
           </div>
@@ -489,16 +508,24 @@ export default function BulletinsPage() {
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {bulletin.matieres.slice(0, 6).map((matiere, index) => (
-                      <div key={index} className="bg-white rounded-xl p-3 border border-slate-200/50 shadow-sm group/item hover:border-emerald-200 transition-colors">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate mb-1">{matiere.matiere_nom}</p>
+                      <div key={index} className={`bg-white rounded-xl p-3 border shadow-sm group/item hover:border-emerald-200 transition-colors ${matiere.is_bonus ? 'border-indigo-100 bg-indigo-50/10' : 'border-slate-200/50'}`}>
+                        <p className={`text-[10px] font-black uppercase tracking-widest truncate mb-1 ${matiere.is_bonus ? 'text-indigo-400' : 'text-slate-400'}`}>
+                          {matiere.matiere_nom}
+                        </p>
                         <div className="flex items-baseline gap-1">
-                          <span className="text-sm font-black text-slate-800">
-                            {bulletin.niveau?.cycle === 'primaire' 
-                              ? (matiere.moyenne / 2).toFixed(1)
-                              : matiere.moyenne.toFixed(1)
-                            }
-                          </span>
-                          <span className="text-[9px] font-bold text-slate-400">/{bulletin.niveau?.cycle === 'primaire' ? '10' : '20'}</span>
+                          {matiere.is_bonus ? (
+                            <span className="text-sm font-black text-indigo-600">+{matiere.points_bonus?.toFixed(1)} pts</span>
+                          ) : (
+                            <>
+                              <span className="text-sm font-black text-slate-800">
+                                {bulletin.niveau?.cycle === 'primaire' 
+                                  ? (matiere.moyenne / 2).toFixed(1)
+                                  : matiere.moyenne.toFixed(1)
+                                }
+                              </span>
+                              <span className="text-[9px] font-bold text-slate-400">/{bulletin.niveau?.cycle === 'primaire' ? '10' : '20'}</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     ))}

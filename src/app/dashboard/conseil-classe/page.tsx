@@ -37,6 +37,7 @@ export default function ConseilClassePage() {
   const [classes, setClasses] = useState<any[]>([])
   const [selectedClasse, setSelectedClasse] = useState<string>('')
   const [selectedTrimestre, setSelectedTrimestre] = useState<1 | 2 | 3>(1)
+  const [anneeScolaire, setAnneeScolaire] = useState('2024-2025')
   const [loading, setLoading] = useState(false)
   const [bulletins, setBulletins] = useState<BulletinData[]>([])
   const [search, setSearch] = useState('')
@@ -77,7 +78,7 @@ export default function ConseilClassePage() {
       const data = await CalculateurMoyennes.genererBulletinsClasse(
         selectedClasse,
         selectedTrimestre,
-        '2024-2025'
+        anneeScolaire
       )
       setBulletins(data)
     } catch (error) {
@@ -89,7 +90,7 @@ export default function ConseilClassePage() {
 
   useEffect(() => {
     loadData()
-  }, [selectedClasse, selectedTrimestre])
+  }, [selectedClasse, selectedTrimestre, anneeScolaire])
 
   async function handleEditDecision(b: BulletinData) {
     setEditingEleve(b)
@@ -177,6 +178,16 @@ export default function ConseilClassePage() {
               <option value={3}>3ème Trimestre</option>
             </select>
             <TrendingUp className="w-4 h-4 text-emerald-600 absolute right-4 pointer-events-none" />
+          </div>
+
+          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-slate-200 shadow-sm relative group overflow-hidden transition-all hover:border-emerald-200">
+            <input 
+              type="text"
+              value={anneeScolaire}
+              onChange={(e) => setAnneeScolaire(e.target.value)}
+              className="bg-transparent border-none focus:outline-none text-sm font-black text-slate-900 pr-8 cursor-pointer w-24"
+            />
+            <School className="w-4 h-4 text-emerald-600 absolute right-4 pointer-events-none" />
           </div>
         </div>
       </div>
