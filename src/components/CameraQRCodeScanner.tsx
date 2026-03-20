@@ -13,20 +13,15 @@ export default function CameraQRCodeScanner({ onScan, onClose }: CameraQRCodeSca
   const scannerRef = useRef<Html5Qrcode | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isStarted, setIsStarted] = useState(false)
-  const [cameraId, setCameraId] = useState<string | null>(null)
-  const [cameras, setCameras] = useState<any[]>([])
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment')
 
   const SCAN_REGION_ID = 'qr-reader'
 
   useEffect(() => {
-    // 1. Get available cameras
+    // Check for camera availability
     Html5Qrcode.getCameras()
       .then((devices) => {
-        if (devices && devices.length > 0) {
-          setCameras(devices)
-          // Default to the last camera (usually the back camera on phones)
-          setCameraId(devices[devices.length - 1].id)
-        } else {
+        if (!devices || devices.length === 0) {
           setError('Aucune caméra trouvée sur cet appareil.')
         }
       })
@@ -40,7 +35,12 @@ export default function CameraQRCodeScanner({ onScan, onClose }: CameraQRCodeSca
     }
   }, [])
 
-  const startScanner = async (id: string) => {
+  const startScanner = async (mode: 'user' | 'environment') => {
+    // Si déjà démarré, on arrête d'abord
+    if (scannerRef.current) {
+        await stopScanner()
+    }
+
     const html5QrCode = new Html5Qrcode(SCAN_REGION_ID)
     scannerRef.current = html5QrCode
 
@@ -48,7 +48,7 @@ export default function CameraQRCodeScanner({ onScan, onClose }: CameraQRCodeSca
       setIsStarted(true)
       setError(null)
       await html5QrCode.start(
-        id,
+        { facingMode: mode },
         {
           fps: 10,
           qrbox: { width: 250, height: 250 },
@@ -59,12 +59,12 @@ export default function CameraQRCodeScanner({ onScan, onClose }: CameraQRCodeSca
           stopScanner()
         },
         () => {
-          // Error callback (silent to avoid spam)
+          // Error callback (silent)
         }
       )
     } catch (err) {
       console.error('Failed to start scanner:', err)
-      setError('Impossible de démarrer la caméra.')
+      setError('Impossible de démarrer la caméra. Vérifiez les permissions.')
       setIsStarted(false)
     }
   }
@@ -80,14 +80,11 @@ export default function CameraQRCodeScanner({ onScan, onClose }: CameraQRCodeSca
     setIsStarted(false)
   }
 
-  const switchCamera = () => {
-    if (cameras.length < 2) return
-    const currentIndex = cameras.findIndex(c => c.id === cameraId)
-    const nextIndex = (currentIndex + 1) % cameras.length
-    const nextId = cameras[nextIndex].id
-    setCameraId(nextId)
+  const toggleCamera = () => {
+    const nextMode = facingMode === 'environment' ? 'user' : 'environment'
+    setFacingMode(nextMode)
     if (isStarted) {
-      stopScanner().then(() => startScanner(nextId))
+      startScanner(nextMode)
     }
   }
 
@@ -115,10 +112,10 @@ export default function CameraQRCodeScanner({ onScan, onClose }: CameraQRCodeSca
               <Camera className="w-12 h-12 text-emerald-400" />
             </div>
             <p className="text-slate-400 text-sm mb-6">
-              Prêt à scanner ? Orientez votre caméra vers le QR Code de l&apos;élève.
+              Prêt à scanner ? Orientez votre caméra arrière (ou avant) vers le QR Code.
             </p>
             <button
-              onClick={() => cameraId && startScanner(cameraId)}
+              onClick={() => startScanner(facingMode)}
               className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-2xl font-bold transition-all shadow-lg shadow-emerald-600/20"
             >
               Démarrer le scanner
@@ -141,21 +138,23 @@ export default function CameraQRCodeScanner({ onScan, onClose }: CameraQRCodeSca
       </div>
 
       {/* Footer Controls */}
-      <div className="mt-8 flex justify-center gap-4">
-        {cameras.length > 1 && (
-          <button
-            onClick={switchCamera}
-            className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-2xl font-medium transition-all flex items-center gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Changer de caméra
-          </button>
-        )}
+      <div className="mt-8 flex flex-col items-center gap-4">
+        <button
+          onClick={toggleCamera}
+          className="bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-2xl font-medium transition-all flex items-center gap-2"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Passer à la caméra {facingMode === 'environment' ? 'avant' : 'arrière'}
+        </button>
+        
+        <p className="text-slate-500 text-center text-[10px] uppercase tracking-widest font-black">
+          Mode actuel: {facingMode === 'environment' ? 'Arrière' : 'Avant'}
+        </p>
       </div>
 
       <div className="mt-auto pb-4">
-        <p className="text-slate-500 text-center text-xs">
-          Le scan est automatique dès que le code est détecté dans le cadre.
+        <p className="text-slate-300 text-center text-xs">
+          Le scan est automatique dès que le code est détecté.
         </p>
       </div>
     </div>

@@ -303,6 +303,37 @@ export default function NotesPage() {
     }
   }
 
+  async function deleteEvaluation(id: string) {
+    if (!confirm('Voulez-vous vraiment supprimer cette évaluation et toutes ses notes ?')) return
+    setSaving(true)
+    try {
+      const { error } = await supabase.from('evaluations').delete().eq('id', id)
+      if (!error) {
+        showToast('Évaluation supprimée avec succès', 'success')
+        setSelectedEvaluation('')
+        await loadEvaluations()
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function updateEvaluation(ev: Evaluation) {
+    const newBareme = prompt('Nouveau Barème (ex: 20)?', ev.bareme.toString())
+    if (!newBareme || isNaN(Number(newBareme))) return
+
+    setSaving(true)
+    try {
+      const { error } = await supabase.from('evaluations').update({ bareme: Number(newBareme) }).eq('id', ev.id)
+      if (!error) {
+        showToast('Barème mis à jour', 'success')
+        await loadEvaluations()
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const getMention = (note: number, bareme: number = 20): string => {
     if (note === undefined || note === null) return '-';
     
@@ -488,9 +519,25 @@ export default function NotesPage() {
                   <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Classe</div>
                   <div className="text-sm font-black text-white">{selectedClasseData?.nom_classe}</div>
                 </div>
-                <div className="px-4 py-2">
+                <div className="px-4 py-2 border-r border-white/10">
                   <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Date</div>
                   <div className="text-sm font-black text-white uppercase">{new Date(selectedEvaluationData.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</div>
+                </div>
+                <div className="flex items-center gap-2 pl-4">
+                  <button 
+                    onClick={() => updateEvaluation(selectedEvaluationData)}
+                    className="p-2 rounded-lg bg-white/10 text-white hover:bg-emerald-500 transition-colors"
+                    title="Modifier le barème"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={() => deleteEvaluation(selectedEvaluationData.id)}
+                    className="p-2 rounded-lg bg-white/10 text-white hover:bg-red-500 transition-colors"
+                    title="Supprimer l'évaluation"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             </div>

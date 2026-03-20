@@ -1,5 +1,5 @@
 -- ============================================================
--- EDUMATRIX - MIGRATION SYSTEME SCOLAIRE SENEGALAIS V3 (FINAL)
+-- EDUMATRIX - MIGRATION SYSTEME SCOLAIRE SENEGALAIS V3 (FIX SCHEMA & JOINS)
 -- ============================================================
 
 -- Nettoyage des anciennes versions pour éviter les erreurs de changement de structure (Postgres 42P16)
@@ -52,7 +52,9 @@ SELECT
   m.nom as matiere_nom,
   m.est_bonus,
   sc.trimestre,
+  -- Coeff : cn.coefficient > m.coefficient > default 1
   COALESCE(cn.coefficient, m.coefficient, 1) as coefficient,
+  -- Logique Sénégalaise : (MCC + Composition) / 2
   CASE 
     WHEN sc.mcc IS NOT NULL AND sc.composition_note IS NOT NULL THEN ROUND((sc.mcc + sc.composition_note) / 2, 2)
     WHEN sc.mcc IS NOT NULL THEN ROUND(sc.mcc, 2)
@@ -62,9 +64,11 @@ SELECT
   sc.total_evals as nombre_evaluations
 FROM public.eleves e
 JOIN public.classes c ON e.classe_id = c.id
+-- Jointure par CODE car 'niveau' dans classes est du TEXTE
 LEFT JOIN public.niveaux niv ON niv.code = c.niveau AND niv.ecole_id = e.ecole_id
 CROSS JOIN (SELECT id, nom, est_bonus, coefficient FROM public.matieres) m
 JOIN subject_components sc ON sc.eleve_id = e.id AND sc.matiere_id = m.id
+-- Utilisation de coefficients_niveaux confirmée par l'utilisateur
 LEFT JOIN public.coefficients_niveaux cn ON 
   cn.matiere_id = m.id AND 
   cn.niveau = c.niveau AND
@@ -84,19 +88,22 @@ SELECT
   niveau_code,
   cycle,
   trimestre,
+  -- Points totaux (Bonus EPS inclus)
   SUM(
     CASE 
       WHEN est_bonus THEN GREATEST(0, (COALESCE(moyenne_matiere, 0) - 10) * coefficient)
       ELSE COALESCE(moyenne_matiere, 0) * coefficient 
     END
   ) as total_points,
+  -- Diviseur des coefficients (Sans bonus)
   SUM(CASE WHEN NOT est_bonus AND moyenne_matiere IS NOT NULL THEN coefficient ELSE 0 END) as total_coefficients,
+  -- Moyenne Générale
   CASE 
     WHEN SUM(CASE WHEN NOT est_bonus AND moyenne_matiere IS NOT NULL THEN coefficient ELSE 0 END) > 0 THEN
       CASE 
-        WHEN cycle = 'primaire' THEN -- Sur /10
+        WHEN cycle = 'primaire' THEN 
            ROUND((SUM(COALESCE(moyenne_matiere, 0) * coefficient) / SUM(CASE WHEN moyenne_matiere IS NOT NULL THEN coefficient ELSE 0 END)) / 2, 2)
-        ELSE -- Sur /20 avec bonus
+        ELSE 
            ROUND(
              SUM(CASE WHEN est_bonus THEN GREATEST(0, (COALESCE(moyenne_matiere, 0) - 10) * coefficient) ELSE COALESCE(moyenne_matiere, 0) * coefficient END)
              / SUM(CASE WHEN NOT est_bonus AND moyenne_matiere IS NOT NULL THEN coefficient ELSE 0 END), 2
@@ -104,6 +111,7 @@ SELECT
       END
     ELSE 0 
   END as moyenne_generale,
+  -- Mention
   CASE 
     WHEN SUM(CASE WHEN NOT est_bonus AND moyenne_matiere IS NOT NULL THEN coefficient ELSE 0 END) > 0 THEN
       CASE 
@@ -140,15 +148,16 @@ GROUP BY eleve_id, ecole_id, prenom, nom, matricule, classe_id, nom_classe,
 CREATE OR REPLACE VIEW public.v_bulletins_complets AS
 SELECT 
   vmg.*,
-  vmg.niveau_code as niveau_nom,
-  COALESCE(vmg.cycle, 'primaire') as niveau_cycle,
+  ni.nom as niveau_nom,
+  COALESCE(ni.cycle, 'primaire') as niveau_cycle,
   (SELECT array_agg(
     '(' || vmm.matiere_id || ',' || vmm.matiere_nom || ',' || vmm.coefficient || ',' || COALESCE(vmm.moyenne_matiere::text, '0') || ',' || vmm.nombre_evaluations || ')'
    )
    FROM public.v_moyennes_matieres vmm
    WHERE vmm.eleve_id = vmg.eleve_id AND vmm.trimestre = vmg.trimestre AND vmm.moyenne_matiere IS NOT NULL
   ) as matieres_details
-FROM public.v_moyennes_generales vmg;
+FROM public.v_moyennes_generales vmg
+-- Correction de la jointure par CODE pour la vue bulletins
+LEFT JOIN public.niveaux ni ON ni.code = vmg.niveau_code AND ni.ecole_id = vmg.ecole_id;
 
--- RECHARGEMENT DU CACHE
 NOTIFY pgrst, 'reload schema';

@@ -32,19 +32,18 @@ export class CalculateurMoyennes {
    */
   static async getCoefficientsMatieres(
     ecole_id: string,
-    niveau_id: string,
+    niveau_code: string,
     serie_id?: string
   ): Promise<CoefficientMatiere[]> {
     const { data, error } = await supabase
-      .from('coefficients_matieres')
+      .from('coefficients_niveaux')
       .select(`
         *,
         matiere:matieres(id, nom, code_matiere, cycle, est_bonus),
-        niveau:niveaux(id, code, nom, cycle),
         serie:series(id, code, nom)
       `)
       .eq('ecole_id', ecole_id)
-      .eq('niveau_id', niveau_id)
+      .eq('niveau', niveau_code)
       .or(`serie_id.eq.${serie_id || ''},serie_id.is.null`)
       .order('matiere(nom)')
 
@@ -67,7 +66,7 @@ export class CalculateurMoyennes {
       { data: eleves, error: elErr },
       { data: allNotes, error: ntErr }
     ] = await Promise.all([
-      supabase.from('classes').select('*, niveau:niveaux(*), serie:series(*)').eq('id', classe_id).single(),
+      supabase.from('classes').select('*, serie:series(*)').eq('id', classe_id).single(),
       supabase.from('eleves').select('*').eq('classe_id', classe_id).order('nom, prenom'),
       supabase.from('notes').select('*, evaluation:evaluations!inner(*)').eq('evaluation.classe_id', classe_id).eq('evaluation.trimestre', trimestre)
     ])
@@ -76,11 +75,14 @@ export class CalculateurMoyennes {
     if (!eleves || eleves.length === 0) return []
 
     const classe = classeData as any
-    const niveau = classe.niveau
+    // Fetch niveau separately by code
+    const { data: niveau } = await supabase.from('niveaux').select('*').eq('code', classe.niveau).eq('ecole_id', classe.ecole_id).single()
+    if (!niveau) throw new Error("Niveau de classe introuvable.")
+
     const serie = classe.serie
 
     // 2. Charger les coefficients une seule fois
-    const coefficients = await this.getCoefficientsMatieres(classe.ecole_id, niveau.id, serie?.id)
+    const coefficients = await this.getCoefficientsMatieres(classe.ecole_id, classe.niveau, serie?.id)
 
     // 3. Calculer les bulletins élève par élève
     const bulletins: BulletinData[] = eleves.map((eleve: any) => {
