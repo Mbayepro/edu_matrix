@@ -295,6 +295,8 @@ export default function NotesPage() {
 
       if (!error) {
         showToast(`${notesToInsert.length} note(s) enregistrée(s) avec succès.`, 'success')
+        // REFRESH DATA to see new averages
+        await loadNotes()
       } else {
         showToast('Erreur : ' + error.message, 'error')
       }
@@ -545,110 +547,192 @@ export default function NotesPage() {
         )}
       </div>
 
-      {/* Notes Table */}
+      {/* Notes Section with Save Button Fixed/Scrolling */}
       {selectedEvaluation && eleves.length > 0 && (
-        <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Tableau de Saisie</h2>
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-emerald-600" />
-                <span className="text-base font-black text-slate-900">{eleves.length} élèves inscrits</span>
+        <div className="space-y-6">
+          <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Tableau de Saisie</h2>
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-emerald-600" />
+                  <span className="text-base font-black text-slate-900">{eleves.length} élèves inscrits</span>
+                </div>
               </div>
+              
+              <button
+                onClick={saveNotes}
+                disabled={saving}
+                className="flex items-center justify-center gap-3 px-8 py-3.5 bg-slate-900 hover:bg-emerald-600 text-white text-sm font-black rounded-xl transition-all shadow-xl shadow-slate-900/10 disabled:opacity-50"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Enregistrement…
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Mettre à jour les notes
+                  </>
+                )}
+              </button>
             </div>
-            
-            <button
-              onClick={saveNotes}
-              disabled={saving}
-              className="flex items-center justify-center gap-3 px-8 py-3.5 bg-slate-900 hover:bg-emerald-600 text-white text-sm font-black rounded-xl transition-all shadow-xl shadow-slate-900/10 disabled:opacity-50"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Enregistrement…
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  Mettre à jour les notes
-                </>
-              )}
-            </button>
-          </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/30">
-                  <th className="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Élève</th>
-                  <th className="text-center px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest w-40">Note / {selectedEvaluationData?.bareme || 20}</th>
-                  <th className="text-center px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest w-32">Évaluation</th>
-                  <th className="text-center px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest w-40 bg-slate-50/50">Moyenne Générale</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {eleves.map((eleve) => {
-                  const note = notes[eleve.id]
-                  const moyenneEleve = moyennesGenerales[eleve.id]
-                  return (
-                    <tr key={eleve.id} className="group hover:bg-slate-50/80 transition-all duration-300">
-                      <td className="px-8 py-5">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 text-xs font-black uppercase transition-transform group-hover:scale-110">
-                            {eleve.prenom[0]}{eleve.nom[0]}
+            {/* DESKTOP TABLE VIEW */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50/30">
+                    <th className="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Élève</th>
+                    <th className="text-center px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest w-40">Note / {selectedEvaluationData?.bareme || 20}</th>
+                    <th className="text-center px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest w-32">Évaluation</th>
+                    <th className="text-center px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest w-40 bg-slate-50/50">Moyenne Générale</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {eleves.map((eleve) => {
+                    const note = notes[eleve.id]
+                    const moyenneEleve = moyennesGenerales[eleve.id]
+                    return (
+                      <tr key={eleve.id} className="group hover:bg-slate-50/80 transition-all duration-300">
+                        <td className="px-8 py-5">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 text-xs font-black uppercase transition-transform group-hover:scale-110">
+                              {eleve.prenom[0]}{eleve.nom[0]}
+                            </div>
+                            <div>
+                              <p className="text-base font-black text-slate-900 leading-tight">{eleve.prenom} {eleve.nom}</p>
+                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{eleve.matricule}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-base font-black text-slate-900 leading-tight">{eleve.prenom} {eleve.nom}</p>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{eleve.matricule}</p>
+                        </td>
+                        <td className="px-4 py-5">
+                          <div className="relative max-w-[120px] mx-auto group-focus-within:scale-105 transition-transform">
+                            <input
+                              type="number"
+                              min="0"
+                              max={selectedEvaluationData?.bareme || 20}
+                              step="0.5"
+                              value={note === undefined ? '' : note}
+                              placeholder="—"
+                              onChange={(e) => setNotes(prev => ({
+                                ...prev,
+                                [eleve.id]: e.target.value === '' ? undefined as any : Number(e.target.value)
+                              }))}
+                              className={`w-full px-4 py-3 text-center rounded-[1rem] text-base font-black transition-all border-2 focus:outline-none focus:ring-4 ${
+                                note !== undefined 
+                                  ? 'bg-white border-emerald-500/20 text-emerald-700' 
+                                  : 'bg-slate-50 border-transparent text-slate-400 focus:bg-white focus:border-emerald-500'
+                              }`}
+                            />
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-5">
-                        <div className="relative max-w-[120px] mx-auto group-focus-within:scale-105 transition-transform">
-                          <input
-                            type="number"
-                            min="0"
-                            max={selectedEvaluationData?.bareme || 20}
-                            step="0.5"
-                            value={note === undefined ? '' : note}
-                            placeholder="—"
-                            onChange={(e) => setNotes(prev => ({
-                              ...prev,
-                              [eleve.id]: e.target.value === '' ? undefined as any : Number(e.target.value)
-                            }))}
-                            className={`w-full px-4 py-3 text-center rounded-[1rem] text-base font-black transition-all border-2 focus:outline-none focus:ring-4 ${
-                              note !== undefined 
-                                ? 'bg-white border-emerald-500/20 text-emerald-700' 
-                                : 'bg-slate-50 border-transparent text-slate-400 focus:bg-white focus:border-emerald-500'
-                            }`}
-                          />
-                        </div>
-                      </td>
-                      <td className="px-4 py-5 text-center">
-                        <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider ${getNoteColor(note, selectedEvaluationData?.bareme)}`}>
-                          {getMention(note, selectedEvaluationData?.bareme)}
-                        </span>
-                      </td>
-                      <td className="px-8 py-5 text-center bg-slate-50/30">
-                        {moyenneEleve !== undefined ? (
-                          <div className="flex flex-col items-center">
-                            <span className="text-lg font-black text-slate-900">
-                              {(selectedClasseData?.niveau_info?.cycle === 'primaire' ? moyenneEleve / 2 : moyenneEleve).toFixed(2)}
-                            </span>
-                            <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Trim. {selectedTrimestre}</span>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col items-center opacity-30">
-                            <span className="text-sm font-black text-slate-300">—</span>
-                            <span className="text-[9px] text-slate-300 font-black uppercase">N/A</span>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+                        </td>
+                        <td className="px-4 py-5 text-center">
+                          <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider ${getNoteColor(note, selectedEvaluationData?.bareme)}`}>
+                            {getMention(note, selectedEvaluationData?.bareme)}
+                          </span>
+                        </td>
+                        <td className="px-8 py-5 text-center bg-slate-50/30">
+                          {moyenneEleve !== undefined ? (
+                            <div className="flex flex-col items-center">
+                              <span className="text-lg font-black text-slate-900">
+                                {(selectedClasseData?.niveau_info?.cycle === 'primaire' ? moyenneEleve / 2 : moyenneEleve).toFixed(2)}
+                              </span>
+                              <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Trim. {selectedTrimestre}</span>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center opacity-30">
+                              <span className="text-sm font-black text-slate-300">—</span>
+                              <span className="text-[9px] text-slate-300 font-black uppercase">N/A</span>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* MOBILE CARD VIEW */}
+            <div className="md:hidden divide-y divide-slate-100">
+              {eleves.map((eleve) => {
+                const note = notes[eleve.id]
+                const moyenneEleve = moyennesGenerales[eleve.id]
+                return (
+                  <div key={eleve.id} className="p-6 space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black text-sm uppercase">
+                        {eleve.prenom[0]}{eleve.nom[0]}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-base font-black text-slate-900 truncate">
+                          {eleve.prenom} {eleve.nom}
+                        </p>
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
+                          {eleve.matricule}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Moyenne Générale</p>
+                        <p className="text-base font-black text-slate-900">
+                          {moyenneEleve !== undefined 
+                            ? (selectedClasseData?.niveau_info?.cycle === 'primaire' ? moyenneEleve / 2 : moyenneEleve).toFixed(2)
+                            : '—'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Note / {selectedEvaluationData?.bareme || 20}</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max={selectedEvaluationData?.bareme || 20}
+                          step="0.5"
+                          value={note === undefined ? '' : note}
+                          placeholder="Note"
+                          onChange={(e) => setNotes(prev => ({
+                            ...prev,
+                            [eleve.id]: e.target.value === '' ? undefined as any : Number(e.target.value)
+                          }))}
+                          className={`w-full px-4 py-3 rounded-xl text-lg font-black transition-all border-2 focus:outline-none ${
+                            note !== undefined 
+                              ? 'bg-emerald-50 border-emerald-500/20 text-emerald-700' 
+                              : 'bg-slate-50 border-transparent text-slate-400 focus:bg-white focus:border-emerald-500'
+                          }`}
+                        />
+                      </div>
+                      <div className="flex flex-col justify-end">
+                         <div className={`h-12 flex items-center justify-center rounded-xl text-[10px] font-black uppercase tracking-widest border border-current opacity-70 ${getNoteColor(note, selectedEvaluationData?.bareme)}`}>
+                            {getMention(note, selectedEvaluationData?.bareme)}
+                         </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+          
+          {/* Scrollable Save Button for Mobile */}
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 md:hidden w-[calc(100%-3rem)] max-w-sm">
+             <button
+               onClick={saveNotes}
+               disabled={saving}
+               className="w-full flex items-center justify-center gap-3 py-4 bg-slate-900 hover:bg-emerald-600 text-white text-sm font-black rounded-2xl transition-all shadow-2xl shadow-slate-900/40 disabled:opacity-50 border border-white/10"
+             >
+               {saving ? (
+                 <Loader2 className="w-5 h-5 animate-spin" />
+               ) : (
+                 <>
+                   <Save className="w-5 h-5" />
+                   ENREGISTRER LES NOTES
+                 </>
+               )}
+             </button>
           </div>
         </div>
       )}

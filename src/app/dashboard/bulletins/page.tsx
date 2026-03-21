@@ -14,7 +14,9 @@ import {
   TrendingUp,
   Award,
   Eye,
+  AlertCircle,
 } from 'lucide-react'
+import { useToast } from '@/contexts/ToastContext'
 
 export default function BulletinsPage() {
   const [ecoleId, setEcoleId] = useState<string | null>(null)
@@ -27,6 +29,7 @@ export default function BulletinsPage() {
   const [loading, setLoading] = useState(true)
   const [loadingBulletins, setLoadingBulletins] = useState(false)
   const [generating, setGenerating] = useState<string | null>(null)
+  const { showToast } = useToast()
 
   useEffect(() => {
     init()
@@ -100,9 +103,21 @@ export default function BulletinsPage() {
         selectedTrimestre,
         anneeScolaire
       )
+      
+      if (bulletinsData.length === 0) {
+        showToast('Aucun élève trouvé ou pas de notes pour ce trimestre.', 'error')
+      } else {
+        const withNotes = bulletinsData.filter(b => b.matieres.length > 0)
+        if (withNotes.length === 0) {
+          showToast("Les élèves existent mais aucune moyenne calculée. Vérifiez vos matières et coefficients dans les Paramètres.", "error")
+        } else {
+          showToast(`${withNotes.length} bulletins calculés.`, 'success')
+        }
+      }
       setBulletins(bulletinsData)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur lors du chargement des bulletins:', error)
+      showToast('Erreur : ' + (error.message || 'Impossible de générer les bulletins'), 'error')
       setBulletins([])
     } finally {
       setLoadingBulletins(false)

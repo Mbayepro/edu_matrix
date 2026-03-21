@@ -35,7 +35,7 @@ export class CalculateurMoyennes {
     niveau_code: string,
     serie_id?: string
   ): Promise<CoefficientMatiere[]> {
-    const { data, error } = await supabase
+    let query = supabase
       .from('coefficients_niveaux')
       .select(`
         *,
@@ -44,8 +44,14 @@ export class CalculateurMoyennes {
       `)
       .eq('ecole_id', ecole_id)
       .eq('niveau', niveau_code)
-      .or(`serie_id.eq.${serie_id || ''},serie_id.is.null`)
-      .order('matiere(nom)')
+
+    if (serie_id) {
+       query = query.or(`serie_id.eq.${serie_id},serie_id.is.null`)
+    } else {
+       query = query.is('serie_id', null)
+    }
+
+    const { data, error } = await query.order('matiere(nom)')
 
     if (error) throw error
     return data || []
@@ -75,11 +81,26 @@ export class CalculateurMoyennes {
     if (!eleves || eleves.length === 0) return []
 
     const classe = classeData as any
-    // Fetch niveau separately by code
-    const { data: niveau } = await supabase.from('niveaux').select('*').eq('code', classe.niveau).eq('ecole_id', classe.ecole_id).single()
-    if (!niveau) throw new Error("Niveau de classe introuvable.")
-
     const serie = classe.serie
+
+    // 2. Charger le niveau avec plus de souplesse
+    let { data: niveau } = await supabase
+      .from('niveaux')
+      .select('*')
+      .eq('code', classe.niveau)
+      .eq('ecole_id', classe.ecole_id)
+      .single()
+    
+    // Fallback: Si pas trouvé par code exact, on crée un objet niveau par défaut basé sur le cycle estimé
+    if (!niveau) {
+      console.warn(`Niveau ${classe.niveau} introuvable pour l'école ${classe.ecole_id}. Utilisation d'un profil par défaut.`)
+      niveau = {
+        code: classe.niveau,
+        nom: classe.niveau,
+        cycle: (classe.niveau.includes('CM') || classe.niveau.includes('CE') || classe.niveau.includes('CP') || classe.niveau.includes('CI')) ? 'primaire' : 'moyen',
+        ecole_id: classe.ecole_id
+      } as any
+    }
 
     // 2. Charger les coefficients une seule fois
     const coefficients = await this.getCoefficientsMatieres(classe.ecole_id, classe.niveau, serie?.id)

@@ -6,7 +6,7 @@ import { useProfile } from '@/hooks/useProfile'
 import type { Classe, Profile } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import AttendanceScanner from '@/components/AttendanceScanner'
-import { UserCheck, BookOpen, Clock, AlertCircle, Loader2 } from 'lucide-react'
+import { UserCheck, BookOpen, Clock, AlertCircle, Loader2, QrCode } from 'lucide-react'
 
 interface ElevePresence {
   id: string
@@ -30,6 +30,7 @@ export default function PresencesPage() {
   const [eleves, setEleves] = useState<ElevePresence[]>([])
   const [marking, setMarking] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [activeTab, setActiveTab] = useState<'scanner' | 'list'>('scanner')
 
   useEffect(() => {
     if (ecoleId) {
@@ -193,142 +194,166 @@ export default function PresencesPage() {
           <p className="text-sm">Veuillez d'abord créer une classe avant de marquer les présences.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          
-          {/* Left Col: Scanner */}
-          <div className="lg:col-span-5">
-            <div className="sticky top-24">
-              <div onClick={() => loadTodayPresences(selectedClasseId)}>
-                <AttendanceScanner classeId={selectedClasseId} />
-              </div>
-              <div className="mt-4 text-center">
-                 <button 
-                  onClick={() => loadTodayPresences(selectedClasseId)} 
-                  className="text-xs text-emerald-600 hover:underline inline-flex items-center gap-1"
-                 >
-                   <Clock className="w-3 h-3" />
-                   Actualiser la liste
-                 </button>
-              </div>
-            </div>
+        <>
+          {/* Tabs for Mobile */}
+          <div className="flex lg:hidden bg-slate-100 p-1 rounded-2xl">
+            <button
+              onClick={() => setActiveTab('scanner')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                activeTab === 'scanner' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'
+              }`}
+            >
+              <QrCode className="w-4 h-4" />
+              Scanner
+            </button>
+            <button
+              onClick={() => setActiveTab('list')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                activeTab === 'list' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'
+              }`}
+            >
+              <UserCheck className="w-4 h-4" />
+              Liste d&apos;appel
+            </button>
           </div>
 
-          {/* Right Col: Class List */}
-          <div className="lg:col-span-7">
-            <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm overflow-hidden h-full flex flex-col transition-all duration-500 hover:shadow-xl hover:shadow-emerald-900/5">
-              <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600">
-                      <UserCheck className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h2 className="text-sm font-black text-slate-800 leading-tight">Appel de la Classe</h2>
-                    </div>
-                  </div>
-                  <div className="bg-slate-900 text-white font-black px-3 py-1 rounded-lg text-[9px] uppercase tracking-widest shadow-lg shadow-slate-900/10">
-                    {eleves.filter(e => e.statut).length} / {eleves.length}
-                  </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            {/* Left Col: Scanner */}
+            <div className={`lg:col-span-5 ${activeTab === 'scanner' ? 'block' : 'hidden lg:block'}`}>
+              <div className="sticky top-24">
+                <div onClick={() => loadTodayPresences(selectedClasseId)}>
+                  <AttendanceScanner classeId={selectedClasseId} />
                 </div>
-                
-                {/* Search Bar - More Compact */}
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest">S</span>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Rechercher..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-xl py-2 pl-8 pr-4 text-xs font-medium focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all shadow-sm"
-                  />
+                <div className="mt-4 text-center">
+                   <button 
+                    onClick={() => loadTodayPresences(selectedClasseId)} 
+                    className="text-xs text-emerald-600 hover:underline inline-flex items-center gap-1"
+                   >
+                     <Clock className="w-3 h-3" />
+                     Actualiser la liste
+                   </button>
                 </div>
-              </div>
-
-              <div className="p-0 flex-1 overflow-y-auto max-h-[500px] bg-slate-50/50 scrollbar-thin scrollbar-thumb-slate-200">
-                {eleves.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-48 text-slate-400">
-                    <AlertCircle className="w-8 h-8 mb-2 text-slate-300" />
-                    <p className="text-sm">Aucun élève dans cette classe.</p>
-                  </div>
-                ) : (
-                  <ul className="divide-y divide-slate-100">
-                    {filteredEleves.map((eleve) => (
-                      <li key={eleve.id} className="px-8 py-5 hover:bg-white transition-all duration-300 group flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-2xl flex items-center justify-center font-black text-xs shrink-0 uppercase border border-slate-200/50 group-hover:scale-110 transition-transform duration-500">
-                            {eleve.prenom[0]}{eleve.nom[0]}
-                          </div>
-                          <div>
-                            <p className="text-base font-black text-slate-900 leading-tight group-hover:text-emerald-600 transition-colors">
-                              {eleve.prenom} {eleve.nom}
-                            </p>
-                            <div className="flex items-center gap-2 mt-1">
-                              {eleve.matricule && (
-                                <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded-md">
-                                  {eleve.matricule}
-                                </span>
-                              )}
-                              {eleve.statut && (
-                                <span className={`text-[9px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-[0.15em] shadow-sm ${statutColors[eleve.statut]}`}>
-                                  {eleve.statut}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          {marking === eleve.id ? (
-                            <div className="px-8 py-2.5 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 animate-pulse bg-slate-50 rounded-xl">
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                              Synced…
-                            </div>
-                          ) : (
-                            <div className="inline-flex p-1 bg-slate-50 border border-slate-200/60 rounded-xl gap-1">
-                              <button
-                                onClick={() => markPresenceManually(eleve.id, 'présent')}
-                                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                                  eleve.statut === 'présent' 
-                                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20' 
-                                    : 'text-slate-400 hover:text-emerald-600 hover:bg-white'
-                                }`}
-                              >
-                                Présent
-                              </button>
-                              <button
-                                onClick={() => markPresenceManually(eleve.id, 'absent')}
-                                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                                  eleve.statut === 'absent' 
-                                    ? 'bg-red-600 text-white shadow-lg shadow-red-500/20' 
-                                    : 'text-slate-400 hover:text-red-600 hover:bg-white'
-                                }`}
-                              >
-                                Absent
-                              </button>
-                              <button
-                                onClick={() => markPresenceManually(eleve.id, 'retard')}
-                                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-                                  eleve.statut === 'retard' 
-                                    ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' 
-                                    : 'text-slate-400 hover:text-amber-600 hover:bg-white'
-                                }`}
-                              >
-                                Retard
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
               </div>
             </div>
-          </div>
 
-        </div>
+            {/* Right Col: Class List */}
+            <div className={`lg:col-span-7 ${activeTab === 'list' ? 'block' : 'hidden lg:block'}`}>
+              <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm overflow-hidden h-full flex flex-col transition-all duration-500 hover:shadow-xl hover:shadow-emerald-900/5">
+                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600">
+                        <UserCheck className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h2 className="text-sm font-black text-slate-800 leading-tight">Appel de la Classe</h2>
+                      </div>
+                    </div>
+                    <div className="bg-slate-900 text-white font-black px-3 py-1 rounded-lg text-[9px] uppercase tracking-widest shadow-lg shadow-slate-900/10">
+                      {eleves.filter(e => e.statut).length} / {eleves.length}
+                    </div>
+                  </div>
+                  
+                  {/* Search Bar - More Compact */}
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest">S</span>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Rechercher..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl py-2 pl-8 pr-4 text-xs font-medium focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all shadow-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="p-0 flex-1 overflow-y-auto max-h-[600px] bg-slate-50/50 scrollbar-thin scrollbar-thumb-slate-200">
+                  {eleves.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-48 text-slate-400">
+                      <AlertCircle className="w-8 h-8 mb-2 text-slate-300" />
+                      <p className="text-sm">Aucun élève dans cette classe.</p>
+                    </div>
+                  ) : (
+                    <ul className="divide-y divide-slate-100">
+                      {filteredEleves.map((eleve) => (
+                        <li key={eleve.id} className="px-6 py-4 hover:bg-white transition-all duration-300 group flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center font-black text-[10px] shrink-0 uppercase border border-slate-200/50 group-hover:scale-110 transition-transform duration-500">
+                              {eleve.prenom[0]}{eleve.nom[0]}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-black text-slate-900 leading-tight group-hover:text-emerald-600 transition-colors truncate">
+                                {eleve.prenom} {eleve.nom}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                {eleve.matricule && (
+                                  <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest bg-slate-100 px-1.5 py-0.5 rounded">
+                                    {eleve.matricule}
+                                  </span>
+                                )}
+                                {eleve.statut && (
+                                  <span className={`text-[8px] font-black px-2 py-0.5 rounded-lg border uppercase tracking-[0.1em] shadow-sm ${statutColors[eleve.statut]}`}>
+                                    {eleve.statut}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1 shrink-0">
+                            {marking === eleve.id ? (
+                              <div className="px-4 py-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 animate-pulse bg-slate-50 rounded-xl">
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                Synced…
+                              </div>
+                            ) : (
+                              <div className="inline-flex p-0.5 bg-slate-50 border border-slate-200/60 rounded-xl gap-0.5">
+                                <button
+                                  onClick={() => markPresenceManually(eleve.id, 'présent')}
+                                  className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+                                    eleve.statut === 'présent' 
+                                      ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20' 
+                                      : 'text-slate-400 hover:text-emerald-600 hover:bg-white'
+                                  }`}
+                                >
+                                  P
+                                </button>
+                                <button
+                                  onClick={() => markPresenceManually(eleve.id, 'absent')}
+                                  className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+                                    eleve.statut === 'absent' 
+                                      ? 'bg-red-600 text-white shadow-lg shadow-red-500/20' 
+                                      : 'text-slate-400 hover:text-red-600 hover:bg-white'
+                                  }`}
+                                >
+                                  A
+                                </button>
+                                <button
+                                  onClick={() => markPresenceManually(eleve.id, 'retard')}
+                                  className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+                                    eleve.statut === 'retard' 
+                                      ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' 
+                                      : 'text-slate-400 hover:text-amber-600 hover:bg-white'
+                                  }`}
+                                >
+                                  R
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </>
       )}
     </div>
   )
