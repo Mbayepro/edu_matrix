@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { CalculateurMoyennes } from '@/lib/calculMoyennes'
 import type { BulletinData } from '@/lib/calculMoyennes'
@@ -448,6 +449,49 @@ export default function BulletinsPage() {
           </div>
         </div>
       </div>
+
+      {/* Persistent Alert for Configuration Issues */}
+      {!loadingBulletins && selectedClasse && bulletins.length > 0 && bulletins.filter(b => b.matieres.length > 0).length === 0 && (
+         <div className="mx-8 mb-8 p-6 bg-red-50 border-2 border-red-100 rounded-3xl flex items-start gap-5 animate-in fade-in slide-in-from-top-4 duration-500 shadow-xl shadow-red-500/5">
+           <div className="w-14 h-14 rounded-2xl bg-white border-2 border-red-100 flex items-center justify-center shrink-0 shadow-sm">
+             <AlertCircle className="w-7 h-7 text-red-500" />
+           </div>
+           <div className="flex-1">
+             <h3 className="text-lg font-black text-red-900 mb-2">Calcul impossible pour {classes.find(c => c.id === selectedClasse)?.nom_classe}</h3>
+             <div className="space-y-3 text-sm text-red-700/80 font-medium leading-relaxed">
+               <p>Aucune matière n&apos;a pu être calculée pour cette classe. Voici les points à vérifier :</p>
+               <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 list-none">
+                 <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                    <strong>Coefficients :</strong> Absents pour le niveau {classes.find(c => c.id === selectedClasse)?.niveau}.
+                 </li>
+                 <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                    <strong>Notes :</strong> Aucune note saisie pour le Trimestre {selectedTrimestre}.
+                 </li>
+                 <li className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                    <strong>Paramètres :</strong> Matières non liées à ce niveau.
+                 </li>
+               </ul>
+             </div>
+             <div className="flex gap-3 mt-6">
+                <Link 
+                  href="/dashboard/parametres" 
+                  className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-red-600/20"
+                >
+                  Configurer les Coefficients
+                </Link>
+                <Link 
+                  href="/dashboard/notes" 
+                  className="px-6 py-2.5 bg-white hover:bg-red-50 text-red-600 border border-red-200 text-xs font-black uppercase tracking-widest rounded-xl transition-all"
+                >
+                  Saisir des Notes
+                </Link>
+             </div>
+           </div>
+         </div>
+      )}
 
       {/* Bulletins List */}
       {loadingBulletins ? (
