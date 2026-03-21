@@ -51,10 +51,13 @@ export class CalculateurMoyennes {
        query = query.is('serie_id', null)
     }
 
-    const { data, error } = await query.order('nom', { foreignTable: 'matiere', ascending: true })
+    const { data, error } = await query
 
     if (error) throw error
-    return data || []
+    // Sort on client-side to avoid PostgREST limitations with Aliases in order
+    return (data || []).sort((a: any, b: any) => 
+      (a.matiere?.nom || '').localeCompare(b.matiere?.nom || '')
+    )
   }
 
   /**
@@ -74,7 +77,11 @@ export class CalculateurMoyennes {
     ] = await Promise.all([
       supabase.from('classes').select('*, serie:series(*)').eq('id', classe_id).single(),
       supabase.from('eleves').select('*').eq('classe_id', classe_id).order('nom, prenom'),
-      supabase.from('notes').select('*, evaluation:evaluations!inner(*)').eq('evaluation.classe_id', classe_id).eq('evaluation.trimestre', trimestre)
+      supabase.from('notes')
+        .select('*, evaluation:evaluations!inner(*)')
+        .eq('evaluation.classe_id', classe_id)
+        .eq('evaluation.trimestre', trimestre)
+        .eq('evaluation.annee_scolaire', annee_scolaire)
     ])
 
     if (clErr || elErr || ntErr) throw new Error("Erreur lors de la récupération groupée des données.")

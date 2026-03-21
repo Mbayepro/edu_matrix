@@ -34,6 +34,7 @@ export default function NotesPage() {
   const [selectedMatiere, setSelectedMatiere] = useState<string>('')
   const [selectedTrimestre, setSelectedTrimestre] = useState<1 | 2 | 3>(1)
   const [selectedEvaluation, setSelectedEvaluation] = useState<string>('')
+  const [anneeScolaire, setAnneeScolaire] = useState<string>('2024-2025')
   
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -54,10 +55,10 @@ export default function NotesPage() {
   }, [selectedClasse])
 
   useEffect(() => {
-    if (selectedClasse && selectedMatiere && selectedTrimestre) {
+    if (selectedClasse && selectedMatiere && selectedTrimestre && anneeScolaire) {
       loadEvaluations()
     }
-  }, [selectedClasse, selectedMatiere, selectedTrimestre])
+  }, [selectedClasse, selectedMatiere, selectedTrimestre, anneeScolaire])
 
   useEffect(() => {
     if (selectedEvaluation) {
@@ -175,6 +176,7 @@ export default function NotesPage() {
       .eq('classe_id', selectedClasse)
       .eq('matiere_id', selectedMatiere)
       .eq('trimestre', selectedTrimestre)
+      .eq('annee_scolaire', anneeScolaire)
       .order('date', { ascending: false })
     
     setEvaluations(data ?? [])
@@ -243,6 +245,7 @@ export default function NotesPage() {
           classe_id: selectedClasse,
           matiere_id: selectedMatiere,
           trimestre: selectedTrimestre,
+          annee_scolaire: anneeScolaire,
           type: newEval.type,
           date: newEval.date,
           coef: newEval.coef,
@@ -425,7 +428,7 @@ export default function NotesPage() {
 
       {/* Filters */}
       <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
           <div className="space-y-2">
             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Structure / Classe</label>
             <select
@@ -465,6 +468,20 @@ export default function NotesPage() {
               <option value={2}>2ème Trimestre</option>
               <option value={3}>3ème Trimestre</option>
             </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Année Scolaire</label>
+            <div className="relative group">
+              <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-600 transition-transform group-hover:scale-110" />
+              <input
+                type="text"
+                value={anneeScolaire}
+                onChange={(e) => setAnneeScolaire(e.target.value)}
+                className="w-full bg-slate-50 border-none rounded-xl pl-11 pr-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all"
+                placeholder="2024-2025"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">

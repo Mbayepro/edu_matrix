@@ -9,6 +9,7 @@ DROP VIEW IF EXISTS public.v_moyennes_matieres CASCADE;
 
 -- 0. Mise à jour du schéma (si nécessaire)
 ALTER TABLE public.matieres ADD COLUMN IF NOT EXISTS est_bonus BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.evaluations ADD COLUMN IF NOT EXISTS annee_scolaire TEXT DEFAULT '2024-2025';
 
 -- 1. Vue pour les moyennes par matière avec logique MCC + Composition
 CREATE OR REPLACE VIEW public.v_moyennes_matieres AS
@@ -17,6 +18,7 @@ WITH raw_notes AS (
     e.id as eleve_id,
     m.id as matiere_id,
     ev.trimestre,
+    ev.annee_scolaire,
     ev.type,
     notes.note,
     ev.bareme,
@@ -32,11 +34,12 @@ subject_components AS (
     eleve_id,
     matiere_id,
     trimestre,
+    annee_scolaire,
     AVG(note / bareme * 20) FILTER (WHERE type IN ('controle', 'devoir')) as mcc,
     MAX(note / bareme * 20) FILTER (WHERE type = 'composition') as composition_note,
     COUNT(note) as total_evals
   FROM raw_notes
-  GROUP BY eleve_id, matiere_id, trimestre
+  GROUP BY eleve_id, matiere_id, trimestre, annee_scolaire
 )
 SELECT 
   e.id as eleve_id,
@@ -52,6 +55,7 @@ SELECT
   m.nom as matiere_nom,
   m.est_bonus,
   sc.trimestre,
+  sc.annee_scolaire,
   -- Coeff : cn.coefficient > m.coefficient > default 1
   COALESCE(cn.coefficient, m.coefficient, 1) as coefficient,
   -- Logique Sénégalaise : (MCC + Composition) / 2
@@ -88,6 +92,7 @@ SELECT
   niveau_code,
   cycle,
   trimestre,
+  annee_scolaire,
   -- Points totaux (Bonus EPS inclus)
   SUM(
     CASE 
@@ -142,7 +147,7 @@ SELECT
   SUM(CASE WHEN NOT est_bonus AND moyenne_matiere IS NOT NULL THEN coefficient ELSE 0 END) as total_coefficients_calcules
 FROM public.v_moyennes_matieres
 GROUP BY eleve_id, ecole_id, prenom, nom, matricule, classe_id, nom_classe, 
-         niveau_code, cycle, trimestre;
+         niveau_code, cycle, trimestre, annee_scolaire;
 
 -- 3. Vue des bulletins complets
 CREATE OR REPLACE VIEW public.v_bulletins_complets AS
@@ -154,7 +159,7 @@ SELECT
     '(' || vmm.matiere_id || ',' || vmm.matiere_nom || ',' || vmm.coefficient || ',' || COALESCE(vmm.moyenne_matiere::text, '0') || ',' || vmm.nombre_evaluations || ')'
    )
    FROM public.v_moyennes_matieres vmm
-   WHERE vmm.eleve_id = vmg.eleve_id AND vmm.trimestre = vmg.trimestre AND vmm.moyenne_matiere IS NOT NULL
+   WHERE vmm.eleve_id = vmg.eleve_id AND vmm.trimestre = vmg.trimestre AND vmm.annee_scolaire = vmg.annee_scolaire AND vmm.moyenne_matiere IS NOT NULL
   ) as matieres_details
 FROM public.v_moyennes_generales vmg
 -- Correction de la jointure par CODE pour la vue bulletins
