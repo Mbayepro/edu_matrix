@@ -177,11 +177,19 @@ export default function DashboardPage() {
             const { data: ids } = await supabase.from('eleves').select('id').eq('classe_id', cl.id)
             if (!ids?.length) return { classe: cl.nom_classe, moyenne: 0 }
             const { data: notes } = await supabase
-              .from('notes').select('note, coefficient').in('eleve_id', ids.map((e: any) => e.id))
+              .from('notes')
+              .select('note, evaluation:evaluations(coef)')
+              .in('eleve_id', ids.map((e: any) => e.id))
+            
             if (!notes?.length) return { classe: cl.nom_classe, moyenne: 0 }
-            const sum = notes.reduce((a: number, n: any) => a + n.note * n.coefficient, 0)
-            const div = notes.reduce((a: number, n: any) => a + n.coefficient, 0)
-            return { classe: cl.nom_classe, moyenne: div > 0 ? Math.round(sum / div * 10) / 10 : 0 }
+            
+            const sum = notes.reduce((a: number, n: any) => a + n.note * (n.evaluation?.coef || 1), 0)
+            const div = notes.reduce((a: number, n: any) => a + (n.evaluation?.coef || 1), 0)
+            
+            return { 
+              classe: cl.nom_classe, 
+              moyenne: div > 0 ? Math.round(sum / div * 10) / 10 : 0 
+            }
           })
         )
         setNotesChart(avgs.filter((a) => a.moyenne > 0))

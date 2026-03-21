@@ -51,7 +51,7 @@ export class CalculateurMoyennes {
        query = query.is('serie_id', null)
     }
 
-    const { data, error } = await query.order('matiere(nom)')
+    const { data, error } = await query.order('nom', { foreignTable: 'matiere', ascending: true })
 
     if (error) throw error
     return data || []
@@ -89,7 +89,7 @@ export class CalculateurMoyennes {
       .select('*')
       .eq('code', classe.niveau)
       .eq('ecole_id', classe.ecole_id)
-      .single()
+      .maybeSingle()
     
     // Fallback: Si pas trouvé par code exact, on crée un objet niveau par défaut basé sur le cycle estimé
     if (!niveau) {

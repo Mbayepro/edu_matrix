@@ -27,10 +27,13 @@ export const metadata: Metadata = {
     apple: '/icons/icon-192x192.svg'
   },
   appleWebApp: {
-    capable: true,
     statusBarStyle: 'default',
     title: 'EduMatrix',
   },
+  other: {
+    'mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-capable': 'yes',
+  }
 }
 
 export const viewport: Viewport = {
