@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { Loader2, FileText, Plus, X, Calendar, Save, Trash2, Edit2 } from 'lucide-react';
+import { Loader2, FileText, Plus, X, Calendar, Save, Trash2, Edit2, WifiOff, RefreshCw } from 'lucide-react';
+import { useOfflineGradesStore } from '../store/useOfflineGradesStore';
 
 interface Matiere {
   id: string;
@@ -59,6 +60,51 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
   });
   const [niveau, setNiveau] = useState<Niveau | null>(null);
   const [serie, setSerie] = useState<Serie | null>(null);
+  
+  // -- PWA Offline Management --
+  const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? navigator.onLine : true);
+  const { addNodeToQueue, removeNodeFromQueue, getPendingNotes } = useOfflineGradesStore();
+  const pendingNotes = getPendingNotes();
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      syncOfflineNotes();
+    };
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    // Sync to local memory if any from start
+    if (navigator.onLine && pendingNotes.length > 0) {
+      syncOfflineNotes();
+    }
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  const syncOfflineNotes = async () => {
+    const notesToSync = useOfflineGradesStore.getState().getPendingNotes();
+    if (notesToSync.length === 0) return;
+
+    for (const noteData of notesToSync) {
+      const { error } = await supabase.from('notes').upsert({
+        eleve_id: noteData.eleve_id,
+        evaluation_id: noteData.evaluation_id,
+        note: noteData.note,
+        professeur_id: noteData.professeur_id,
+      }, { onConflict: 'eleve_id,evaluation_id' });
+
+      if (!error) {
+        useOfflineGradesStore.getState().removeNodeFromQueue(noteData.eleve_id, noteData.evaluation_id);
+      }
+    }
+  };
+  // -----------------------------
 
   // Charger les informations de la classe (niveau et série)
   useEffect(() => {
@@ -319,19 +365,22 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
 
     if (error) {
       console.error('Erreur de sauvegarde (Réseau ou BDD):', error);
-      // PWA Mode Offline : Sauvegarde locale
-      const offlineKey = `offline_note_${eleveId}_${evaluationId}`;
-      const offlineData = {
+      // PWA Mode Offline : Sauvegarde via Zustand Queue
+      addNodeToQueue({
         eleve_id: eleveId,
         evaluation_id: evaluationId,
         note: noteValue,
         professeur_id: user?.id,
-        saved_at: new Date().toISOString()
-      };
-      localStorage.setItem(offlineKey, JSON.stringify(offlineData));
-      alert(`⚠️ Connexion perdue. La note (${noteValue}) a été sauvegardée localement (Brouillon PWA) et sera synchronisée au retour du réseau.`);
+        saved_at: new Date().toISOString(),
+        is_synced: false
+      });
+      // Optionnel : ne pas spammer d'alert si on sait qu'on est hors ligne, on s'appuie sur la bannière UI.
+      if (isOnline) {
+         // Si c'est juste un glitch réseau isolé
+         alert(`⚠️ Sauvegarde locale PWA activée. La note (${noteValue}) sera synchronisée dès le retour du réseau.`);
+      }
     } else {
-      localStorage.removeItem(`offline_note_${eleveId}_${evaluationId}`);
+      removeNodeFromQueue(eleveId, evaluationId);
     }
   };
 
@@ -371,6 +420,27 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
 
   return (
     <div className="space-y-10 pb-20">
+      {(!isOnline || pendingNotes.length > 0) && (
+        <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+             <WifiOff className="w-5 h-5 text-amber-600" />
+             <div>
+               <p className="text-sm font-bold text-amber-900">
+                 {isOnline ? 'Synchronisation PWA en cours...' : 'Connexion perdue : Saisie en mode local (sécurisé)'}
+               </p>
+               <p className="text-xs text-amber-700">
+                 {pendingNotes.length} note(s) en attente de synchronisation réseau.
+               </p>
+             </div>
+          </div>
+          {isOnline && pendingNotes.length > 0 && (
+            <button onClick={syncOfflineNotes} className="flex items-center justify-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-xl text-xs font-bold hover:bg-amber-700 shadow-md">
+              <RefreshCw className="w-4 h-4 animate-spin"/> Synchroniser manuellement
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <div className="flex items-center gap-3 mb-2">

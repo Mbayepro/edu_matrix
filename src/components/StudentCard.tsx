@@ -92,59 +92,71 @@ function PhysicalCard({ eleve, ecole, className }: {
   return (
     <div
       id="student-card-print"
-      className="w-[340px] rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-slate-800 to-slate-900 text-white select-none"
+      className="relative w-[380px] rounded-3xl overflow-hidden shadow-2xl bg-[#0B132B] text-white select-none flex flex-col print:shadow-none"
       style={{ fontFamily: 'system-ui, sans-serif' }}
     >
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }} />
+
       {/* Header strip */}
-      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-3 flex items-center gap-2">
-        <BookOpen className="w-4 h-4 text-white/80" />
-        <p className="text-xs font-bold tracking-widest uppercase text-white/90">
-          {ecole?.nom ?? 'Carte Scolaire'}
-        </p>
+      <div className="relative bg-emerald-600 px-6 py-4 flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
+          <BookOpen className="w-4 h-4 text-white" />
+        </div>
+        <div>
+           <p className="text-xs font-black tracking-widest uppercase text-white leading-none">
+             {ecole?.nom ?? 'EXCELLENCE'}
+           </p>
+           <p className="text-[9px] text-emerald-100 uppercase tracking-[0.2em] mt-1">
+             Carte d'Étudiant
+           </p>
+        </div>
         <div className="ml-auto text-right">
-          <p className="text-[10px] text-white/70">EduMatrix</p>
+          <p className="text-[10px] font-black text-white/90">EduMatrix</p>
           <p className="text-[10px] text-white/70">{new Date().getFullYear()}</p>
         </div>
       </div>
 
       {/* Body */}
-      <div className="px-5 py-4 flex gap-4">
+      <div className="relative px-6 py-6 flex gap-5">
         {/* Photo */}
-        <div className="shrink-0">
+        <div className="shrink-0 relative">
+          <div className="absolute -inset-1 bg-gradient-to-b from-emerald-500 to-transparent rounded-2xl blur opacity-30"></div>
           {eleve.photo_url ? (
             <img
               src={eleve.photo_url}
               alt={`${eleve.prenom} ${eleve.nom}`}
-              className="w-20 h-24 object-cover rounded-xl border-2 border-white/20"
+              className="relative w-24 h-28 object-cover rounded-xl border-2 border-slate-700 bg-slate-800 shadow-inner"
             />
           ) : (
-            <div className="w-20 h-24 bg-white/10 rounded-xl border-2 border-white/20 flex items-center justify-center">
-              <User className="w-8 h-8 text-white/40" />
+            <div className="relative w-24 h-28 bg-slate-800 rounded-xl border-2 border-slate-700 flex items-center justify-center shadow-inner">
+              <User className="w-10 h-10 text-slate-500" />
             </div>
           )}
         </div>
 
         {/* Info */}
-        <div className="flex-1 min-w-0 space-y-2">
+        <div className="flex-1 min-w-0 flex flex-col justify-center space-y-3">
           <div>
-            <p className="text-lg font-bold leading-tight truncate">
+            <p className="text-xl font-black leading-tight truncate text-white tracking-tight">
               {eleve.prenom} {eleve.nom}
             </p>
-            <p className="text-xs text-white/60 mt-0.5">{ecole?.ville}</p>
+            <p className="text-xs text-slate-400 mt-0.5 truncate uppercase tracking-widest font-semibold">{ecole?.ville}</p>
           </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-white/50 uppercase tracking-wide w-14">Classe</span>
-              <span className="text-xs font-semibold text-emerald-300">{className}</span>
+          
+          <div className="space-y-1.5 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest w-16">Classe</span>
+              <span className="text-xs font-black text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-md">{className}</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-white/50 uppercase tracking-wide w-14">Matricule</span>
-              <span className="text-xs font-mono font-bold text-amber-300">{eleve.matricule}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest w-16">Matricule</span>
+              <span className="text-xs font-mono font-bold text-amber-400">{eleve.matricule}</span>
             </div>
             {eleve.date_naissance && (
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-white/50 uppercase tracking-wide w-14">Né(e) le</span>
-                <span className="text-xs text-white/80">
+              <div className="flex items-center gap-2">
+                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest w-16">Né(e) le</span>
+                <span className="text-xs text-slate-300 font-semibold">
                   {new Date(eleve.date_naissance).toLocaleDateString('fr-FR')}
                 </span>
               </div>
@@ -154,20 +166,20 @@ function PhysicalCard({ eleve, ecole, className }: {
       </div>
 
       {/* QR Code section */}
-      <div className="px-5 pb-4 flex items-center gap-4 border-t border-white/10 pt-3">
-        <div className="bg-white p-2 rounded-xl shrink-0">
+      <div className="mt-auto px-6 py-5 bg-slate-900/50 flex items-center gap-5 border-t border-slate-800">
+        <div className="bg-white p-2 rounded-xl shrink-0 shadow-lg ring-4 ring-slate-800">
           <QRCodeSVG
             value={eleve.id}
-            size={64}
+            size={60}
             level="M"
             bgColor="#ffffff"
-            fgColor="#0f172a"
+            fgColor="#0B132B"
           />
         </div>
         <div>
-          <p className="text-[10px] text-white/50 mb-1">Scannez pour vérifier</p>
-          <p className="text-[10px] text-white/30 leading-tight">
-            Ce QR code permet de contrôler les présences et paiements.
+          <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1.5">Badge Officiel</p>
+          <p className="text-[10px] text-slate-400 leading-relaxed font-medium">
+            Ce QR code permet à l'établissement de contrôler l'accès, les présences et les règlements.
           </p>
         </div>
       </div>
@@ -300,17 +312,17 @@ export default function StudentCard({ eleveId, onClose, defaultTab }: StudentCar
         <div className="p-6 space-y-6">
 
           {/* Card + QR */}
-          <div ref={cardRef} className="flex flex-col sm:flex-row gap-6 items-start sm:items-center justify-center">
+          <div ref={cardRef} className="flex flex-col gap-6 items-center justify-center py-4 bg-slate-50/50 rounded-2xl border border-slate-100">
             <PhysicalCard eleve={eleve} ecole={ecole} className={className} />
 
             {/* Download hint */}
-            <div className="sm:self-end">
+            <div>
               <button
                 onClick={() => window.print()}
-                className="flex items-center gap-2 text-sm text-slate-600 hover:text-emerald-700 border border-slate-200 hover:border-emerald-300 px-4 py-2.5 rounded-xl transition-colors"
+                className="flex items-center justify-center gap-2 text-sm font-bold text-emerald-700 bg-white hover:bg-emerald-50 border border-emerald-200 hover:border-emerald-300 px-6 py-3 rounded-xl transition-all shadow-sm w-full sm:w-auto"
               >
-                <Download className="w-4 h-4" />
-                Imprimer la carte
+                <Download className="w-5 h-5" />
+                Imprimer la carte physique
               </button>
             </div>
           </div>

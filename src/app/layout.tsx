@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   icons: { 
     icon: '/favicon.ico',
-    apple: '/icons/icon-192x192.svg'
+    apple: '/icons/icon-192x192.png'
   },
   appleWebApp: {
     statusBarStyle: 'default',
@@ -42,11 +42,16 @@ export const viewport: Viewport = {
   themeColor:   '#059669',
 }
 
+import InstallButton from '../components/InstallButton'
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" className={`${outfit.variable} ${jetbrains.variable}`}>
       <body className="font-sans antialiased bg-slate-50 text-slate-900">
         {children}
+        <div className="fixed bottom-6 right-6 z-50">
+          <InstallButton />
+        </div>
       </body>
     </html>
   )
