@@ -37,7 +37,7 @@ export default function ConseilClassePage() {
   const [classes, setClasses] = useState<any[]>([])
   const [selectedClasse, setSelectedClasse] = useState<string>('')
   const [selectedTrimestre, setSelectedTrimestre] = useState<1 | 2 | 3>(1)
-  const [anneeScolaire, setAnneeScolaire] = useState('2024-2025')
+  const [anneeScolaire, setAnneeScolaire] = useState('2025-2026')
   const [loading, setLoading] = useState(false)
   const [bulletins, setBulletins] = useState<BulletinData[]>([])
   const [search, setSearch] = useState('')

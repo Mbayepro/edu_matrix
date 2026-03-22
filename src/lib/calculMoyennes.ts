@@ -99,7 +99,7 @@ export class CalculateurMoyennes {
   static async genererBulletinsClasse(
     classe_id: string,
     trimestre: number,
-    annee_scolaire: string = '2024-2025'
+    annee_scolaire: string = '2025-2026'
   ): Promise<BulletinData[]> {
     // 1. Charger tout le nécessaire en parallèle
     const [

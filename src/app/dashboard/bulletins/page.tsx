@@ -25,7 +25,7 @@ export default function BulletinsPage() {
   const [classes, setClasses] = useState<Classe[]>([])
   const [selectedClasse, setSelectedClasse] = useState<string>('')
   const [selectedTrimestre, setSelectedTrimestre] = useState<1 | 2 | 3>(1)
-  const [anneeScolaire, setAnneeScolaire] = useState('2024-2025')
+  const [anneeScolaire, setAnneeScolaire] = useState('2025-2026')
   const [bulletins, setBulletins] = useState<BulletinData[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingBulletins, setLoadingBulletins] = useState(false)
@@ -223,26 +223,83 @@ export default function BulletinsPage() {
     setGenerating(bulletin.eleve.id)
     
     try {
-      // This would integrate with a PDF generation library
-      // For now, we'll create a simple HTML representation
       const html = generateBulletinHTML(bulletin)
-      
-      // Create download link
-      const blob = new Blob([html], { type: 'text/html' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `Bulletin_${bulletin.eleve.prenom}_${bulletin.eleve.nom}_T${bulletin.trimestre}.html`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      const printWindow = window.open('', '_blank')
+      if (printWindow) {
+        printWindow.document.write(html)
+        printWindow.document.close()
+        printWindow.focus()
+        setTimeout(() => {
+          printWindow.print()
+        }, 500)
+      }
     } finally {
       setGenerating(null)
     }
   }
 
-  function generateBulletinHTML(bulletin: BulletinData): string {
+  async function generateAllBulletinsPDF() {
+    if (bulletins.length === 0) return;
+    setGenerating('all')
+    
+    try {
+      let combinedHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+          <meta charset="UTF-8">
+          <title>Bulletins de la classe ${classes.find(c => c.id === selectedClasse)?.nom_classe}</title>
+          <style>
+              body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #fff; }
+              @media print {
+                  body { background: white; padding: 0; }
+                  .bulletin-page { page-break-after: always; padding: 20px; }
+                  .bulletin-page:last-child { page-break-after: auto; }
+              }
+              .bulletin-page { padding: 40px; margin: 0 auto; max-width: 800px; }
+              /* Extracted styles */
+              .bulletin { margin: 0 auto; background: white; padding: 0; }
+              .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #e5e7eb; padding-bottom: 20px; }
+              .header h1 { color: #1f2937; margin: 0; font-size: 24px; }
+              .header h2 { color: #6b7280; margin: 5px 0 0 0; font-size: 16px; font-weight: normal; }
+              .student-info { display: flex; justify-content: space-between; margin-bottom: 30px; background: #f9fafb; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb; }
+              .student-info h3 { color: #374151; margin: 0 0 10px 0; }
+              .student-info p { margin: 5px 0; color: #6b7280; }
+              .table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+              .table th, .table td { border: 1px solid #e5e7eb; padding: 12px; text-align: left; }
+              .table th { background: #f3f4f6; font-weight: bold; color: #374151; }
+              .table tr:nth-child(even) { background: #f9fafb; }
+              .moyenne { text-align: center; font-weight: bold; }
+              .mention { text-align: center; font-weight: bold; padding: 8px; border-radius: 4px; color: white; display: inline-block; }
+              .footer { margin-top: 40px; text-align: center; color: #6b7280; font-size: 14px; }
+              .logo { max-width: 100px; margin-bottom: 20px; }
+          </style>
+      </head>
+      <body>
+      `;
+
+      for (const bulletin of bulletins) {
+        const bodyContent = generateBulletinHTML(bulletin, true);
+        combinedHtml += `<div class="bulletin-page">${bodyContent}</div>`;
+      }
+      
+      combinedHtml += `</body></html>`;
+
+      const printWindow = window.open('', '_blank')
+      if (printWindow) {
+        printWindow.document.write(combinedHtml)
+        printWindow.document.close()
+        printWindow.focus()
+        setTimeout(() => {
+          printWindow.print()
+        }, 1500) // waiting longer for all images
+      }
+    } finally {
+      setGenerating(null)
+    }
+  }
+
+  function generateBulletinHTML(bulletin: BulletinData, insideCombined: boolean = false): string {
     const getMentionColor = (mention: string) => {
       switch (mention) {
         case 'Très bien': return '#10b981'
@@ -253,32 +310,10 @@ export default function BulletinsPage() {
       }
     }
 
-    return `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Bulletin Scolaire</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
-        .bulletin { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #e5e7eb; padding-bottom: 20px; }
-        .header h1 { color: #1f2937; margin: 0; font-size: 24px; }
-        .header h2 { color: #6b7280; margin: 5px 0 0 0; font-size: 16px; font-weight: normal; }
-        .student-info { display: flex; justify-content: space-between; margin-bottom: 30px; background: #f9fafb; padding: 20px; border-radius: 8px; }
-        .student-info h3 { color: #374151; margin: 0 0 10px 0; }
-        .student-info p { margin: 5px 0; color: #6b7280; }
-        .table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-        .table th, .table td { border: 1px solid #e5e7eb; padding: 12px; text-align: left; }
-        .table th { background: #f3f4f6; font-weight: bold; color: #374151; }
-        .table tr:nth-child(even) { background: #f9fafb; }
-        .moyenne { text-align: center; font-weight: bold; }
-        .mention { text-align: center; font-weight: bold; padding: 8px; border-radius: 4px; color: white; }
-        .footer { margin-top: 40px; text-align: center; color: #6b7280; font-size: 14px; }
-        .logo { max-width: 100px; margin-bottom: 20px; }
-    </style>
-</head>
-<body>
+    const displayMoyenneTotal = bulletin.niveau?.cycle === 'primaire' ? bulletin.moyenne_generale / 2 : bulletin.moyenne_generale;
+    const displayBaremeTotal = bulletin.niveau?.cycle === 'primaire' ? 10 : 20;
+
+    const content = `
     <div class="bulletin">
         <div class="header">
             ${ecole?.logo_url ? `<img src="${ecole.logo_url}" alt="Logo" class="logo">` : ''}
@@ -340,11 +375,11 @@ export default function BulletinsPage() {
             </tbody>
         </table>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
             <div>
                 <h3 style="margin: 0; color: #374151;">Moyenne Générale</h3>
                 <p style="font-size: 24px; font-weight: bold; color: #1f2937; margin: 10px 0;">
-                    ${bulletin.moyenne_generale} / 20
+                    ${displayMoyenneTotal.toFixed(2)} / ${displayBaremeTotal}
                 </p>
             </div>
             <div>
@@ -362,10 +397,39 @@ export default function BulletinsPage() {
                 ${ecole?.tampon_url ? `<img src="${ecole.tampon_url}" alt="Tampon" style="max-height: 80px; margin-left: 20px;">` : ''}
             </div>
         </div>
-    </div>
+    </div>`;
+
+    if (insideCombined) return content;
+
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Bulletin ${bulletin.eleve.prenom} ${bulletin.eleve.nom}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .bulletin { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #e5e7eb; padding-bottom: 20px; }
+        .header h1 { color: #1f2937; margin: 0; font-size: 24px; }
+        .header h2 { color: #6b7280; margin: 5px 0 0 0; font-size: 16px; font-weight: normal; }
+        .student-info { display: flex; justify-content: space-between; margin-bottom: 30px; background: #f9fafb; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb; }
+        .student-info h3 { color: #374151; margin: 0 0 10px 0; }
+        .student-info p { margin: 5px 0; color: #6b7280; }
+        .table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        .table th, .table td { border: 1px solid #e5e7eb; padding: 12px; text-align: left; }
+        .table th { background: #f3f4f6; font-weight: bold; color: #374151; }
+        .table tr:nth-child(even) { background: #f9fafb; }
+        .moyenne { text-align: center; font-weight: bold; }
+        .mention { text-align: center; font-weight: bold; padding: 8px; border-radius: 4px; color: white; display: inline-block; }
+        .footer { margin-top: 40px; text-align: center; color: #6b7280; font-size: 14px; }
+        .logo { max-width: 100px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+${content}
 </body>
-</html>
-    `
+</html>`;
   }
 
   const selectedClasseData = classes.find(c => c.id === selectedClasse)
@@ -406,9 +470,17 @@ export default function BulletinsPage() {
             <div className="text-center px-4">
               <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Moy. Classe</div>
               <div className="text-lg font-black text-emerald-600 leading-tight">
-                {(bulletins.reduce((sum, b) => sum + b.moyenne_generale, 0) / bulletins.length).toFixed(2)}
+                {((bulletins.reduce((sum, b) => sum + b.moyenne_generale, 0) / bulletins.length) / (bulletins[0]?.niveau?.cycle === 'primaire' ? 2 : 1)).toFixed(2)}
               </div>
             </div>
+            <button
+              onClick={generateAllBulletinsPDF}
+              disabled={generating === 'all'}
+              className="ml-2 flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-emerald-600 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-slate-900/20 disabled:opacity-50"
+            >
+              {generating === 'all' ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+              Imprimer Tout
+            </button>
           </div>
         )}
       </div>
