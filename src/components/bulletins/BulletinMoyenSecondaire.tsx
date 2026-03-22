@@ -1,0 +1,261 @@
+import React from 'react';
+
+export interface MatiereDetails {
+  id: string;
+  nom: string;
+  coefficient: number;
+  moyenne: number;
+  nombre_evaluations: number;
+  mcc?: number;
+  composition_note?: number;
+  est_bonus?: boolean;
+}
+
+export interface BulletinData {
+  eleve: {
+    id: string;
+    nom: string;
+    prenom: string;
+    matricule: string;
+  };
+  classe: {
+    id: string;
+    nom_classe: string;
+    niveau_code: string;
+    niveau_nom: string;
+    cycle: string;
+    serie_code?: string;
+    serie_nom?: string;
+  };
+  ecole: {
+    nom: string;
+    logo_url?: string;
+    tampon_url?: string;
+    signature_url?: string;
+  };
+  trimestre: number;
+  matieres: MatiereDetails[];
+  moyenne_generale: number;
+  mention: string;
+  total_coefficients: number;
+  nombre_matieres: number;
+  decision_conseil?: string;
+}
+
+export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }) {
+  // Calculs stricts Sénégalais: Total(moyen * coef), sommes...
+  const matieresCalculated = data.matieres.map((m) => {
+    const mcc = m.mcc != null ? Number(m.mcc) : null;
+    const compo = m.composition_note != null ? Number(m.composition_note) : null;
+    
+    // Si la moyenne n'est pas fournie, on la recalcule : (mcc + compo) / 2
+    let moyenne = Number(m.moyenne);
+    if (!moyenne && mcc != null && compo != null) {
+      moyenne = (mcc + compo) / 2;
+    } else if (!moyenne && mcc != null) {
+      moyenne = mcc;
+    } else if (!moyenne && compo != null) {
+      moyenne = compo;
+    }
+    
+    const isBonus = m.est_bonus === true;
+    let total = 0;
+    
+    if (isBonus) {
+      if (moyenne > 10) {
+        total = (moyenne - 10) * m.coefficient;
+      }
+    } else {
+      total = moyenne * m.coefficient;
+    }
+
+    return {
+      ...m,
+      mccDisplay: mcc != null ? mcc.toFixed(2) : '-',
+      compoDisplay: compo != null ? compo.toFixed(2) : '-',
+      moyenneDisplay: moyenne ? moyenne.toFixed(2) : '-',
+      totalDisplay: total > 0 ? total.toFixed(2) : (isBonus ? '-' : '0.00'),
+      isBonus,
+      total,
+      moyenneNum: moyenne
+    };
+  });
+
+  const sumTotal = matieresCalculated.reduce((acc, curr) => acc + curr.total, 0);
+  const sumCoeff = matieresCalculated.filter(m => !m.isBonus).reduce((acc, curr) => acc + curr.coefficient, 0);
+  const mgRecomp = sumCoeff > 0 ? (sumTotal / sumCoeff) : 0;
+  
+  const getAppreciation = (moy: number) => {
+    if (moy < 10) return 'Insuffisant';
+    if (moy < 12) return 'Passable';
+    if (moy < 14) return 'Assez Bien';
+    if (moy < 16) return 'Bien';
+    return 'Très Bien';
+  };
+
+  return (
+    <div className="w-[210mm] min-h-[297mm] mx-auto bg-white p-8 relative print:p-0 print:w-full font-serif text-sm">
+      {/* Watermark Logo */}
+      {data.ecole.logo_url && (
+         <div 
+           className="absolute inset-0 opacity-[0.05] pointer-events-none z-0" 
+           style={{
+             backgroundImage: `url(${data.ecole.logo_url})`, 
+             backgroundPosition: 'center', 
+             backgroundSize: '80%', 
+             backgroundRepeat: 'no-repeat'
+           }}
+         />
+      )}
+
+      {/* En-tête institutionnelle */}
+      <div className="flex justify-between items-start mb-6 z-10 relative border-b-2 border-slate-800 pb-4">
+        <div className="w-1/3 text-center text-xs">
+          <p className="font-bold text-sm">MINISTÈRE DE L'ÉDUCATION NATIONALE</p>
+          <p>**********</p>
+          <p className="font-bold uppercase">{data.ecole.nom}</p>
+        </div>
+        
+        <div className="w-1/3 flex flex-col items-center justify-center">
+          {data.ecole.logo_url ? (
+            <img src={data.ecole.logo_url} alt="Logo de l'école" className="h-20 object-contain" />
+          ) : (
+            <div className="h-20 w-20 bg-slate-200 rounded-full flex items-center justify-center text-slate-400">Logo</div>
+          )}
+        </div>
+
+        <div className="w-1/3 text-center text-xs">
+          <p className="font-bold text-sm">RÉPUBLIQUE DU SÉNÉGAL</p>
+          <p className="italic">Un Peuple - Un But - Une Foi</p>
+          <p>**********</p>
+          <p className="font-bold">Année Scolaire : 2024 - 2025</p>
+        </div>
+      </div>
+
+      {/* Titre */}
+      <div className="text-center mb-6 z-10 relative">
+        <h1 className="text-2xl font-black uppercase tracking-widest border-2 border-slate-800 inline-block px-8 py-2 bg-slate-100/50">
+          BULLETIN DE NOTES
+        </h1>
+        <p className="text-lg font-bold mt-2">TRIMESTRE {data.trimestre}</p>
+        {data.classe.cycle === 'secondaire' && (
+          <p className="text-sm font-semibold uppercase text-slate-700">CYLES SECONDAIRES - SÉRIE {data.classe.serie_code}</p>
+        )}
+      </div>
+
+      {/* Infos Élève */}
+      <div className="flex justify-between border-2 border-slate-800 p-4 mb-6 rounded-sm z-10 relative bg-slate-50">
+        <div className="w-2/3">
+          <p className="mb-1"><span className="font-bold inline-block w-24">Prénom(s) :</span> <span className="font-bold text-lg uppercase">{data.eleve.prenom}</span></p>
+          <p className="mb-1"><span className="font-bold inline-block w-24">Nom :</span> <span className="font-bold text-lg uppercase">{data.eleve.nom}</span></p>
+          <p><span className="font-bold inline-block w-24">Matricule :</span> {data.eleve.matricule}</p>
+        </div>
+        <div className="w-1/3 text-right">
+          <p className="mb-1"><span className="font-bold">Classe :</span> {data.classe.nom_classe}</p>
+          <p><span className="font-bold">Effectif :</span> N/A</p>
+        </div>
+      </div>
+
+      {/* Tableau des notes */}
+      <div className="mb-6 z-10 relative">
+        <table className="w-full border-collapse border-2 border-slate-800 text-sm">
+          <thead className="bg-slate-200">
+            <tr>
+              <th className="border border-slate-800 p-2 text-left w-1/4">Matières</th>
+              <th className="border border-slate-800 p-2 text-center text-xs">Moy Devoirs<br/>(MCC)</th>
+              <th className="border border-slate-800 p-2 text-center text-xs">Compo</th>
+              <th className="border border-slate-800 p-2 text-center bg-slate-300 font-bold">Moy / 20</th>
+              <th className="border border-slate-800 p-2 text-center">Coef</th>
+              <th className="border border-slate-800 p-2 text-center font-bold">Total<br/>(Moy × Coef)</th>
+              <th className="border border-slate-800 p-2 text-left w-1/4">Appréciation</th>
+            </tr>
+          </thead>
+          <tbody>
+            {matieresCalculated.map((m) => (
+              <tr key={m.id} className="hover:bg-slate-50">
+                <td className="border border-slate-800 p-2 font-semibold">
+                  {m.nom} {m.isBonus && <span className="text-xs text-slate-500 italic">(Bonus)</span>}
+                </td>
+                <td className="border border-slate-800 p-2 text-center">{m.mccDisplay}</td>
+                <td className="border border-slate-800 p-2 text-center">{m.compoDisplay}</td>
+                <td className="border border-slate-800 p-2 text-center font-bold bg-slate-50">{m.moyenneDisplay}</td>
+                <td className="border border-slate-800 p-2 text-center">{!m.isBonus ? m.coefficient : '-'}</td>
+                <td className="border border-slate-800 p-2 text-center font-bold">{m.totalDisplay}</td>
+                <td className="border border-slate-800 p-2 text-xs italic">
+                  {m.moyenneNum ? getAppreciation(m.moyenneNum) : ''}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot className="bg-slate-200 border-2 border-slate-800">
+            <tr>
+              <td colSpan={4} className="border border-slate-800 p-2 text-right font-bold uppercase">
+                Somme des totaux & coefficients :
+              </td>
+              <td className="border border-slate-800 p-2 text-center font-black text-lg">
+                {sumCoeff}
+              </td>
+              <td className="border border-slate-800 p-2 text-center font-black text-lg">
+                {sumTotal.toFixed(2)}
+              </td>
+              <td className="border border-slate-800 p-2 bg-slate-300"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      {/* Résultats Globaux */}
+      <div className="flex border-2 border-slate-800 p-4 mb-6 z-10 relative bg-slate-50 gap-4 justify-between items-center rounded-sm">
+        <div className="flex flex-col items-center">
+             <span className="text-sm font-bold uppercase text-slate-600">Moyenne Générale</span>
+             <span className="text-3xl font-black text-slate-900 border-b-4 border-double border-slate-800 px-4">
+                 {mgRecomp.toFixed(2)} / 20
+             </span>
+        </div>
+        <div className="flex flex-col">
+             <span className="text-sm font-bold uppercase text-slate-600">Mention</span>
+             <span className="text-xl font-bold italic">{data.mention || getAppreciation(mgRecomp)}</span>
+        </div>
+      </div>
+
+      {/* Cadre de décision et signature */}
+      <div className="grid grid-cols-2 gap-4 z-10 relative min-h-[160px]">
+        {/* Décision du conseil */}
+        <div className="border-2 border-slate-800 p-3 rounded-sm">
+           <p className="font-bold underline text-sm mb-2 uppercase text-center bg-slate-200 py-1">Décision du conseil de classe</p>
+           <p className="italic text-base whitespace-pre-line text-center mt-4">
+             {data.decision_conseil || "Passe en classe supérieure."}
+           </p>
+        </div>
+        
+        {/* Signature Chef */}
+        <div className="border-2 border-slate-800 p-3 rounded-sm relative flex flex-col justify-start">
+           <p className="font-bold underline text-sm mb-2 uppercase text-center bg-slate-200 py-1">Le Chef d'Établissement</p>
+           
+           {/* Section Images pour signature et tampon superposés */}
+           <div className="relative mt-2 flex-grow min-h-[100px] flex items-center justify-center">
+              {data.ecole.tampon_url && (
+                <img 
+                  src={data.ecole.tampon_url} 
+                  alt="Tampon" 
+                  className="absolute opacity-60 h-24 right-4 rotate-[-15deg] object-contain mix-blend-multiply drop-shadow-md z-1"
+                />
+              )}
+              {data.ecole.signature_url && (
+                <img 
+                  src={data.ecole.signature_url} 
+                  alt="Signature" 
+                  className="absolute h-16 right-10 mix-blend-multiply drop-shadow-sm z-10"
+                />
+              )}
+           </div>
+        </div>
+      </div>
+      
+      {/* Footer Text */}
+      <div className="absolute bottom-4 left-0 right-0 text-center text-xs text-slate-500 z-10">
+        Généré le {new Date().toLocaleDateString('fr-FR')} par EduMatrix - Bulletin Scolaire Officiel
+      </div>
+    </div>
+  );
+}
