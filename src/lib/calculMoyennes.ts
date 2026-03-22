@@ -43,7 +43,7 @@ export class CalculateurMoyennes {
         serie:series(id, code, nom)
       `)
       .eq('ecole_id', ecole_id)
-      .eq('niveau', niveau_code)
+      .ilike('niveau', niveau_code)
 
     if (serie_id) {
        query = query.or(`serie_id.eq.${serie_id},serie_id.is.null`)
@@ -94,7 +94,7 @@ export class CalculateurMoyennes {
     let { data: niveau } = await supabase
       .from('niveaux')
       .select('*')
-      .eq('code', classe.niveau)
+      .ilike('code', classe.niveau)
       .eq('ecole_id', classe.ecole_id)
       .maybeSingle()
     
