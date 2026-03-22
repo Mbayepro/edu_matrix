@@ -318,7 +318,20 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
       });
 
     if (error) {
-      console.error('Erreur lors de la sauvegarde de la note:', error);
+      console.error('Erreur de sauvegarde (Réseau ou BDD):', error);
+      // PWA Mode Offline : Sauvegarde locale
+      const offlineKey = `offline_note_${eleveId}_${evaluationId}`;
+      const offlineData = {
+        eleve_id: eleveId,
+        evaluation_id: evaluationId,
+        note: noteValue,
+        professeur_id: user?.id,
+        saved_at: new Date().toISOString()
+      };
+      localStorage.setItem(offlineKey, JSON.stringify(offlineData));
+      alert(`⚠️ Connexion perdue. La note (${noteValue}) a été sauvegardée localement (Brouillon PWA) et sera synchronisée au retour du réseau.`);
+    } else {
+      localStorage.removeItem(`offline_note_${eleveId}_${evaluationId}`);
     }
   };
 

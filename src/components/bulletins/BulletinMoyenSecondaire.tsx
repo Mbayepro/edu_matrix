@@ -9,6 +9,7 @@ export interface MatiereDetails {
   mcc?: number;
   composition_note?: number;
   est_bonus?: boolean;
+  domaine?: string;
 }
 
 export interface BulletinData {

@@ -1,7 +1,12 @@
+"use client";
+
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { Database } from '../types/supabase';
 import BulletinMoyenSecondaire, { BulletinData } from './bulletins/BulletinMoyenSecondaire';
 import BulletinPrimaire from './bulletins/BulletinPrimaire';
+
+type BulletinRow = Database['public']['Views']['v_bulletins_complets']['Row'];
 
 interface GenerateurProps {
   eleveId?: string; // Optionnel : si null, on imprime tous les élèves de la classe!
@@ -37,45 +42,31 @@ export default function BulletinGenerator({ eleveId, classeId, trimestre }: Gene
           return;
         }
 
-        const formattedArray = rows.map((bulletinRow: any) => {
-          let parsedMatieres = [];
-          // Support JSON v4 ou Rétrocompatibilité v3
+        const formattedArray = rows.map((bulletinRow: BulletinRow) => {
+          let parsedMatieres: any[] = [];
           if (bulletinRow.matieres_details_json) {
-            parsedMatieres = bulletinRow.matieres_details_json;
-          } else if (bulletinRow.matieres_details) {
-            parsedMatieres = bulletinRow.matieres_details.map((detail: string) => {
-              const [id, nom, coefficient, moyenne, nombre_evaluations] = detail.replace(/[()]/g, '').split(',');
-              return {
-                id: id.trim(),
-                nom: nom.trim(),
-                coefficient: parseFloat(coefficient),
-                moyenne: parseFloat(moyenne),
-                nombre_evaluations: parseInt(nombre_evaluations)
-              };
-            });
+            parsedMatieres = bulletinRow.matieres_details_json as any[];
           }
 
           return {
             eleve: {
-              id: bulletinRow.eleve_id,
-              nom: bulletinRow.nom,
-              prenom: bulletinRow.prenom,
-              matricule: bulletinRow.matricule
+              id: bulletinRow.eleve_id || '',
+              nom: bulletinRow.nom || '',
+              prenom: bulletinRow.prenom || '',
+              matricule: bulletinRow.matricule || ''
             },
             classe: {
-              id: bulletinRow.classe_id,
-              nom_classe: bulletinRow.nom_classe,
-              niveau_code: bulletinRow.niveau_code,
-              niveau_nom: bulletinRow.niveau_nom,
-              cycle: bulletinRow.niveau_cycle || bulletinRow.cycle || 'primaire',
-              serie_code: bulletinRow.serie_code,
-              serie_nom: bulletinRow.serie_nom
+              id: bulletinRow.classe_id || '',
+              nom_classe: bulletinRow.nom_classe || '',
+              niveau_code: bulletinRow.niveau_code || '',
+              niveau_nom: bulletinRow.niveau_nom || '',
+              cycle: bulletinRow.niveau_cycle || bulletinRow.cycle || 'primaire'
             },
             ecole: {
               nom: bulletinRow.ecole_nom || 'Établissement Scolaire',
-              logo_url: bulletinRow.ecole_logo_url,
-              tampon_url: bulletinRow.ecole_tampon_url,
-              signature_url: bulletinRow.ecole_signature_url
+              logo_url: bulletinRow.ecole_logo_url || null,
+              tampon_url: bulletinRow.ecole_tampon_url || null,
+              signature_url: bulletinRow.ecole_signature_url || null
             },
             trimestre: bulletinRow.trimestre,
             matieres: parsedMatieres,

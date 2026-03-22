@@ -1,33 +1,10 @@
 import React from 'react';
-import { BulletinData } from './BulletinMoyenSecondaire';
-
-// Mapping simple pour déduire un domaine à partir du nom d'une matière (faute de champ en DB)
-const getDomaineParDefaut = (nom: string) => {
-  const n = nom.toLowerCase();
-  if (n.includes('lecture') || n.includes('dictée') || n.includes('expression') || n.includes('français') || n.includes('oral') || n.includes('texte')) {
-    return 'Langue et Communication';
-  }
-  if (n.includes('math') || n.includes('calcul') || n.includes('géométrie') || n.includes('problème') || n.includes('mesure')) {
-    return 'Mathématiques';
-  }
-  if (n.includes('science') || n.includes('découverte') || n.includes('histoire') || n.includes('géo') || n.includes('ist')) {
-    return 'Découverte du Monde';
-  }
-  if (n.includes('eps') || n.includes('sport') || n.includes('physique')) {
-    return 'Éducation Physique et Sportive';
-  }
-  if (n.includes('art') || n.includes('dessin') || n.includes('poésie') || n.includes('chant')) {
-    return 'Éducation Artistique';
-  }
-  return 'Activités Diverses';
-};
+import { BulletinData } from './BulletinMoyenSecondaire'; // À refactoriser avec les types autogénérés plus tard
 
 export default function BulletinPrimaire({ data }: { data: BulletinData }) {
-  // 1. Déduction des domaines & adaptation sur 10.
-  // Au primaire (Sénégal), les notes sont sur 10. Si le système les a enregistrées sur 20 (base), on divise par 2.
+  // 1. Adaptation sur 10.
+  // Au primaire (Sénégal), les notes sont sur 10.
   const matieresAvecDomaines = data.matieres.map(m => {
-    // Si la moyenne est > 10, c'est sûrement qu'elle est sur 20. On normalise sur 10 si besoin.
-    // Mais on a calculé la moyenne générale sur 10 normalement dans postgres, on peut forcer la division :
     const moyenneSur10 = m.moyenne / 2;
     const observation = moyenneSur10 >= 7 ? 'Acquis (A)' : 
                         moyenneSur10 >= 4 ? 'En cours d\'acquisition (ECA)' :
@@ -35,7 +12,8 @@ export default function BulletinPrimaire({ data }: { data: BulletinData }) {
 
     return {
       ...m,
-      domaine: getDomaineParDefaut(m.nom),
+      // Fallback sémantique juste pour les anciennes matières non migrées
+      domaine: m.domaine || 'Activités Diverses',
       moyenneSur10,
       observation
     };
@@ -47,7 +25,7 @@ export default function BulletinPrimaire({ data }: { data: BulletinData }) {
       acc[current.domaine] = {
         nom: current.domaine,
         activites: [],
-        coefficientDomaine: 1 // On peut forcer un coeff par domaine, ex: 1 pour tous ou somme
+        coefficientDomaine: 1 // À configurer via DB si nécessaire un jour
       };
     }
     acc[current.domaine].activites.push(current);
