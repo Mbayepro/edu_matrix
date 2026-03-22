@@ -54,8 +54,40 @@ export class CalculateurMoyennes {
     const { data, error } = await query
 
     if (error) throw error
+    
+    // Si aucun coefficient spécifique n'est défini pour ce niveau, 
+    // on utilise les coefficients par défaut de la table matieres
+    let coefficients = data || []
+    if (coefficients.length === 0) {
+      const { data: matieresDefault } = await supabase
+        .from('matieres')
+        .select('*')
+        .eq('ecole_id', ecole_id)
+        .eq('is_active', true)
+        
+      if (matieresDefault && matieresDefault.length > 0) {
+        coefficients = matieresDefault.map((m: any) => ({
+          id: m.id,
+          ecole_id: ecole_id,
+          matiere_id: m.id,
+          niveau_id: niveau_code,
+          serie_id: serie_id || null,
+          coefficient: m.coefficient || 1,
+          is_obligatoire: true,
+          created_at: m.created_at,
+          matiere: {
+            id: m.id,
+            nom: m.nom,
+            code_matiere: m.code,
+            cycle: m.cycle || 'moyen',
+            est_bonus: m.est_bonus || false
+          }
+        }))
+      }
+    }
+
     // Sort on client-side to avoid PostgREST limitations with Aliases in order
-    return (data || []).sort((a: any, b: any) => 
+    return coefficients.sort((a: any, b: any) => 
       (a.matiere?.nom || '').localeCompare(b.matiere?.nom || '')
     )
   }

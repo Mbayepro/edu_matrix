@@ -513,7 +513,7 @@ export default function BulletinsPage() {
              </div>
              <div className="flex gap-3 mt-6">
                 <Link 
-                  href="/dashboard/parametres" 
+                  href="/dashboard/matieres" 
                   className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-red-600/20"
                 >
                   Configurer les Coefficients
