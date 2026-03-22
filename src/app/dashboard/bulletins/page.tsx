@@ -30,7 +30,17 @@ export default function BulletinsPage() {
   const [loading, setLoading] = useState(true)
   const [loadingBulletins, setLoadingBulletins] = useState(false)
   const [generating, setGenerating] = useState<string | null>(null)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const { showToast } = useToast()
+
+  // Générer les années scolaires disponibles
+  const anneesScolaires = [
+    '2023-2024',
+    '2024-2025',
+    '2025-2026',
+    '2026-2027',
+    '2027-2028'
+  ]
 
   useEffect(() => {
     init()
@@ -98,6 +108,7 @@ export default function BulletinsPage() {
     if (!selectedClasse || !selectedTrimestre) return
     
     setLoadingBulletins(true)
+    setErrorMsg(null)
     try {
       const bulletinsData = await CalculateurMoyennes.genererBulletinsClasse(
         selectedClasse,
@@ -118,6 +129,7 @@ export default function BulletinsPage() {
       setBulletins(bulletinsData)
     } catch (error: any) {
       console.error('Erreur lors du chargement des bulletins:', error)
+      setErrorMsg(error.message || 'Impossible de générer les bulletins')
       showToast('Erreur : ' + (error.message || 'Impossible de générer les bulletins'), 'error')
       setBulletins([])
     } finally {
@@ -437,18 +449,42 @@ export default function BulletinsPage() {
                    <TrendingUp className="w-5 h-5" />
                 </div>
                 <div>
-                   <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600/60">Session</p>
-                   <input 
-                      type="text" 
+                   <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600/60">Année Scolaire</p>
+                   <select 
                       value={anneeScolaire} 
                       onChange={(e) => setAnneeScolaire(e.target.value)}
-                      className="bg-transparent border-none p-0 text-sm font-black text-emerald-900 leading-tight focus:ring-0 w-24 outline-none"
-                   />
+                      className="bg-transparent border-none p-0 text-sm font-black text-emerald-900 leading-tight focus:ring-0 w-32 outline-none"
+                   >
+                      {anneesScolaires.map(annee => (
+                        <option key={annee} value={annee}>{annee}</option>
+                      ))}
+                   </select>
                 </div>
              </div>
           </div>
         </div>
       </div>
+
+      {/* Persistent Error Alert */}
+      {!loadingBulletins && errorMsg && (
+        <div className="mx-8 mb-8 p-6 bg-red-50 border-2 border-red-200 rounded-3xl flex items-start gap-4 animate-in fade-in slide-in-from-top-4 duration-500 shadow-xl shadow-red-500/5">
+          <div className="w-12 h-12 rounded-2xl bg-white border border-red-200 flex items-center justify-center shrink-0">
+             <AlertCircle className="w-6 h-6 text-red-600" />
+          </div>
+          <div>
+            <h3 className="text-base font-black text-red-900 mb-1">Erreur inattendue</h3>
+            <p className="text-sm text-red-700 font-medium">
+              Le calcul des bulletins a été interrompu: <strong className="break-all">{errorMsg}</strong>
+            </p>
+            <button 
+              onClick={() => setErrorMsg(null)}
+              className="mt-3 text-[10px] font-black uppercase tracking-widest text-red-500 hover:text-red-700 bg-white px-3 py-1.5 rounded-lg border border-red-200"
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Persistent Alert for Configuration Issues */}
       {!loadingBulletins && selectedClasse && bulletins.length > 0 && bulletins.filter(b => b.matieres.length > 0).length === 0 && (

@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS public.coefficients_niveaux (
     matiere_nom TEXT NOT NULL, -- Gardé pour compatibilité et recherche rapide
     coefficient INTEGER NOT NULL DEFAULT 1,
     serie TEXT, -- Pour le secondaire: S1, S2, L1, L2, G, T (NULL pour primaire/moyen)
-    UNIQUE(ecole_id, niveau, matiere_id, serie)
+    serie_id UUID REFERENCES public.series(id) ON DELETE SET NULL, -- Foreign key vers la table series
+    UNIQUE(ecole_id, niveau, matiere_id, serie_id)
 );
 
 -- Index pour accélérer le calcul des bulletins
@@ -30,15 +31,21 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+-- On supprime l'ancien trigger s'il existe
+DROP TRIGGER IF EXISTS update_coefficients_updated_at ON public.coefficients_niveaux;
+
 -- On attache le trigger à la table
 CREATE TRIGGER update_coefficients_updated_at
 BEFORE UPDATE ON public.coefficients_niveaux
 FOR EACH ROW
 EXECUTE PROCEDURE update_updated_at_column();
 
-
 -- On active la sécurité sur la table
 ALTER TABLE public.coefficients_niveaux ENABLE ROW LEVEL SECURITY;
+
+-- Supprimer les anciennes politiques si elles existent
+DROP POLICY IF EXISTS "Lecture des coefficients par école" ON public.coefficients_niveaux;
+DROP POLICY IF EXISTS "Gestion des coefficients par le directeur" ON public.coefficients_niveaux;
 
 -- Règle 1 : Tout le personnel d'une école peut voir les coefficients de son école
 CREATE POLICY "Lecture des coefficients par école"
@@ -70,6 +77,9 @@ WITH CHECK (
 -- ============================================================
 -- VUE POUR LE CALCUL DES MOYENNES AVEC COEFFICIENTS
 -- ============================================================
+
+DROP VIEW IF EXISTS public.v_moyennes_generales CASCADE;
+DROP VIEW IF EXISTS public.v_moyennes_coefficients CASCADE;
 
 -- Vue qui fait la jointure entre notes, coefficients et calcul les moyennes
 CREATE OR REPLACE VIEW public.v_moyennes_coefficients AS
@@ -138,3 +148,6 @@ WHERE moyenne_matiere > 0 -- Exclure les matières sans notes
 GROUP BY eleve_id, eleve_nom, eleve_prenom, classe_id, nom_classe, 
          niveau_classe, trimestre
 ORDER BY eleve_nom, eleve_prenom, trimestre;
+
+-- Recharger le cache du schéma PostgREST
+NOTIFY pgrst, 'reload schema';
