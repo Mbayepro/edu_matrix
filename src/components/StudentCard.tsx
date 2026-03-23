@@ -121,7 +121,7 @@ function PhysicalCard({ eleve, ecole, className }: {
       <div className="relative px-6 py-6 flex gap-5">
         {/* Photo */}
         <div className="shrink-0 relative">
-          <div className="absolute -inset-1 bg-gradient-to-b from-emerald-500 to-transparent rounded-2xl blur opacity-30"></div>
+          <div className="absolute -inset-1 bg-gradient-to-b from-emerald-500 to-transparent rounded-2xl blur opacity-30 print:hidden"></div>
           {eleve.photo_url ? (
             <img
               src={eleve.photo_url}
@@ -299,6 +299,9 @@ export default function StudentCard({ eleveId, onClose, defaultTab }: StudentCar
           }
           #student-card-print, #student-card-print * {
             visibility: visible;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
           }
           #student-card-print {
             position: absolute;
@@ -306,14 +309,13 @@ export default function StudentCard({ eleveId, onClose, defaultTab }: StudentCar
             top: 50%;
             transform: translate(-50%, -50%);
             margin: 0;
-            /* Forcer l'impression des couleurs d'arrière-plan (très important pour le thème sombre) */
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
+            break-inside: avoid;
+            page-break-inside: avoid;
           }
         }
       `}</style>
 
-      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto print:bg-transparent">
+      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto print:bg-transparent print:backdrop-blur-none">
       <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden my-auto">
 
         {/* Modal header */}
