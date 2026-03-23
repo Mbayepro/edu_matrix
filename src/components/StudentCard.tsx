@@ -348,18 +348,20 @@ export default function StudentCard({ eleveId, onClose, defaultTab }: StudentCar
             </div>
 
             {/* Average banner */}
-            <div className="bg-white rounded-xl p-4 flex items-center gap-4 mb-4 shadow-sm border border-slate-100">
-              <div className="text-center">
-                <p className="text-3xl font-bold text-slate-800">
-                  {moyenneGenerale.toFixed(2)}
-                </p>
-                <p className="text-xs text-slate-400">/ {isPrimary ? '10' : '20'}</p>
+            {parMatiere.length > 0 && (
+              <div className="bg-white rounded-xl p-4 flex items-center gap-4 mb-4 shadow-sm border border-slate-100">
+                <div className="text-center">
+                  <p className="text-3xl font-bold text-slate-800">
+                    {moyenneGenerale.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-slate-400">/ {isPrimary ? '10' : '20'}</p>
+                </div>
+                <div>
+                  <MentionBadge moyenne={moyenneGenerale} isPrimary={isPrimary} />
+                  <p className="text-xs text-slate-500 mt-1">Moyenne générale pondérée</p>
+                </div>
               </div>
-              <div>
-                <MentionBadge moyenne={moyenneGenerale} isPrimary={isPrimary} />
-                <p className="text-xs text-slate-500 mt-1">Moyenne générale pondérée</p>
-              </div>
-            </div>
+            )}
 
             {/* Bulletin imprimable */}
             <div className="mt-4 bg-white rounded-xl p-4 border border-dashed border-slate-200">
