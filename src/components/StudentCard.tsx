@@ -290,7 +290,30 @@ export default function StudentCard({ eleveId, onClose, defaultTab }: StudentCar
     : '—'
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <>
+      {/* ── STYLE DÉDIÉ À L'IMPRESSION ── */}
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          #student-card-print, #student-card-print * {
+            visibility: visible;
+          }
+          #student-card-print {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            margin: 0;
+            /* Forcer l'impression des couleurs d'arrière-plan (très important pour le thème sombre) */
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+        }
+      `}</style>
+
+      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto print:bg-transparent">
       <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden my-auto">
 
         {/* Modal header */}
@@ -406,5 +429,6 @@ export default function StudentCard({ eleveId, onClose, defaultTab }: StudentCar
         </div>
       </div>
     </div>
+    </>
   )
 }
