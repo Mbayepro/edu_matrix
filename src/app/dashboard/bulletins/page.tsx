@@ -18,9 +18,12 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import { useToast } from '@/contexts/ToastContext'
+import { useTeacherClasses } from '@/hooks/useTeacherClasses'
 
 export default function BulletinsPage() {
   const [ecoleId, setEcoleId] = useState<string | null>(null)
+  const [profileId, setProfileId] = useState<string | null>(null)
+  const [isTeacher, setIsTeacher] = useState(false)
   const [ecole, setEcole] = useState<Ecole | null>(null)
   const [classes, setClasses] = useState<Classe[]>([])
   const [selectedClasse, setSelectedClasse] = useState<string>('')
@@ -32,6 +35,11 @@ export default function BulletinsPage() {
   const [generating, setGenerating] = useState<string | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const { showToast } = useToast()
+
+  // Profeseur : uniquement ses classes assignées
+  const { classeIds: teacherClasseIds, loading: teacherLoading } = useTeacherClasses(
+    isTeacher ? profileId : null
+  )
 
   // Générer les années scolaires disponibles
   const anneesScolaires = [
@@ -48,11 +56,13 @@ export default function BulletinsPage() {
 
   useEffect(() => {
     if (ecoleId) {
+      // Pour un prof, attendre que les assignations soient chargées
+      if (isTeacher && teacherLoading) return
       Promise.all([loadEcole(), loadClasses()]).finally(() => {
         setLoading(false)
       })
     }
-  }, [ecoleId])
+  }, [ecoleId, isTeacher, teacherLoading, teacherClasseIds.join(',')])
 
   useEffect(() => {
     if (selectedClasse && selectedTrimestre && anneeScolaire) {
@@ -69,12 +79,14 @@ export default function BulletinsPage() {
 
     const { data: prof } = await supabase
       .from('profiles')
-      .select('ecole_id')
+      .select('id, ecole_id, role')
       .eq('user_id', user.id)
       .single()
     
     if (prof?.ecole_id) {
       setEcoleId(prof.ecole_id)
+      setProfileId(prof.id)
+      setIsTeacher(prof.role === 'teacher')
     } else {
       setLoading(false)
     }
@@ -95,13 +107,27 @@ export default function BulletinsPage() {
   async function loadClasses() {
     if (!ecoleId) return
     
-    const { data } = await supabase
-      .from('classes')
-      .select('*')
-      .eq('ecole_id', ecoleId)
-      .order('nom_classe')
-    
-    setClasses(data ?? [])
+    if (isTeacher) {
+      // Prof : uniquement ses classes assignées
+      if (teacherClasseIds.length === 0) {
+        setClasses([])
+        return
+      }
+      const { data } = await supabase
+        .from('classes')
+        .select('*')
+        .in('id', teacherClasseIds)
+        .order('nom_classe')
+      setClasses(data ?? [])
+    } else {
+      // Directeur : toutes les classes de l'école
+      const { data } = await supabase
+        .from('classes')
+        .select('*')
+        .eq('ecole_id', ecoleId)
+        .order('nom_classe')
+      setClasses(data ?? [])
+    }
   }
 
   async function loadBulletins() {

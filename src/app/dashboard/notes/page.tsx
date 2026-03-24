@@ -16,10 +16,17 @@ import {
 } from 'lucide-react'
 import { useProfile } from '@/hooks/useProfile'
 import { useToast } from '@/contexts/ToastContext'
+import { useTeacherClasses } from '@/hooks/useTeacherClasses'
 
 export default function NotesPage() {
   const { profile, loading: profileLoading } = useProfile()
   const ecoleId = profile?.ecole_id || null
+  const isTeacher = profile?.role === 'teacher'
+
+  // Professeur : récupère uniquement ses classes et matières assignées
+  const { classeIds: teacherClasseIds, getMatiereIdsForClasse, loading: teacherLoading } = useTeacherClasses(
+    isTeacher ? profile?.id : null
+  )
 
   const [classes, setClasses] = useState<Classe[]>([])
   const [niveaux, setNiveaux] = useState<Niveau[]>([])
@@ -80,12 +87,12 @@ export default function NotesPage() {
   }
 
   useEffect(() => {
-    if (ecoleId) {
-       loadBaseData(ecoleId)
-    } else if (!profileLoading && !ecoleId) {
-       setLoading(false)
-    }
-  }, [ecoleId, profileLoading])
+    if (profileLoading) return
+    if (!ecoleId) { setLoading(false); return }
+    // Attendre les assignations du prof
+    if (isTeacher && teacherLoading) return
+    loadBaseData(ecoleId)
+  }, [ecoleId, profileLoading, isTeacher, teacherLoading, teacherClasseIds.join(',')])
 
   async function loadNiveaux(schoolId: string) {
     const { data } = await supabase
@@ -108,18 +115,32 @@ export default function NotesPage() {
   }
 
   async function loadClasses(schoolId: string) {
-    const { data } = await supabase
-      .from('classes')
-      .select('*, niveau_info:niveaux(cycle)')
-      .eq('ecole_id', schoolId)
-      .order('nom_classe')
-    setClasses(data ?? [])
+    if (isTeacher) {
+      // Prof : uniquement ses classes assignées
+      if (teacherClasseIds.length === 0) {
+        setClasses([])
+        return
+      }
+      const { data } = await supabase
+        .from('classes')
+        .select('*, niveau_info:niveaux(cycle)')
+        .in('id', teacherClasseIds)
+        .order('nom_classe')
+      setClasses(data ?? [])
+    } else {
+      // Directeur : toutes les classes de l'école
+      const { data } = await supabase
+        .from('classes')
+        .select('*, niveau_info:niveaux(cycle)')
+        .eq('ecole_id', schoolId)
+        .order('nom_classe')
+      setClasses(data ?? [])
+    }
   }
 
   async function loadMatieres() {
     if (!selectedClasse || !ecoleId) return
     
-    // Fetch matieres via coefficients_matieres if niveau_id exists
     const { data: classeData } = await supabase
       .from('classes')
       .select('niveau_id, serie_id, niveau_info:niveaux(cycle)')
@@ -127,8 +148,9 @@ export default function NotesPage() {
       .single()
 
     try {
+      let matieresList: Matiere[] = []
+
       if (classeData?.niveau_id) {
-        // Cas normal : classe liée à un niveau → on filtre par niveau
         let query = supabase
           .from('coefficients_matieres')
           .select(`matiere:matieres(*)`)
@@ -143,25 +165,40 @@ export default function NotesPage() {
         }
 
         const { data } = await query
-        const list = data?.map((cm: any) => cm.matiere).filter(Boolean) as Matiere[]
-        if (list && list.length > 0) {
-          setMatieres(list)
-          return
-        }
+        matieresList = (data?.map((cm: any) => cm.matiere).filter(Boolean) as Matiere[]) ?? []
       }
       
-      // Fallback : classe sans niveau_id OU aucune matière trouvée dans coefficients
-      // → on charge toutes les matières actives de l'école
-      const { data: allMatieres } = await supabase
-        .from('matieres')
-        .select('*')
-        .eq('ecole_id', ecoleId)
-        .eq('is_active', true)
-        .order('nom')
-      setMatieres(allMatieres ?? [])
+      if (!matieresList.length) {
+        const { data: allMatieres } = await supabase
+          .from('matieres')
+          .select('*')
+          .eq('ecole_id', ecoleId)
+          .eq('is_active', true)
+          .order('nom')
+        matieresList = allMatieres ?? []
+      }
+
+      // Pour les professeurs : restreindre aux matières assignées à cette classe
+      if (isTeacher) {
+        const assignedMatiereIds = getMatiereIdsForClasse(selectedClasse)
+        if (assignedMatiereIds && assignedMatiereIds.length > 0) {
+          const filtered = matieresList.filter((m) => assignedMatiereIds.includes(m.id))
+          if (filtered.length > 0) {
+            matieresList = filtered
+          } else {
+            const { data: assignedMatieres } = await supabase
+              .from('matieres')
+              .select('*')
+              .in('id', assignedMatiereIds)
+              .eq('is_active', true)
+            matieresList = assignedMatieres ?? []
+          }
+        }
+      }
+
+      setMatieres(matieresList)
     } catch (error) {
       console.error('Erreur lors du chargement des matières:', error)
-      // Fallback final : toutes les matières de l'école
       const { data } = await supabase.from('matieres').select('*').eq('ecole_id', ecoleId).eq('is_active', true).order('nom')
       setMatieres(data ?? [])
     }

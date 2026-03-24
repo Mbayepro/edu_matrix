@@ -18,6 +18,7 @@ import { SkeletonTable } from '@/components/Skeleton'
 import type { Ecole } from '@/lib/supabase'
 import { useProfile } from '@/hooks/useProfile'
 import { useToast } from '@/contexts/ToastContext'
+import { useTeacherClasses } from '@/hooks/useTeacherClasses'
 
 const StudentCard = dynamic(() => import('@/components/StudentCard'), { ssr: false })
 
@@ -28,7 +29,13 @@ type StatutPaiement = 'tous' | 'payé' | 'impayé' | 'partiel'
 export default function ElevesPage() {
   const { profile, ecole, loading: profileLoading } = useProfile()
   const ecoleId = profile?.ecole_id || null
+  const isTeacher = profile?.role === 'teacher'
   const { showToast } = useToast()
+
+  // Professeur : récupère uniquement ses classes assignées
+  const { classeIds: teacherClasseIds, loading: teacherLoading } = useTeacherClasses(
+    isTeacher ? profile?.id : null
+  )
 
   const [eleves,       setEleves]       = useState<Eleve[]>([])
   const [classes,      setClasses]      = useState<Classe[]>([])
@@ -47,29 +54,54 @@ export default function ElevesPage() {
   const uploadingFor = useRef<string | null>(null)
 
   useEffect(() => {
-    if (ecoleId) {
-      loadClasses(ecoleId)
-    }
-  }, [ecoleId])
+    if (profileLoading) return
+    if (!ecoleId) return
+    // Pour un prof, attendre que les assignations soient chargées
+    if (isTeacher && teacherLoading) return
+    loadClasses()
+  }, [ecoleId, profileLoading, isTeacher, teacherLoading, teacherClasseIds.join(',')])
 
   useEffect(() => { 
     if (profileLoading) return
-    if (ecoleId) {
-      loadEleves()
-    } else {
-      setLoading(false)
-    }
-  }, [page, search, filterClasse, filterStatut, ecoleId, profileLoading])
+    if (!ecoleId) { setLoading(false); return }
+    // Pour un prof, attendre que les assignations soient chargées
+    if (isTeacher && teacherLoading) return
+    loadEleves()
+  }, [page, search, filterClasse, filterStatut, ecoleId, profileLoading, isTeacher, teacherLoading, teacherClasseIds.join(',')])
 
-  async function loadClasses(schoolId: string) {
+  async function loadClasses() {
+    if (!ecoleId) return
     try {
       setLoading(true)
-      const { data: cls } = await supabase
-        .from('classes')
-        .select('*')
-        .eq('ecole_id', schoolId)
-        .order('nom_classe')
-      setClasses(cls ?? [])
+      let cls: Classe[] = []
+
+      if (isTeacher) {
+        // Prof : uniquement ses classes assignées
+        if (teacherClasseIds.length === 0) {
+          setClasses([])
+          return
+        }
+        const { data } = await supabase
+          .from('classes')
+          .select('*')
+          .in('id', teacherClasseIds)
+          .order('nom_classe')
+        cls = data ?? []
+      } else {
+        // Directeur / superadmin : toutes les classes de l'école
+        const { data } = await supabase
+          .from('classes')
+          .select('*')
+          .eq('ecole_id', ecoleId)
+          .order('nom_classe')
+        cls = data ?? []
+      }
+
+      setClasses(cls)
+      // Si prof et une seule classe, pré-sélectionner automatiquement
+      if (isTeacher && cls.length === 1 && !filterClasse) {
+        setFilterClasse(cls[0].id)
+      }
     } catch (err) {
       console.error(err)
     } finally {
@@ -87,12 +119,29 @@ export default function ElevesPage() {
         .order('nom')
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
+      // Profeseur : restreindre aux classes assignées
+      if (isTeacher) {
+        if (teacherClasseIds.length === 0) {
+          setEleves([])
+          setTotal(0)
+          return
+        }
+        // Si un filtre classe est actif, vérifier qu'il appartient au prof
+        if (filterClasse && teacherClasseIds.includes(filterClasse)) {
+          query = query.eq('classe_id', filterClasse)
+        } else {
+          // Sinon forcer toutes ses classes
+          query = query.in('classe_id', teacherClasseIds)
+        }
+      } else {
+        if (filterClasse) query = query.eq('classe_id', filterClasse)
+      }
+
       if (search.trim()) {
         query = query.or(
           `nom.ilike.%${search}%,prenom.ilike.%${search}%,matricule.ilike.%${search}%`
         )
       }
-      if (filterClasse)              query = query.eq('classe_id', filterClasse)
       if (filterStatut !== 'tous')   query = query.eq('statut_paiement', filterStatut)
 
       const { data, count, error } = await query

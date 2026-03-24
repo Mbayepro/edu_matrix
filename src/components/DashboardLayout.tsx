@@ -24,22 +24,22 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Vue Globale',       href: '/dashboard/superadmin',            icon: LayoutGrid,    roles: ['superadmin'] },
-  { label: 'Tableau de bord',   href: '/dashboard',                       icon: LayoutGrid,    roles: ['director'] },
-  { label: 'Validation',        href: '/dashboard/admin/validation',      icon: BookOpen,      roles: ['superadmin'] },
-  { label: 'Toutes les écoles', href: '/dashboard/admin/ecoles',          icon: LayoutGrid,    roles: ['superadmin'] },
-  { label: 'Classes',           href: '/dashboard/classes',               icon: BookOpen,      roles: ['director', 'superadmin'] },
-  { label: 'Mes classes',       href: '/dashboard/teacher',               icon: BookOpen,      roles: ['teacher'] },
-  { label: 'Matières',          href: '/dashboard/matieres',              icon: BookMarked,    roles: ['director', 'superadmin'] },
-  { label: 'Enseignants',       href: '/dashboard/enseignants',           icon: GraduationCap, roles: ['director', 'superadmin'] },
-  { label: 'Emploi du temps',   href: '/dashboard/admin/emploi-du-temps', icon: Calendar,      roles: ['director'] },
-  { label: 'Élèves',            href: '/dashboard/eleves',                icon: Users,         roles: ['superadmin', 'director', 'teacher'] },
-  { label: 'Notes',             href: '/dashboard/notes',                 icon: TrendingUp,    roles: ['superadmin', 'director', 'teacher'] },
-  { label: 'Bulletins',         href: '/dashboard/bulletins',             icon: FileText,      roles: ['superadmin', 'director', 'teacher'] },
-  { label: 'Conseil de Classe', href: '/dashboard/conseil-classe',        icon: UsersRound,    roles: ['superadmin', 'director'] },
-  { label: 'Présences',         href: '/dashboard/presences',             icon: UserCheck,     roles: ['superadmin', 'director', 'teacher'] },
-  { label: 'Paiements',         href: '/dashboard/paiements',             icon: TrendingUp,    roles: ['superadmin', 'director'] },
-  { label: 'Paramètres',        href: '/dashboard/parametres',            icon: Settings,      roles: ['superadmin', 'director'] },
+  { label: 'Vue Globale',         href: '/dashboard/superadmin',            icon: LayoutGrid,    roles: ['superadmin'] },
+  { label: 'Tableau de bord',     href: '/dashboard',                       icon: LayoutGrid,    roles: ['director'] },
+  { label: 'Mon tableau de bord', href: '/dashboard/teacher',               icon: LayoutGrid,    roles: ['teacher'] },
+  { label: 'Validation',          href: '/dashboard/admin/validation',      icon: BookOpen,      roles: ['superadmin'] },
+  { label: 'Toutes les écoles',   href: '/dashboard/admin/ecoles',          icon: LayoutGrid,    roles: ['superadmin'] },
+  { label: 'Classes',             href: '/dashboard/classes',               icon: BookOpen,      roles: ['director', 'superadmin'] },
+  { label: 'Matières',            href: '/dashboard/matieres',              icon: BookMarked,    roles: ['director', 'superadmin'] },
+  { label: 'Enseignants',         href: '/dashboard/enseignants',           icon: GraduationCap, roles: ['director', 'superadmin'] },
+  { label: 'Emploi du temps',     href: '/dashboard/admin/emploi-du-temps', icon: Calendar,      roles: ['director'] },
+  { label: 'Élèves',              href: '/dashboard/eleves',                icon: Users,         roles: ['superadmin', 'director', 'teacher'] },
+  { label: 'Notes',               href: '/dashboard/notes',                 icon: TrendingUp,    roles: ['superadmin', 'director', 'teacher'] },
+  { label: 'Bulletins',           href: '/dashboard/bulletins',             icon: FileText,      roles: ['superadmin', 'director', 'teacher'] },
+  { label: 'Conseil de Classe',   href: '/dashboard/conseil-classe',        icon: UsersRound,    roles: ['superadmin', 'director'] },
+  { label: 'Présences',           href: '/dashboard/presences',             icon: UserCheck,     roles: ['superadmin', 'director', 'teacher'] },
+  { label: 'Paiements',           href: '/dashboard/paiements',             icon: TrendingUp,    roles: ['superadmin', 'director'] },
+  { label: 'Paramètres',          href: '/dashboard/parametres',            icon: Settings,      roles: ['superadmin', 'director'] },
 ]
 
 function NavLink({ item, active, onClick }: { item: NavItem; active: boolean; onClick?: () => void }) {

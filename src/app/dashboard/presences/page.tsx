@@ -7,6 +7,7 @@ import type { Classe, Profile } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import AttendanceScanner from '@/components/AttendanceScanner'
 import { UserCheck, BookOpen, Clock, AlertCircle, Loader2, QrCode } from 'lucide-react'
+import { useTeacherClasses } from '@/hooks/useTeacherClasses'
 
 interface ElevePresence {
   id: string
@@ -22,6 +23,12 @@ export default function PresencesPage() {
   const router = useRouter()
   const { profile, loading: profileLoading } = useProfile()
   const ecoleId = profile?.ecole_id || null
+  const isTeacher = profile?.role === 'teacher'
+
+  // Pour les profs : charger uniquement leurs classes assignées
+  const { classeIds: teacherClasseIds, loading: teacherLoading } = useTeacherClasses(
+    isTeacher ? profile?.id : null
+  )
 
   const [classes, setClasses] = useState<Classe[]>([])
   
@@ -33,12 +40,17 @@ export default function PresencesPage() {
   const [activeTab, setActiveTab] = useState<'scanner' | 'list'>('scanner')
 
   useEffect(() => {
-    if (ecoleId) {
+    if (profileLoading) return
+    if (!ecoleId) { setLoading(false); return }
+    // Pour les profs, attendre que les assignations soient chargées
+    if (isTeacher && teacherLoading) return
+
+    if (isTeacher) {
+      loadDataForTeacher()
+    } else {
       loadData(ecoleId)
-    } else if (!profileLoading && !ecoleId) {
-      setLoading(false)
     }
-  }, [ecoleId, profileLoading])
+  }, [ecoleId, profileLoading, isTeacher, teacherLoading, teacherClasseIds.join(',')])
 
   useEffect(() => {
     if (selectedClasseId) {
@@ -46,6 +58,7 @@ export default function PresencesPage() {
     }
   }, [selectedClasseId])
 
+  // Directeur / superadmin : toutes les classes de l'école
   async function loadData(schoolId: string) {
     try {
       setLoading(true)
@@ -53,6 +66,29 @@ export default function PresencesPage() {
         .from('classes')
         .select('*')
         .eq('ecole_id', schoolId)
+        .order('nom_classe')
+      
+      setClasses(cls || [])
+      if (cls && cls.length > 0) {
+        setSelectedClasseId(cls[0].id)
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Professeur : seulement ses classes assignées
+  async function loadDataForTeacher() {
+    try {
+      setLoading(true)
+      if (!teacherClasseIds.length) {
+        setClasses([])
+        return
+      }
+      const { data: cls } = await supabase
+        .from('classes')
+        .select('*')
+        .in('id', teacherClasseIds)
         .order('nom_classe')
       
       setClasses(cls || [])

@@ -87,6 +87,8 @@ export default function DashboardPage() {
   useEffect(() => {
     if (profile?.role === 'superadmin') {
       router.push('/dashboard/superadmin')
+    } else if (profile?.role === 'teacher') {
+      router.push('/dashboard/teacher')
     }
   }, [profile, router])
 
