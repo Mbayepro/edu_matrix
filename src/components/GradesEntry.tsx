@@ -76,11 +76,11 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
         .select('*, matieres(*)')
         .eq('niveau_id', classe?.niveau_id);
       
-      const filteredCoefs = coefs?.filter(c => 
+      const filteredCoefs = coefs?.filter((c: any) => 
         !c.serie_id || c.serie_id === classe?.serie_id
       ) || [];
 
-      setMatieres(filteredCoefs.map(c => ({
+      setMatieres(filteredCoefs.map((c: any) => ({
         id: c.matieres.id,
         nom: c.matieres.nom,
         coefficient: parseFloat(c.coefficient),
@@ -105,7 +105,7 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
         const { data: listNotes } = await supabase
           .from('notes')
           .select('*')
-          .in('evaluation_id', listEvals.map(e => e.id));
+          .in('evaluation_id', listEvals.map((e: any) => e.id));
         setNotes(listNotes || []);
       }
     } finally {
