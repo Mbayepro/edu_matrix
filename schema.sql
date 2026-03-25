@@ -433,3 +433,41 @@ JOIN matieres_stats ms ON ms.eleve_id = e.id AND ms.classe_id = c.id
 GROUP BY e.id, e.prenom, e.nom, e.matricule, c.id, c.nom_classe, 
          niv.id, niv.code, niv.nom, niv.cycle, s.code, s.nom, ms.trimestre
 ORDER BY e.nom, e.prenom, ms.trimestre;
+
+-- ─────────────────────────────────────────
+-- FUNCTION: get_payment_coverage_status
+-- ─────────────────────────────────────────
+CREATE OR REPLACE FUNCTION public.get_payment_coverage_status(p_eleve_id UUID)
+RETURNS TEXT AS $$
+DECLARE
+    v_total_paid    NUMERIC(10,2);
+    v_monthly_fee   NUMERIC(10,2);
+    v_nb_months     INTEGER;
+    v_months        TEXT[] := ARRAY['Octobre', 'Novembre', 'Décembre', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet'];
+BEGIN
+    SELECT COALESCE(SUM(p.montant), 0) INTO v_total_paid
+    FROM public.paiements p
+    JOIN public.frais_scolaires f ON p.frais_id = f.id
+    WHERE p.eleve_id = p_eleve_id AND f.frequence = 'mensuel';
+
+    SELECT COALESCE(ef.montant_a_payer, 0) INTO v_monthly_fee
+    FROM public.eleves_frais ef
+    JOIN public.frais_scolaires f ON ef.frais_id = f.id
+    WHERE ef.eleve_id = p_eleve_id AND f.frequence = 'mensuel'
+    LIMIT 1;
+
+    IF v_monthly_fee <= 0 THEN
+        RETURN 'Pas de scolarité mensuelle';
+    END IF;
+
+    v_nb_months := FLOOR(v_total_paid / v_monthly_fee);
+
+    IF v_nb_months = 0 THEN
+        RETURN 'Impayé (Octobre dû)';
+    ELSIF v_nb_months >= 10 THEN
+        RETURN 'Scolarité payée pour l/''année';
+    ELSE
+        RETURN 'Payé (' || v_months[v_nb_months] || ') - OK jusqu/''au 5 ' || v_months[v_nb_months + 1];
+    END IF;
+END;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;

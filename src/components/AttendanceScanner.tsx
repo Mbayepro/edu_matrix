@@ -15,6 +15,7 @@ interface ScanResult {
   studentName?: string
   matricule?: string
   statutPaiement?: string
+  paymentDetails?: string
 }
 
 import CameraQRCodeScanner from './CameraQRCodeScanner'
@@ -66,6 +67,8 @@ async function processAttendance(studentId: string, classeId: string): Promise<S
       .eq('date', today)
       .maybeSingle() // Use maybeSingle to avoid 406 errors if not found
 
+    const { data: payDetails } = await supabase.rpc('get_payment_coverage_status', { p_eleve_id: realStudentId })
+
     if (existing) {
       return {
         status: 'already',
@@ -73,6 +76,7 @@ async function processAttendance(studentId: string, classeId: string): Promise<S
         studentName: `${eleve.prenom} ${eleve.nom}`,
         matricule:   eleve.matricule ?? undefined,
         statutPaiement: eleve.statut_paiement,
+        paymentDetails: payDetails ?? 'Statut inconnu'
       }
     }
 
@@ -102,6 +106,7 @@ async function processAttendance(studentId: string, classeId: string): Promise<S
       studentName: `${eleve.prenom} ${eleve.nom}`,
       matricule:   eleve.matricule ?? undefined,
       statutPaiement: eleve.statut_paiement,
+      paymentDetails: payDetails ?? 'Statut inconnu'
     }
   } catch (error) {
     console.error('Error in processAttendance:', error)
@@ -154,15 +159,23 @@ function ScanResultCard({ result, onReset }: { result: ScanResult; onReset: () =
           <p className={`text-sm ${c.titleColor}`}>{result.message}</p>
           
           {result.statutPaiement && (
-            <div className="mt-3 pt-3 border-t border-black/5 flex items-center justify-between">
-              <span className="text-[10px] uppercase font-black tracking-widest text-slate-400">Paiement</span>
-              <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest ${
-                result.statutPaiement === 'payé' ? 'bg-emerald-100 text-emerald-700' :
-                result.statutPaiement === 'partiel' ? 'bg-amber-100 text-amber-700' :
-                'bg-red-100 text-red-700'
-              }`}>
-                {result.statutPaiement}
-              </span>
+            <div className="mt-3 pt-3 border-t border-black/5 flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase font-black tracking-widest text-slate-400">Paiement</span>
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest ${
+                  result.statutPaiement === 'payé' ? 'bg-emerald-100 text-emerald-700' :
+                  result.statutPaiement === 'partiel' ? 'bg-amber-100 text-amber-700' :
+                  'bg-red-100 text-red-700'
+                }`}>
+                  {result.statutPaiement}
+                </span>
+              </div>
+              {result.paymentDetails && (
+                <div className="flex items-center gap-2 bg-black/5 p-2 rounded-xl border border-black/5">
+                  <div className={`w-1.5 h-1.5 rounded-full ${result.statutPaiement === 'payé' ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                  <span className="text-[10px] font-bold text-slate-700">{result.paymentDetails}</span>
+                </div>
+              )}
             </div>
           )}
         </div>
