@@ -2,7 +2,7 @@
 
 // src/components/StudentCard.tsx
 import { useEffect, useState, useRef } from 'react'
-import { QRCodeSVG } from 'qrcode.react'
+import { QRCodeCanvas } from 'qrcode.react'
 import { supabase, Eleve, Note, Ecole } from '@/lib/supabase'
 import {
   User, Award, BookOpen, Loader2,
@@ -181,9 +181,9 @@ function PhysicalCard({ eleve, ecole, classeNom }: {
       {/* QR Code section */}
       <div className="mt-auto px-6 py-5 bg-slate-900/50 flex items-center gap-5 border-t border-slate-800">
         <div className="bg-white p-2 rounded-xl shrink-0 shadow-lg ring-4 ring-slate-800">
-          <QRCodeSVG
-            value={eleve.id}
-            size={60}
+          <QRCodeCanvas
+            value={eleve.id || 'no-id'}
+            size={80}
             level="M"
             bgColor="#ffffff"
             fgColor="#0B132B"
