@@ -122,78 +122,92 @@ function PhysicalCard({ eleve, ecole, classeNom, isPrint = false }: {
            <BookOpen className="w-64 h-64 text-emerald-900" />
         </div>
 
-        {/* Passport Photo */}
-        <div className="relative mb-6 z-10">
-          <div className="w-32 h-40 bg-slate-50 border-2 border-slate-200 rounded-lg overflow-hidden shadow-md">
-            {eleve.photo_url ? (
-              <img
-                src={eleve.photo_url}
-                alt={`${prenom} ${nom}`}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <User className="w-16 h-16 text-slate-300" />
-              </div>
-            )}
+        {/* Top Section: Photo & QR Code Side-by-Side */}
+        <div className="flex items-center justify-around w-full mb-8 z-10 gap-6">
+          {/* Passport Photo */}
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-32 h-40 bg-slate-50 border-2 border-slate-200 rounded-lg overflow-hidden shadow-md">
+              {eleve.photo_url ? (
+                <img
+                  src={eleve.photo_url}
+                  alt={`${prenom} ${nom}`}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <User className="w-16 h-16 text-slate-300" />
+                </div>
+              )}
+            </div>
+            <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">PHOTO RÉGLEMENTAIRE</p>
+          </div>
+
+          {/* QR Code Prominent */}
+          <div className="flex flex-col items-center gap-2">
+            <div className="bg-white p-2.5 rounded-xl border-2 border-emerald-600 shadow-lg shadow-emerald-100 relative group">
+              <div className="absolute -inset-1 bg-emerald-500/10 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity" />
+              {isPrint ? (
+                <img src={qrUrl} alt="QR Code" className="w-[110px] h-[110px]" />
+              ) : (
+                <QRCodeCanvas
+                  value={eleve.id || 'no-id'}
+                  size={110}
+                  level="M"
+                  bgColor="#ffffff"
+                  fgColor="#047857"
+                />
+              )}
+            </div>
+            <p className="text-[8px] text-emerald-600 font-black uppercase tracking-widest animate-pulse">SCANNER POUR PRÉSENCE</p>
           </div>
         </div>
 
         {/* Identity Details - Clean & Academic */}
         <div className="w-full space-y-4 z-10">
-          <div className="text-center pb-2 border-b border-slate-100">
-             <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-0.5">Étudiant(e)</p>
-             <h2 className="text-xl font-black text-slate-800 uppercase leading-none">{prenom}</h2>
-             <h2 className="text-2xl font-black text-slate-900 uppercase mt-1">{nom}</h2>
+          <div className="text-center pb-2 border-b-2 border-slate-100">
+             <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-0.5">Identité de l'Étudiant(e)</p>
+             <h2 className="text-xl font-black text-slate-800 uppercase leading-none tracking-tight">{prenom}</h2>
+             <h2 className="text-3xl font-black text-slate-950 uppercase mt-1 tracking-tighter">{nom}</h2>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-             <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
-                <p className="text-[9px] text-slate-500 font-bold uppercase mb-1">Matricule</p>
-                <p className="text-sm font-black text-emerald-700 font-mono tracking-tighter">{matricule}</p>
+             <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 shadow-sm">
+                <p className="text-[9px] text-slate-500 font-bold uppercase mb-1 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  Matricule
+                </p>
+                <p className="text-base font-black text-amber-600 font-mono tracking-tighter">{matricule}</p>
              </div>
-             <div className="bg-slate-50 p-2 rounded-lg border border-slate-100">
-                <p className="text-[9px] text-slate-500 font-bold uppercase mb-1">Niveau / Classe</p>
-                <p className="text-sm font-black text-slate-800">{classeNom}</p>
+             <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 shadow-sm">
+                <p className="text-[9px] text-slate-500 font-bold uppercase mb-1 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  Classe
+                </p>
+                <p className="text-base font-black text-slate-800">{classeNom}</p>
              </div>
           </div>
         </div>
       </div>
 
-      {/* Footer: Security & Validation */}
-      <div className="bg-slate-50 border-t border-slate-200 p-6 flex items-center gap-6">
-        <div className="bg-white p-1.5 rounded-lg border border-slate-200 shadow-sm shrink-0">
-          {isPrint ? (
-            <img src={qrUrl} alt="QR Code" className="w-[80px] h-[80px]" />
-          ) : (
-            <QRCodeCanvas
-              value={eleve.id || 'no-id'}
-              size={80}
-              level="M"
-              bgColor="#ffffff"
-              fgColor="#047857"
-            />
-          )}
-        </div>
-        
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-             <p className="text-[10px] font-black text-emerald-800 uppercase tracking-widest">Document Officiel</p>
-          </div>
-          <p className="text-[9px] text-slate-500 leading-relaxed font-semibold italic">
-            Cette carte est strictement personnelle et atteste de la qualité d'étudiant du titulaire.
-          </p>
-          <div className="mt-3 flex justify-between items-end border-t border-slate-200 pt-2">
-             <div>
-                <p className="text-[8px] text-slate-400 font-bold uppercase">Validité</p>
-                <p className="text-[10px] font-black text-slate-600">Session {new Date().getFullYear()}-{new Date().getFullYear()+1}</p>
-             </div>
-             <div className="text-center opacity-30">
-                <p className="text-[8px] text-slate-400 font-bold italic mb-1">Le Directeur</p>
-                <div className="w-16 h-4 border-b border-slate-400 border-dotted" />
-             </div>
-          </div>
+      {/* Footer: Admin Only */}
+      <div className="bg-slate-50 border-t border-slate-200 p-6 flex flex-col justify-end">
+        <div className="flex justify-between items-end">
+           <div className="max-w-[180px]">
+              <p className="text-[10px] font-black text-emerald-800 uppercase tracking-widest mb-1.5">Document Officiel</p>
+              <p className="text-[8px] text-slate-500 leading-tight font-medium italic">
+                Cette carte atteste de la qualité d'étudiant pour l'année en cours.
+              </p>
+           </div>
+           
+           <div className="flex flex-col items-center">
+              <p className="text-[10px] font-black text-slate-600 mb-0.5 uppercase">VALIDE JUSQU'EN</p>
+              <p className="text-sm font-black text-emerald-700 uppercase tracking-tighter">JUIN {new Date().getFullYear()+1}</p>
+           </div>
+
+           <div className="text-center opacity-40">
+              <p className="text-[8px] text-slate-400 font-bold italic mb-1 uppercase">Direction</p>
+              <div className="w-14 h-4 border-b border-slate-400 border-dotted" />
+           </div>
         </div>
       </div>
     </div>
@@ -269,62 +283,81 @@ function printCard(eleve: Eleve, ecole: Ecole | null, classeNom: string, qrValue
 
     .body {
       flex: 1;
-      padding: 24px 32px;
+      padding: 16px 24px;
       display: flex;
       flex-direction: column;
       align-items: center;
       position: relative;
     }
 
-    .photo {
-      width: 128px;
-      height: 160px;
-      background: #f8fafc;
-      border: 2px solid #e2e8f0;
-      border-radius: 8px;
-      overflow: hidden;
+    .top-row {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      width: 100%;
       margin-bottom: 24px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+      gap: 16px;
     }
 
+    .photo {
+      width: 120px;
+      height: 150px;
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
     .photo img { width: 100%; height: 100%; object-fit: cover; }
 
-    .details { width: 100%; text-align: center; }
-    .label { font-size: 10px; color: #94a3b8; font-weight: 900; text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 4px; }
-    .name-prenom { font-size: 20px; font-weight: 900; color: #1e293b; text-transform: uppercase; margin-bottom: 2px; }
-    .name-nom { font-size: 26px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 20px; }
+    .qr-box-main {
+      width: 120px;
+      height: 120px;
+      padding: 8px;
+      background: white;
+      border: 2px solid #047857;
+      border-radius: 12px;
+    }
+    .qr-box-main img { width: 100%; height: 100%; }
 
-    .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .field-box { background: #f8fafc; padding: 8px; border-radius: 8px; border: 1px solid #f1f5f9; }
-    .field-val { font-size: 13px; font-weight: 900; color: #1e293b; }
+    .qr-label {
+      font-size: 8px;
+      font-weight: 900;
+      color: #047857;
+      text-transform: uppercase;
+      margin-top: 6px;
+      letter-spacing: 0.1em;
+    }
+
+    .details { width: 100%; text-align: center; }
+    .label { font-size: 9px; color: #94a3b8; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 2px; }
+    .name-prenom { font-size: 20px; font-weight: 900; color: #1e293b; text-transform: uppercase; margin-bottom: 1px; }
+    .name-nom { font-size: 28px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 16px; line-height: 1; }
+
+    .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .field-box { background: #f8fafc; padding: 10px; border-radius: 12px; border: 1px solid #eef2f6; }
+    .field-val { font-size: 14px; font-weight: 900; color: #1e293b; }
     .field-val.gold { color: #059669; }
 
     .footer {
       background: #f8fafc;
       border-top: 1px solid #e2e8f0;
-      padding: 20px 24px;
+      padding: 16px 24px;
       display: flex;
-      align-items: center;
-      gap: 20px;
+      justify-content: space-between;
+      align-items: flex-end;
     }
 
-    .qr-box {
-      background: white;
-      padding: 6px;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      width: 80px; height: 80px;
-    }
-    .qr-box img { width: 100%; height: 100%; }
-
-    .footer-text { flex: 1; }
+    .footer-text { max-width: 50%; }
     .official-tag { font-size: 10px; font-weight: 900; color: #065f46; text-transform: uppercase; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
     .official-tag::before { content: ""; width: 6px; height: 6px; background: #10b981; border-radius: 50%; }
-    .disclaimer { font-size: 9px; color: #64748b; font-weight: 600; font-style: italic; line-height: 1.4; }
+    .disclaimer { font-size: 8px; color: #64748b; font-weight: 600; line-height: 1.3; }
 
-    .validation { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 12px; padding-top: 8px; border-top: 1px solid #e2e8f0; }
-    .valid-val { font-size: 10px; font-weight: 900; color: #475569; }
-    .sign-label { font-size: 8px; color: #94a3b8; font-weight: 800; font-style: italic; text-align: right; }
+    .validation-row { display: flex; flex-direction: column; align-items: center; }
+    .valid-label-foot { font-size: 8px; font-weight: 900; color: #94a3b8; text-transform: uppercase; }
+    .valid-val-foot { font-size: 12px; font-weight: 900; color: #047857; }
+
+    .sign-box { text-align: center; opacity: 0.5; }
+    .sign-label { font-size: 8px; color: #94a3b8; font-weight: 800; font-style: italic; }
 
     @media print {
       body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -340,15 +373,23 @@ function printCard(eleve: Eleve, ecole: Ecole | null, classeNom: string, qrValue
     </div>
 
     <div class="body">
-      <div class="photo">
-        ${eleve.photo_url
-          ? `<img src="${eleve.photo_url}" alt="${prenom}" crossorigin="anonymous" />`
-          : `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#cbd5e1; font-size:40px;">👤</div>`
-        }
+      <div class="top-row">
+        <div class="photo">
+          ${eleve.photo_url
+            ? `<img src="${eleve.photo_url}" alt="${prenom}" crossorigin="anonymous" />`
+            : `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#cbd5e1; font-size:40px;">👤</div>`
+          }
+        </div>
+        <div style="text-align: center;">
+          <div class="qr-box-main">
+            <img src="${qrUrl}" alt="QR" />
+          </div>
+          <div class="qr-label">SCAN POUR PRÉSENCE</div>
+        </div>
       </div>
 
       <div class="details">
-        <div class="label">Étudiant(e)</div>
+        <div class="label">Identité de l'Étudiant(e)</div>
         <div class="name-prenom">${prenom}</div>
         <div class="name-nom">${nom}</div>
 
@@ -366,23 +407,19 @@ function printCard(eleve: Eleve, ecole: Ecole | null, classeNom: string, qrValue
     </div>
 
     <div class="footer">
-      <div class="qr-box">
-        <img src="${qrUrl}" alt="QR" />
-      </div>
       <div class="footer-text">
         <div class="official-tag">Document Officiel</div>
-        <div class="disclaimer">Cette carte atteste de la qualité d'étudiant du titulaire pour l'année scolaire en cours.</div>
-        
-        <div class="validation">
-          <div>
-            <div class="label">Session</div>
-            <div class="valid-val">${new Date().getFullYear()}-${new Date().getFullYear()+1}</div>
-          </div>
-          <div>
-            <div class="sign-label">Direction</div>
-            <div style="width: 60px; height: 10px; border-bottom: 1px dotted #cbd5e1; margin-top: 4px;"></div>
-          </div>
-        </div>
+        <div class="disclaimer">Cette carte est personnelle et atteste de la qualité d'étudiant pour l'année scolaire en cours.</div>
+      </div>
+      
+      <div class="validation-row">
+        <div class="valid-label-foot">SESSION</div>
+        <div class="valid-val-foot">${new Date().getFullYear()}-${new Date().getFullYear()+1}</div>
+      </div>
+
+      <div class="sign-box">
+        <div class="sign-label">Direction</div>
+        <div style="width: 50px; border-bottom: 1px dotted #cbd5e1; margin-top: 4px;"></div>
       </div>
     </div>
   </div>
