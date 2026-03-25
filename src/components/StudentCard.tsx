@@ -163,27 +163,27 @@ function PhysicalCard({ eleve, ecole, classeNom, isPrint = false }: {
         </div>
 
         {/* Identity Details - Clean & Academic */}
-        <div className="w-full space-y-4 z-10">
+        <div className="w-full flex-1 flex flex-col z-10">
           <div className="text-center pb-2 border-b-2 border-slate-100">
              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-0.5">Identité de l'Étudiant(e)</p>
              <h2 className="text-xl font-black text-slate-800 uppercase leading-none tracking-tight">{prenom}</h2>
              <h2 className="text-3xl font-black text-slate-950 uppercase mt-1 tracking-tighter">{nom}</h2>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-             <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 shadow-sm">
-                <p className="text-[9px] text-slate-500 font-bold uppercase mb-1 flex items-center gap-1.5">
+          <div className="grid grid-cols-2 gap-3 mt-auto">
+             <div className="bg-slate-50 p-2 rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <p className="text-[8px] text-slate-500 font-bold uppercase mb-0.5 flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                   Matricule
                 </p>
-                <p className="text-base font-black text-amber-600 font-mono tracking-tighter">{matricule}</p>
+                <p className="text-[13px] font-black text-amber-600 font-mono tracking-tighter leading-tight break-all">{matricule}</p>
              </div>
-             <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 shadow-sm">
-                <p className="text-[9px] text-slate-500 font-bold uppercase mb-1 flex items-center gap-1.5">
+             <div className="bg-slate-50 p-2 rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <p className="text-[8px] text-slate-500 font-bold uppercase mb-0.5 flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   Classe
                 </p>
-                <p className="text-base font-black text-slate-800">{classeNom}</p>
+                <p className="text-[13px] font-black text-slate-800 leading-tight truncate">{classeNom}</p>
              </div>
           </div>
         </div>
@@ -328,15 +328,15 @@ function printCard(eleve: Eleve, ecole: Ecole | null, classeNom: string, qrValue
       letter-spacing: 0.1em;
     }
 
-    .details { width: 100%; text-align: center; }
+    .details { width: 100%; text-align: center; display: flex; flex-direction: column; flex: 1; }
     .label { font-size: 9px; color: #94a3b8; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 2px; }
     .name-prenom { font-size: 20px; font-weight: 900; color: #1e293b; text-transform: uppercase; margin-bottom: 1px; }
     .name-nom { font-size: 28px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 16px; line-height: 1; }
 
-    .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .field-box { background: #f8fafc; padding: 10px; border-radius: 12px; border: 1px solid #eef2f6; }
-    .field-val { font-size: 14px; font-weight: 900; color: #1e293b; }
-    .field-val.gold { color: #059669; }
+    .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: auto; }
+    .field-box { background: #f8fafc; padding: 8px; border-radius: 12px; border: 1px solid #eef2f6; overflow: hidden; }
+    .field-val { font-size: 12px; font-weight: 900; color: #1e293b; word-break: break-all; line-height: 1.1; }
+    .field-val.gold { color: #d97706; }
 
     .footer {
       background: #f8fafc;
