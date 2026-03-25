@@ -195,18 +195,18 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
       </div>
 
       {matieres.map(matiere => (
-        <div key={matiere.id} className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
-            <h3 className="font-black text-slate-900 uppercase tracking-tight text-xs">{matiere.nom}</h3>
+        <div key={matiere.id} className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm overflow-hidden w-full max-w-full">
+          <div className="px-6 py-4 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between gap-4">
+            <h3 className="font-black text-slate-900 uppercase tracking-tight text-xs truncate min-w-0">{matiere.nom}</h3>
             <button
               onClick={() => { setSelectedMatiereId(matiere.id); setShowNewEvalModal(true); }}
-              className="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
+              className="flex-shrink-0 flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-sm"
             >
               <Plus className="w-3 h-3" /> <span className="hidden sm:inline">Nouvelle Éval.</span>
             </button>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto w-full">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-slate-50/50">
