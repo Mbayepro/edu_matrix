@@ -85,7 +85,7 @@ function PrintCartesContent() {
             <div 
               key={eleve.id} 
               className={`border-[1.5px] border-slate-200 rounded-xl p-4 bg-white relative overflow-hidden shadow-sm flex gap-4 shrink-0 
-                print:shadow-none print:border-slate-800 print:break-inside-avoid print:m-2
+                print:shadow-none print:border-slate-800 print:break-inside-avoid print:m-2 card
               `}
               // Standard CR80 card dimensions
               style={{ width: '85.6mm', height: '54mm' }}
