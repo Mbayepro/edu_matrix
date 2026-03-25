@@ -465,8 +465,8 @@ export default function NotesPage() {
 
       {/* Filters */}
       <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-8">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-          <div className="space-y-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+          <div className="space-y-2 min-w-0">
             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Structure / Classe</label>
             <select
               value={selectedClasse}
@@ -480,7 +480,7 @@ export default function NotesPage() {
             </select>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 min-w-0">
             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Discipline / Matière</label>
             <select
               value={selectedMatiere}
@@ -494,7 +494,7 @@ export default function NotesPage() {
             </select>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 min-w-0">
             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Période scolaire</label>
             <select
               value={selectedTrimestre}
@@ -507,7 +507,7 @@ export default function NotesPage() {
             </select>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 min-w-0">
             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Année Scolaire</label>
             <div className="relative group">
               <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-600 transition-transform group-hover:scale-110" />
@@ -521,13 +521,13 @@ export default function NotesPage() {
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 min-w-0">
             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Séance d&apos;Évaluation</label>
             <div className="flex gap-2">
               <select
                 value={selectedEvaluation}
                 onChange={(e) => setSelectedEvaluation(e.target.value)}
-                className="flex-1 bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all"
+                className="flex-1 bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all min-w-0 truncate"
               >
                 <option value="">Choisir</option>
                 {evaluations.map(evaluation => (
@@ -543,7 +543,7 @@ export default function NotesPage() {
                   setShowNewEvalModal(true)
                 }}
                 disabled={!selectedClasse || !selectedMatiere}
-                className="w-12 h-12 flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-all shadow-lg shadow-emerald-600/20 disabled:opacity-30 disabled:grayscale"
+                className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-all shadow-lg shadow-emerald-600/20 disabled:opacity-30 disabled:grayscale active:scale-95"
                 title="Ajouter une évaluation"
               >
                 <Plus className="w-5 h-5 font-black" />
