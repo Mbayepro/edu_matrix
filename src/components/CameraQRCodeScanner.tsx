@@ -23,19 +23,20 @@ export default function CameraQRCodeScanner({ onScan, onClose }: CameraQRCodeSca
       .then((devices) => {
         if (devices && devices.length > 0) {
           setCameras(devices)
-          // Essayer de trouver la caméra arrière par son nom
-          const backCamera = devices.find(d => 
-            d.label.toLowerCase().includes('back') || 
+          const backCamera = devices.find(d =>
+            d.label.toLowerCase().includes('back') ||
             d.label.toLowerCase().includes('rear') ||
             d.label.toLowerCase().includes('arrière')
           )
-          // Sinon prendre la dernière de la liste (souvent l'arrière sur Android)
-          setCameraId(backCamera ? backCamera.id : devices[devices.length - 1].id)
+          const selectedId = backCamera ? backCamera.id : devices[devices.length - 1].id
+          setCameraId(selectedId)
+          // Démarrer automatiquement
+          startScanner(selectedId)
         } else {
           setError('Aucune caméra trouvée.')
         }
       })
-      .catch(() => setError('Erreur d\'accès caméra.'))
+      .catch(() => setError('Accès caméra refusé. Vérifiez les permissions dans votre navigateur.'))
 
     return () => { stopScanner() }
   }, [])
@@ -90,13 +91,11 @@ export default function CameraQRCodeScanner({ onScan, onClose }: CameraQRCodeSca
       <div className="flex-1 relative bg-slate-900 rounded-3xl overflow-hidden border border-slate-800 flex flex-col items-center justify-center">
         {!isStarted && !error && (
           <div className="text-center p-8">
-            <button
-              onClick={() => cameraId && startScanner(cameraId)}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-10 py-4 rounded-2xl font-bold shadow-xl shadow-emerald-600/20 active:scale-95 transition-all"
-            >
-              Démarrer le scanner
-            </button>
-            <p className="text-slate-500 text-xs mt-6">Utilisez la caméra arrière pour de meilleurs résultats.</p>
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-12 h-12 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
+              <p className="text-slate-400 text-sm">Initialisation de la caméra...</p>
+              <p className="text-slate-500 text-xs">Autorisez l&apos;accès à la caméra si demandé.</p>
+            </div>
           </div>
         )}
 
