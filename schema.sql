@@ -136,6 +136,7 @@ CREATE TABLE IF NOT EXISTS public.evaluations (
   date         DATE NOT NULL,
   coef         NUMERIC NOT NULL DEFAULT 1,
   bareme       NUMERIC NOT NULL DEFAULT 20,
+  libelle      TEXT, -- 1er Devoir, Devoir 2, etc.
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -237,7 +238,7 @@ CREATE TABLE IF NOT EXISTS public.paiements (
   montant      NUMERIC(10,2) NOT NULL,
   mode         TEXT,
   reference    TEXT,
-  date_paiement DATE NOT NULL DEFAULT CURRENT_DATE,
+  date_paiement TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -302,14 +303,14 @@ SELECT
   MAX(ev.date) as derniere_evaluation
 FROM public.eleves e
 JOIN public.classes c ON e.classe_id = c.id
+JOIN public.evaluations ev ON ev.classe_id = c.id
+JOIN public.matieres m ON ev.matiere_id = m.id
 LEFT JOIN public.niveaux niv ON c.niveau_id = niv.id
 LEFT JOIN public.series s ON c.serie_id = s.id
 LEFT JOIN public.coefficients_matieres cm ON 
   cm.matiere_id = m.id AND 
   cm.niveau_id = niv.id AND 
   (cm.serie_id = s.id OR (cm.serie_id IS NULL AND s.id IS NULL))
-JOIN public.evaluations ev ON ev.classe_id = c.id
-JOIN public.matieres m ON ev.matiere_id = m.id
 LEFT JOIN public.notes notes ON 
   notes.evaluation_id = ev.id AND 
   notes.eleve_id = e.id
@@ -356,7 +357,35 @@ GROUP BY eleve_id, prenom, nom, matricule, classe_id, nom_classe,
          niveau_code, cycle, serie_code, trimestre;
 
 -- Vue optimisée pour les bulletins complets avec adaptation par cycle
+-- Vue optimisée pour les bulletins complets avec adaptation par cycle
+-- Utilise JSON pour une structure de données robuste et facile à consommer en JS
 CREATE OR REPLACE VIEW public.v_bulletins_complets AS
+WITH matieres_stats AS (
+  -- Sous-requête pour calculer les moyennes par matière pour chaque élève/trimestre
+  SELECT 
+    e.id as eleve_id,
+    c.id as classe_id,
+    ev.trimestre,
+    m.id as matiere_id,
+    m.nom as matiere_nom,
+    COALESCE(cm.coefficient, 1) as coefficient,
+    CASE 
+      WHEN COUNT(notes.id) > 0 THEN 
+        ROUND(SUM(notes.note * ev.coef) / SUM(ev.coef), 2)
+      ELSE 0 
+    END as moyenne_matiere,
+    COUNT(notes.id) as nombre_notes
+  FROM public.eleves e
+  JOIN public.classes c ON e.classe_id = c.id
+  JOIN public.niveaux niv ON c.niveau_id = niv.id
+  LEFT JOIN public.series s ON c.serie_id = s.id
+  JOIN public.evaluations ev ON ev.classe_id = c.id
+  JOIN public.matieres m ON ev.matiere_id = m.id
+  JOIN public.coefficients_matieres cm ON cm.matiere_id = m.id AND cm.niveau_id = niv.id 
+    AND (cm.serie_id = s.id OR (cm.serie_id IS NULL AND s.id IS NULL))
+  LEFT JOIN public.notes notes ON notes.evaluation_id = ev.id AND notes.eleve_id = e.id
+  GROUP BY e.id, c.id, ev.trimestre, m.id, m.nom, cm.coefficient
+)
 SELECT 
   e.id as eleve_id,
   e.prenom,
@@ -369,114 +398,38 @@ SELECT
   niv.cycle,
   COALESCE(s.code, '') as serie_code,
   COALESCE(s.nom, '') as serie_nom,
-  ev.trimestre,
-  -- Matières avec leurs coefficients selon le niveau et la série
-  (SELECT array_agg(
-    ROW(m.id, m.nom, COALESCE(cm.coefficient, 1), 
-        CASE WHEN COUNT(notes.id) > 0 THEN ROUND(SUM(notes.note * ev2.coef) / SUM(ev2.coef), 2) ELSE 0 END,
-        COUNT(notes.id)
-    )::TEXT[]
-   FROM public.matieres m
-   JOIN public.coefficients_matieres cm ON cm.matiere_id = m.id AND cm.niveau_id = niv.id 
-     AND (cm.serie_id = s.id OR (cm.serie_id IS NULL AND s.id IS NULL))
-   JOIN public.evaluations ev2 ON ev2.matiere_id = m.id AND ev2.classe_id = c.id AND ev2.trimestre = ev.trimestre
-   LEFT JOIN public.notes notes ON notes.evaluation_id = ev2.id AND notes.eleve_id = e.id
-   GROUP BY m.id, cm.coefficient
-   ORDER BY m.nom
+  ms.trimestre,
+  -- Détails des matières en format JSON
+  jsonb_agg(
+    jsonb_build_object(
+      'id', ms.matiere_id,
+      'nom', ms.matiere_nom,
+      'coefficient', ms.coefficient,
+      'moyenne', ms.moyenne_matiere,
+      'notes_count', ms.nombre_notes
+    ) ORDER BY ms.matiere_nom
   ) as matieres_details,
-  -- Moyenne générale calculée côté base de données
-  (SELECT 
-     CASE 
-       WHEN SUM(COALESCE(cm.coefficient, 1)) > 0 THEN 
-         ROUND(
-           SUM(
-             CASE WHEN COUNT(notes.id) > 0 THEN 
-               (SUM(notes.note * ev2.coef) / SUM(ev2.coef)) * COALESCE(cm.coefficient, 1)
-               ELSE 0 
-             END
-           ) / SUM(COALESCE(cm.coefficient, 1)), 2
-         )
-       ELSE 0 
-     END
-   FROM public.matieres m
-   JOIN public.coefficients_matieres cm ON cm.matiere_id = m.id AND cm.niveau_id = niv.id 
-     AND (cm.serie_id = s.id OR (cm.serie_id IS NULL AND s.id IS NULL))
-   JOIN public.evaluations ev2 ON ev2.matiere_id = m.id AND ev2.classe_id = c.id AND ev2.trimestre = ev.trimestre
-   LEFT JOIN public.notes notes ON notes.evaluation_id = ev2.id AND notes.eleve_id = e.id
-   GROUP BY m.id
-  ) as moyenne_generale,
-  -- Mention selon le barème sénégalais
-  (SELECT 
-     CASE 
-       WHEN SUM(COALESCE(cm.coefficient, 1)) > 0 THEN 
-         CASE 
-           WHEN ROUND(
-             SUM(
-               CASE WHEN COUNT(notes.id) > 0 THEN 
-                 (SUM(notes.note * ev2.coef) / SUM(ev2.coef)) * COALESCE(cm.coefficient, 1)
-                 ELSE 0 
-               END
-             ) / SUM(COALESCE(cm.coefficient, 1)), 2
-           ) < 10 THEN 'Insuffisant'
-           WHEN ROUND(
-             SUM(
-               CASE WHEN COUNT(notes.id) > 0 THEN 
-                 (SUM(notes.note * ev2.coef) / SUM(ev2.coef)) * COALESCE(cm.coefficient, 1)
-                 ELSE 0 
-               END
-             ) / SUM(COALESCE(cm.coefficient, 1)), 2
-           ) < 12 THEN 'Passable'
-           WHEN ROUND(
-             SUM(
-               CASE WHEN COUNT(notes.id) > 0 THEN 
-                 (SUM(notes.note * ev2.coef) / SUM(ev2.coef)) * COALESCE(cm.coefficient, 1)
-                 ELSE 0 
-               END
-             ) / SUM(COALESCE(cm.coefficient, 1)), 2
-           ) < 14 THEN 'Assez bien'
-           WHEN ROUND(
-             SUM(
-               CASE WHEN COUNT(notes.id) > 0 THEN 
-                 (SUM(notes.note * ev2.coef) / SUM(ev2.coef)) * COALESCE(cm.coefficient, 1)
-                 ELSE 0 
-               END
-             ) / SUM(COALESCE(cm.coefficient, 1)), 2
-           ) < 16 THEN 'Bien'
-           ELSE 'Très bien'
-         END
-       ELSE 'Insuffisant'
-     END
-   FROM public.matieres m
-   JOIN public.coefficients_matieres cm ON cm.matiere_id = m.id AND cm.niveau_id = niv.id 
-     AND (cm.serie_id = s.id OR (cm.serie_id IS NULL AND s.id IS NULL))
-   JOIN public.evaluations ev2 ON ev2.matiere_id = m.id AND ev2.classe_id = c.id AND ev2.trimestre = ev.trimestre
-   LEFT JOIN public.notes notes ON notes.evaluation_id = ev2.id AND notes.eleve_id = e.id
-   GROUP BY m.id
-  ) as mention,
-  -- Statistiques
-  (SELECT COUNT(DISTINCT m.id) 
-   FROM public.matieres m
-   JOIN public.coefficients_matieres cm ON cm.matiere_id = m.id AND cm.niveau_id = niv.id 
-     AND (cm.serie_id = s.id OR (cm.serie_id IS NULL AND s.id IS NULL))
-   WHERE EXISTS (
-     SELECT 1 FROM public.evaluations ev2 
-     WHERE ev2.matiere_id = m.id AND ev2.classe_id = c.id AND ev2.trimestre = ev.trimestre
-   )
-  ) as nombre_matieres,
-  (SELECT SUM(COALESCE(cm.coefficient, 1))
-   FROM public.matieres m
-   JOIN public.coefficients_matieres cm ON cm.matiere_id = m.id AND cm.niveau_id = niv.id 
-     AND (cm.serie_id = s.id OR (cm.serie_id IS NULL AND s.id IS NULL))
-   WHERE EXISTS (
-     SELECT 1 FROM public.evaluations ev2 
-     WHERE ev2.matiere_id = m.id AND ev2.classe_id = c.id AND ev2.trimestre = ev.trimestre
-   )
-  ) as total_coefficients
+  -- Moyenne Générale
+  ROUND(SUM(ms.moyenne_matiere * ms.coefficient) / NULLIF(SUM(ms.coefficient), 0), 2) as moyenne_generale,
+  -- Mention
+  CASE 
+    WHEN SUM(ms.coefficient) > 0 THEN 
+      CASE 
+        WHEN ROUND(SUM(ms.moyenne_matiere * ms.coefficient) / SUM(ms.coefficient), 2) < 10 THEN 'Insuffisant'
+        WHEN ROUND(SUM(ms.moyenne_matiere * ms.coefficient) / SUM(ms.coefficient), 2) < 12 THEN 'Passable'
+        WHEN ROUND(SUM(ms.moyenne_matiere * ms.coefficient) / SUM(ms.coefficient), 2) < 14 THEN 'Assez bien'
+        WHEN ROUND(SUM(ms.moyenne_matiere * ms.coefficient) / SUM(ms.coefficient), 2) < 16 THEN 'Bien'
+        ELSE 'Très bien'
+      END
+    ELSE 'Insuffisant'
+  END as mention,
+  COUNT(DISTINCT ms.matiere_id) as nombre_matieres,
+  SUM(ms.coefficient) as total_coefficients
 FROM public.eleves e
 JOIN public.classes c ON e.classe_id = c.id
 JOIN public.niveaux niv ON c.niveau_id = niv.id
 LEFT JOIN public.series s ON c.serie_id = s.id
-JOIN public.evaluations ev ON ev.classe_id = c.id
+JOIN matieres_stats ms ON ms.eleve_id = e.id AND ms.classe_id = c.id
 GROUP BY e.id, e.prenom, e.nom, e.matricule, c.id, c.nom_classe, 
-         niv.id, niv.code, niv.nom, niv.cycle, s.code, s.nom, ev.trimestre
-ORDER BY e.nom, e.prenom, ev.trimestre;
+         niv.id, niv.code, niv.nom, niv.cycle, s.code, s.nom, ms.trimestre
+ORDER BY e.nom, e.prenom, ms.trimestre;

@@ -118,7 +118,7 @@ export default function DashboardPage() {
         supabase.from('classes').select('id', { count: 'exact', head: true }).eq('ecole_id', schoolId),
         // Fix: filter presences by ecole via classes join
         supabase.from('presences').select('id, classe:classes!inner(ecole_id)', { count: 'exact', head: true })
-          .eq('date', today).eq('classes.ecole_id', schoolId).eq('statut', 'présent'),
+          .eq('date', today).eq('classes.ecole_id', schoolId).in('statut', ['présent', 'retard']),
       ])
 
       setStats({
@@ -149,7 +149,7 @@ export default function DashboardPage() {
         .eq('classes.ecole_id', schoolId)
         .gte('date', startDate)
         .lte('date', today)
-        .in('statut', ['présent', 'absent'])
+        .in('statut', ['présent', 'retard', 'absent'])
 
       // Build date→{present, absent} map
       const presMap: Record<string, { present: number; absent: number }> = {}
@@ -159,7 +159,7 @@ export default function DashboardPage() {
       }
       presRaw?.forEach((p: any) => {
         if (!presMap[p.date]) return
-        if (p.statut === 'présent') presMap[p.date].present++
+        if (p.statut === 'présent' || p.statut === 'retard') presMap[p.date].present++
         else presMap[p.date].absent++
       })
 

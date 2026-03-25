@@ -120,17 +120,17 @@ export default function TeacherDashboard() {
         <div className="flex border-b border-slate-100">
           {tabs.map((tab) => (
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-medium transition-colors
-                ${activeTab === tab.id
-                  ? 'text-emerald-700 border-b-2 border-emerald-600 bg-emerald-50/50'
-                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-                }`}
-            >
-              <tab.icon className="w-4 h-4" />
-              <span className="hidden sm:inline">{tab.label}</span>
-            </button>
+               key={tab.id}
+               onClick={() => setActiveTab(tab.id)}
+               className={`flex-1 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-3 text-[10px] sm:text-sm font-medium transition-all
+                 ${activeTab === tab.id
+                   ? 'text-emerald-700 bg-emerald-50/50 border-b-2 border-emerald-600'
+                   : 'text-slate-400 hover:text-slate-700 hover:bg-slate-50'
+                 }`}
+             >
+               <tab.icon className={`w-4 h-4 sm:w-5 sm:h-5 ${activeTab === tab.id ? 'text-emerald-600' : 'text-slate-400'}`} />
+               <span className="block">{tab.label}</span>
+             </button>
           ))}
         </div>
 
