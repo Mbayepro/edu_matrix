@@ -94,7 +94,7 @@ async function buildRecuDoc(
       body: [[
         paiement.frais_libelle,
         paiement.mode_paiement,
-        paiement.reference || '-',
+        paiement.reference || `REF-${paiement.id.substring(0, 8).toUpperCase()}`,
         `${paiement.montant.toLocaleString('fr-FR').replace(/\u00a0/g, ' ').replace(/\u202f/g, ' ')} F`,
       ]],
       theme: 'grid',

@@ -146,6 +146,7 @@ export default function PaiementsPage() {
           montant: m,
           mode: mode || null,
           reference: reference || null,
+          date_paiement: new Date().toISOString(),
         })
 
       if (insertError) {
@@ -539,12 +540,12 @@ export default function PaiementsPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Ref.</label>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Réf. Transaction</label>
                       <input
                         type="text"
                         value={reference}
                         onChange={(e) => setReference(e.target.value)}
-                        placeholder="N° Reçu"
+                        placeholder="Ex: Wave ID, Chèque…"
                         className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all"
                       />
                     </div>
@@ -613,10 +614,10 @@ export default function PaiementsPage() {
                         </div>
                         <div className="pt-3 border-t border-slate-50 mt-1 flex items-center justify-between">
                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                            {new Date(p.date_paiement).toLocaleDateString('fr-FR')}
+                            {new Date(p.date_paiement).toLocaleDateString('fr-FR')} à {new Date(p.date_paiement).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                           </span>
-                          <span className="text-[10px] font-black text-slate-300 uppercase italic">
-                            {p.mode || 'N/A'}
+                          <span className="text-[10px] font-black text-slate-400 uppercase italic">
+                            {p.reference || p.mode || 'N/A'}
                           </span>
                         </div>
                       </div>
