@@ -5,12 +5,22 @@ export interface MoyenneMatiere {
   matiere_id: string
   matiere_nom: string
   coefficient: number
-  moyenne: number // Toujours sur 20 en interne
+  moyenne: number // Moyenne générale de la matière sur 20
   bareme: number
   appreciation?: string
   nombre_evaluations: number
   is_bonus?: boolean
   points_bonus?: number
+  moyenne_controles?: number // Moyenne des devoirs
+  note_examen?: number        // Note de la composition
+  devoir1?: number
+  devoir2?: number
+  devoir3?: number
+}
+
+export interface AttendanceData {
+  absences: number
+  retards: number
 }
 
 export interface BulletinData {
@@ -20,10 +30,11 @@ export interface BulletinData {
   trimestre: number
   annee_scolaire: string
   matieres: MoyenneMatiere[]
-  moyenne_generale: number // Toujours sur 20 en interne
+  moyenne_generale: number
   mention: string
   rang?: number
   total_eleves?: number
+  attendance?: AttendanceData
 }
 
 export class CalculateurMoyennes {
@@ -105,18 +116,22 @@ export class CalculateurMoyennes {
     const [
       { data: classeData, error: clErr },
       { data: eleves, error: elErr },
-      { data: allNotes, error: ntErr }
+      { data: allNotes, error: ntErr },
+      { data: allPresences, error: prErr }
     ] = await Promise.all([
       supabase.from('classes').select('*, serie:series(*)').eq('id', classe_id).single(),
-      supabase.from('eleves').select('*').eq('classe_id', classe_id).order('nom, prenom'),
+      supabase.from('eleves').select('*, classe:classes(*)').eq('classe_id', classe_id).order('nom, prenom'),
       supabase.from('notes')
         .select('*, evaluation:evaluations!inner(*)')
         .eq('evaluation.classe_id', classe_id)
         .eq('evaluation.trimestre', trimestre)
-        .eq('evaluation.annee_scolaire', annee_scolaire)
+        .eq('evaluation.annee_scolaire', annee_scolaire),
+      supabase.from('presences')
+        .select('*')
+        .eq('classe_id', classe_id)
     ])
 
-    if (clErr || elErr || ntErr) throw new Error("Erreur lors de la récupération groupée des données.")
+    if (clErr || elErr || ntErr || prErr) throw new Error("Erreur lors de la récupération groupée des données.")
     if (!eleves || eleves.length === 0) return []
 
     const classe = classeData as any
@@ -161,30 +176,33 @@ export class CalculateurMoyennes {
         const isBonus = (coeff.matiere as any)?.est_bonus || false
         const cycle = niveau.cycle
 
-        // --- CALCUL SÉNÉGALAIS (MCC + COMP) / 2 ---
+        // --- CALCUL SÉNÉGALAIS (MCC + 2*COMP) / 3 ---
+        const normaliser = (n: any) => (Number(n.note) / Number(n.evaluation.bareme || 20)) * 20
         const notesCC = matiereNotes.filter((n: any) => n.evaluation.type !== 'composition')
         const noteComp = matiereNotes.find((n: any) => n.evaluation.type === 'composition')
 
-        const normaliser = (n: any) => (Number(n.note) / Number(n.evaluation.bareme || 20)) * 20
+        // --- EXTRACTION INDIVIDUELLE DES DEVOIRS ---
+        const devoirsSorted = [...notesCC].sort((a: any, b: any) => 
+          new Date(a.evaluation.date).getTime() - new Date(b.evaluation.date).getTime()
+        )
 
         let moyenneMatiere = 0
+        let mcc = 0
+        let comp = noteComp ? normaliser(noteComp) : null
+
+        if (notesCC.length > 0) {
+          const sumCC = notesCC.reduce((acc: number, n: any) => acc + (normaliser(n) * Number(n.evaluation.coef || 1)), 0)
+          const sumCoeffCC = notesCC.reduce((acc: number, n: any) => acc + Number(n.evaluation.coef || 1), 0)
+          mcc = sumCC / sumCoeffCC
+        }
+
         if (cycle === 'primaire') {
-          // Primaire : Moyenne arithmétique simple
-          moyenneMatiere = notesCC.concat(noteComp ? [noteComp] : []).reduce((acc: number, n: any) => acc + normaliser(n), 0) / matiereNotes.length
+          // Primaire : Simple moyenne
+          moyenneMatiere = matiereNotes.reduce((acc: number, n: any) => acc + normaliser(n), 0) / matiereNotes.length
         } else {
-          // Moyen/Secondaire : (MCC + Comp) / 2
-          let mcc = 0
-          if (notesCC.length > 0) {
-            // Moyenne pondérée du CC
-            const sumCC = notesCC.reduce((acc: number, n: any) => acc + (normaliser(n) * Number(n.evaluation.coef || 1)), 0)
-            const sumCoeffCC = notesCC.reduce((acc: number, n: any) => acc + Number(n.evaluation.coef || 1), 0)
-            mcc = sumCC / sumCoeffCC
-          }
-
-          const comp = noteComp ? normaliser(noteComp) : null
-
+          // Moyen/Secondaire/Supérieur : (MCC + 2*Comp) / 3
           if (notesCC.length > 0 && comp !== null) {
-            moyenneMatiere = (mcc + comp) / 2
+            moyenneMatiere = (mcc + (2 * comp)) / 3
           } else if (notesCC.length > 0) {
             moyenneMatiere = mcc
           } else if (comp !== null) {
@@ -201,7 +219,12 @@ export class CalculateurMoyennes {
           bareme: 20,
           appreciation: appPath,
           nombre_evaluations: matiereNotes.length,
-          is_bonus: isBonus
+          is_bonus: isBonus,
+          moyenne_controles: Math.round(mcc * 100) / 100,
+          note_examen: comp !== null ? Math.round(comp * 100) / 100 : undefined,
+          devoir1: devoirsSorted[0] ? Math.round(normaliser(devoirsSorted[0]) * 100) / 100 : undefined,
+          devoir2: devoirsSorted[1] ? Math.round(normaliser(devoirsSorted[1]) * 100) / 100 : undefined,
+          devoir3: devoirsSorted[2] ? Math.round(normaliser(devoirsSorted[2]) * 100) / 100 : undefined,
         }
 
         if (isBonus) {
@@ -217,6 +240,22 @@ export class CalculateurMoyennes {
 
       const mg = totalCoefficients > 0 ? totalPoints / totalCoefficients : 0
 
+      // Calculer l'assiduité par trimestre
+      const studentPresences = (allPresences || []).filter((p: any) => {
+        if (p.eleve_id !== eleve.id) return false
+        const date = new Date(p.date)
+        const month = date.getMonth() + 1 // 1-12
+        // T1: 10, 11, 12
+        // T2: 1, 2, 3
+        // T3: 4, 5, 6 (ou reste)
+        if (trimestre === 1) return month >= 10 || month <= 12
+        if (trimestre === 2) return month >= 1 && month <= 3
+        if (trimestre === 3) return month >= 4 && month <= 7
+        return true
+      })
+      const absences = studentPresences.filter((p: any) => p.statut === 'absent').length
+      const retards = studentPresences.filter((p: any) => p.statut === 'retard').length
+
       return {
         eleve,
         niveau,
@@ -225,7 +264,8 @@ export class CalculateurMoyennes {
         annee_scolaire,
         matieres: matieresCalculated,
         moyenne_generale: Math.round(mg * 100) / 100,
-        mention: this.determinerMention(mg, niveau.cycle)
+        mention: this.determinerMention(mg, niveau.cycle),
+        attendance: { absences, retards }
       }
     })
 
