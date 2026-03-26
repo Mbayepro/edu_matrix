@@ -20,17 +20,27 @@ export interface PaiementRecuInfo {
 async function getImageData(url: string | null | undefined): Promise<string | null> {
   if (!url) return null
   try {
+    // On essaie avec fetch
     const res = await fetch(url, { mode: 'cors' })
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
     const blob = await res.blob()
+    
     return new Promise((resolve) => {
       const reader = new FileReader()
-      reader.onloadend = () => resolve(reader.result as string)
-      reader.onerror = () => resolve(null)
+      reader.onloadend = () => {
+        const base64data = reader.result as string
+        resolve(base64data)
+      }
+      reader.onerror = () => {
+        console.error('FileReader error for:', url)
+        resolve(null)
+      }
       reader.readAsDataURL(blob)
     })
   } catch (err) {
-    console.error('Erreur lors du chargement de l\'image:', url, err)
+    console.error('Erreur lors du chargement de l\'image (cors):', url, err)
+    // Tentative alternative pour certains navigateurs si CORS est bloqué par fetch 
+    // mais autorisé pour les balises img (parfois)
     return null
   }
 }
@@ -53,9 +63,13 @@ async function buildRecuDoc(
     try {
       const logoData = await getImageData(ecole.logo_url)
       if (logoData) {
-        doc.addImage(logoData, 'PNG', 14, 10, 24, 24)
+        // Détecter si c'est un PNG ou JPG pour addImage
+        const format = ecole.logo_url.toLowerCase().endsWith('.png') ? 'PNG' : 'JPEG'
+        doc.addImage(logoData, format, 14, 10, 24, 24)
       }
-    } catch (e) { console.warn('Logo error skipped', e) }
+    } catch (e) { 
+      console.warn('Logo error skipped', e)
+    }
   }
 
   const titleX = ecole.logo_url ? 45 : 14
@@ -117,9 +131,18 @@ async function buildRecuDoc(
     try {
       const tamponData = await getImageData(ecole.tampon_url)
       if (tamponData) {
-        doc.addImage(tamponData, 'PNG', pageWidth - 60, finalY + 25, 40, 40)
+        doc.addImage(tamponData, 'PNG', pageWidth - 60, finalY + 25, 35, 35)
       }
     } catch (e) { console.warn('Tampon error skipped', e) }
+  }
+
+  if (ecole.signature_url) {
+    try {
+      const signatureData = await getImageData(ecole.signature_url)
+      if (signatureData) {
+        doc.addImage(signatureData, 'PNG', pageWidth - 55, finalY + 30, 30, 15)
+      }
+    } catch (e) { console.warn('Signature error skipped', e) }
   }
 
   doc.setFontSize(8).setTextColor(148, 163, 184)

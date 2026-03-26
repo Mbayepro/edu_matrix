@@ -140,7 +140,7 @@ export default function BulletinsPage() {
         printWindow.document.write(html)
         printWindow.document.close()
         printWindow.focus()
-        setTimeout(() => { printWindow.print() }, 1000)
+        // wait for onload before print handled inside the script of the html
       }
     } finally {
       setGenerating(null)
@@ -205,7 +205,6 @@ export default function BulletinsPage() {
         printWindow.document.write(combinedHtml)
         printWindow.document.close()
         printWindow.focus()
-        setTimeout(() => { printWindow.print() }, 1500)
       }
     } finally {
       setGenerating(null)
@@ -350,8 +349,20 @@ export default function BulletinsPage() {
         .stamp-area { height: 100px; position: relative; display: flex; align-items: center; justify-content: center; }
         .stamp { max-height: 90px; opacity: 0.8; transform: rotate(-5deg); position: absolute; }
         .signature { max-height: 50px; position: absolute; z-index: 2; }
-        @media print { body { padding: 0; } .bulletin { border: none; } }
-    </style></head><body>${content}</body></html>`;
+        @media print { 
+          body { padding: 0; } 
+          .bulletin { border: none; padding: 20px; box-shadow: none; margin: 0 auto; } 
+          @page { margin: 1cm; }
+        }
+    </style>
+    <script>
+        window.addEventListener('load', () => {
+          setTimeout(() => {
+            window.print();
+          }, 1500);
+        });
+    </script>
+    </head><body><div id="print-root">${content}</div></body></html>`;
   }
 
   const selectedClasseData = classes.find(c => c.id === selectedClasse)
