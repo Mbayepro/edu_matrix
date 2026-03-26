@@ -47,6 +47,14 @@ import InstallButton from '../components/InstallButton'
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" className={`${outfit.variable} ${jetbrains.variable}`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `
+          window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            window.deferredPrompt = e;
+          });
+        `}} />
+      </head>
       <body className="font-sans antialiased bg-slate-50 text-slate-900">
         {children}
         <div className="fixed bottom-6 right-6 z-50">

@@ -215,230 +215,10 @@ function PhysicalCard({ eleve, ecole, classeNom, isPrint = false }: {
 }
 
 // ─────────────────────────────────────────
-// Print card in a dedicated popup window
+// Print card utility (now uses window.print directly on current page)
 // ─────────────────────────────────────────
-function printCard(eleve: Eleve, ecole: Ecole | null, classeNom: string, qrValue: string) {
-  const prenom = eleve.prenom || '—'
-  const nom = eleve.nom || '—'
-  const matricule = eleve.matricule || 'N/A'
-  
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${qrValue}`
-
-  const html = `<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <title>Carte — ${prenom} ${nom}</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap');
-    
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      background: #ffffff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      font-family: 'Outfit', sans-serif;
-    }
-
-    .card {
-      width: 380px;
-      height: 540px;
-      border-radius: 20px;
-      overflow: hidden;
-      background: white;
-      color: #0f172a;
-      display: flex;
-      flex-direction: column;
-      border: 1px solid #e2e8f0;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-      position: relative;
-    }
-
-    .header {
-      background: #047857;
-      padding: 24px 20px 16px;
-      text-align: center;
-      color: white;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-
-    .school-name {
-      font-size: 14px;
-      font-weight: 900;
-      text-transform: uppercase;
-      letter-spacing: 0.15em;
-      margin-top: 10px;
-    }
-
-    .card-title {
-      font-size: 10px;
-      color: #d1fae5;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.25em;
-      margin-top: 6px;
-    }
-
-    .body {
-      flex: 1;
-      padding: 16px 24px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      position: relative;
-    }
-
-    .top-row {
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      width: 100%;
-      margin-bottom: 24px;
-      gap: 16px;
-    }
-
-    .photo {
-      width: 120px;
-      height: 150px;
-      background: #f8fafc;
-      border: 1.5px solid #e2e8f0;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    .photo img { width: 100%; height: 100%; object-fit: cover; }
-
-    .qr-box-main {
-      width: 120px;
-      height: 120px;
-      padding: 8px;
-      background: white;
-      border: 2px solid #047857;
-      border-radius: 12px;
-    }
-    .qr-box-main img { width: 100%; height: 100%; }
-
-    .qr-label {
-      font-size: 8px;
-      font-weight: 900;
-      color: #047857;
-      text-transform: uppercase;
-      margin-top: 6px;
-      letter-spacing: 0.1em;
-    }
-
-    .details { width: 100%; text-align: center; display: flex; flex-direction: column; flex: 1; }
-    .label { font-size: 9px; color: #94a3b8; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 2px; }
-    .name-prenom { font-size: 20px; font-weight: 900; color: #1e293b; text-transform: uppercase; margin-bottom: 1px; }
-    .name-nom { font-size: 28px; font-weight: 900; color: #0f172a; text-transform: uppercase; margin-bottom: 16px; line-height: 1; }
-
-    .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: auto; }
-    .field-box { background: #f8fafc; padding: 8px; border-radius: 12px; border: 1px solid #eef2f6; overflow: hidden; }
-    .field-val { font-size: 12px; font-weight: 900; color: #1e293b; word-break: break-all; line-height: 1.1; }
-    .field-val.gold { color: #d97706; }
-
-    .footer {
-      background: #f8fafc;
-      border-top: 1px solid #e2e8f0;
-      padding: 16px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-    }
-
-    .footer-text { max-width: 50%; }
-    .official-tag { font-size: 10px; font-weight: 900; color: #065f46; text-transform: uppercase; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
-    .official-tag::before { content: ""; width: 6px; height: 6px; background: #10b981; border-radius: 50%; }
-    .disclaimer { font-size: 8px; color: #64748b; font-weight: 600; line-height: 1.3; }
-
-    .validation-row { display: flex; flex-direction: column; align-items: center; }
-    .valid-label-foot { font-size: 8px; font-weight: 900; color: #94a3b8; text-transform: uppercase; }
-    .valid-val-foot { font-size: 12px; font-weight: 900; color: #047857; }
-
-    .sign-box { text-align: center; opacity: 0.5; }
-    .sign-label { font-size: 8px; color: #94a3b8; font-weight: 800; font-style: italic; }
-
-    @media print {
-      body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .card { box-shadow: none; border: 1px solid #e2e8f0; }
-    }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div class="header">
-      <div class="school-name">${ecole?.nom ?? 'Établissement Scolaire'}</div>
-      <div class="card-title">Carte d'Identité Scolaire</div>
-    </div>
-
-    <div class="body">
-      <div class="top-row">
-        <div class="photo">
-          ${eleve.photo_url
-            ? `<img src="${eleve.photo_url}" alt="${prenom}" crossorigin="anonymous" />`
-            : `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#cbd5e1; font-size:40px;">👤</div>`
-          }
-        </div>
-        <div style="text-align: center;">
-          <div class="qr-box-main">
-            <img src="${qrUrl}" alt="QR" />
-          </div>
-          <div class="qr-label">SCAN POUR PRÉSENCE</div>
-        </div>
-      </div>
-
-      <div class="details">
-        <div class="label">Identité de l'Étudiant(e)</div>
-        <div class="name-prenom">${prenom}</div>
-        <div class="name-nom">${nom}</div>
-
-        <div class="fields">
-          <div class="field-box">
-            <div class="label">Matricule</div>
-            <div class="field-val gold">${matricule}</div>
-          </div>
-          <div class="field-box">
-            <div class="label">Niveau/Classe</div>
-            <div class="field-val">${classeNom}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="footer">
-      <div class="footer-text">
-        <div class="official-tag">Document Officiel</div>
-        <div class="disclaimer">Cette carte est personnelle et atteste de la qualité d'étudiant pour l'année scolaire en cours.</div>
-      </div>
-      
-      <div class="validation-row">
-        <div class="valid-label-foot">SESSION</div>
-        <div class="valid-val-foot">${new Date().getFullYear()}-${new Date().getFullYear()+1}</div>
-      </div>
-
-      <div class="sign-box">
-        <div class="sign-label">Direction</div>
-        <div style="width: 50px; border-bottom: 1px dotted #cbd5e1; margin-top: 4px;"></div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    window.onload = function() {
-      setTimeout(() => {
-        window.print();
-        window.close();
-      }, 500);
-    }
-  </script>
-</body>
-</html>`
-  const win = window.open('', '_blank', 'width=520,height=500')
-  if (win) {
-    win.document.write(html)
-    win.document.close()
-  }
+function handleDirectPrint() {
+  window.print();
 }
 
 // ─────────────────────────────────────────
@@ -538,7 +318,21 @@ export default function StudentCard({ eleveId, onClose, defaultTab }: StudentCar
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <style jsx global>{`
+        @media print {
+          body * { visibility: hidden; }
+          #printable-card-area, #printable-card-area * { visibility: visible; }
+          #printable-card-area { position: absolute; left: 0; top: 0; width: 100%; display: flex; justify-content: center; align-items: flex-start; }
+          .no-print { display: none !important; }
+        }
+      `}</style>
+
+      {/* Zone d'impression invisible à l'écran */}
+      <div id="printable-card-area" className="hidden print:flex fixed inset-0 z-[9999] bg-white pointer-events-none items-center justify-center">
+          <PhysicalCard eleve={eleve} ecole={ecole} classeNom={classeNom} isPrint={true} />
+      </div>
+
+      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto print:hidden">
         <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden my-auto">
 
           {/* Modal header */}
@@ -595,8 +389,8 @@ export default function StudentCard({ eleveId, onClose, defaultTab }: StudentCar
               <PhysicalCard eleve={eleve} ecole={ecole} classeNom={classeNom} />
 
               <button
-                onClick={() => printCard(eleve, ecole, classeNom, eleve.id)}
-                className="flex items-center justify-center gap-2 text-sm font-bold text-emerald-700 bg-white hover:bg-emerald-50 border border-emerald-200 hover:border-emerald-300 px-6 py-3 rounded-xl transition-all shadow-sm w-full sm:w-auto"
+                onClick={handleDirectPrint}
+                className="flex items-center justify-center gap-2 text-sm font-bold text-emerald-700 bg-white hover:bg-emerald-50 border border-emerald-200 hover:border-emerald-300 px-6 py-3 rounded-xl transition-all shadow-sm w-full sm:w-auto no-print"
               >
                 <Printer className="w-5 h-5" />
                 Imprimer la carte physique
