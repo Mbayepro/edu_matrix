@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Loader2, FileText, Plus, X, Trash2, Edit2 } from 'lucide-react';
+import { useProfile } from '@/hooks/useProfile';
+
 
 interface Matiere {
   id: string;
@@ -41,7 +43,10 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showNewEvalModal, setShowNewEvalModal] = useState(false);
+  const { profile } = useProfile();
+  const ecoleId = profile?.ecole_id;
   const [selectedMatiereId, setSelectedMatiereId] = useState<string>('');
+
   const [mobileEvalId, setMobileEvalId] = useState<string | null>(null);
 
   const [newEval, setNewEval] = useState({
@@ -114,16 +119,13 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
   }
 
   const handleCreateEval = async () => {
-    if (!selectedMatiereId) return;
+    if (!selectedMatiereId || !ecoleId) return;
     setSaving(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data: prof } = await supabase.from('profiles').select('ecole_id').eq('user_id', user?.id).single();
-
       const { data, error } = await supabase
         .from('evaluations')
         .insert({
-          ecole_id: prof?.ecole_id,
+          ecole_id: ecoleId,
           classe_id: classeId,
           matiere_id: selectedMatiereId,
           trimestre,
@@ -135,6 +137,7 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
         })
         .select()
         .single();
+
 
       if (!error && data) {
         setEvaluations(prev => [...prev, data]);
@@ -166,12 +169,11 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
       return [...filtered, newNote as Note];
     });
 
-    const { data: { user } } = await supabase.auth.getUser();
     await supabase.from('notes').upsert({
       eleve_id: eleveId,
       evaluation_id: evalId,
       note: num,
-      professeur_id: user?.id
+      professeur_id: profile?.id
     }, { onConflict: 'eleve_id,evaluation_id' });
   };
 
