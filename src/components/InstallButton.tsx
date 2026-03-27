@@ -62,7 +62,7 @@ export default function InstallButton() {
           <X className="w-3.5 h-3.5" />
         </button>
         <p className="text-[11px] font-bold text-emerald-800 uppercase tracking-tight mb-2">
-          Installer SunuEduMatrix
+          Installer EduMatrix
         </p>
         <div className="flex flex-col gap-2">
            <div className="flex items-center gap-2 text-[10px] text-emerald-700">
@@ -89,7 +89,7 @@ export default function InstallButton() {
         className="w-full flex items-center justify-center gap-2 px-4 py-3 text-xs font-bold rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-100 transition-all duration-200 shadow-sm group active:scale-[0.98]"
       >
         <Download className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
-        <span>Installer SunuEduMatrix</span>
+        <span>Installer EduMatrix</span>
       </button>
     </div>
   );
