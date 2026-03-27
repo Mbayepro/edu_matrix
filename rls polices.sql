@@ -195,6 +195,7 @@ CREATE POLICY "eleves_teacher_select"
 -- TABLE: notes
 -- ─────────────────────────────────────────
 DROP POLICY IF EXISTS "notes_superadmin_all"   ON public.notes;
+DROP POLICY IF EXISTS "notes_director_all"     ON public.notes;
 DROP POLICY IF EXISTS "notes_director_select"  ON public.notes;
 DROP POLICY IF EXISTS "notes_teacher_all"      ON public.notes;
 
@@ -203,10 +204,18 @@ CREATE POLICY "notes_superadmin_all"
   USING (public.get_my_role() = 'superadmin')
   WITH CHECK (public.get_my_role() = 'superadmin');
 
--- Director can see all notes in their school
-CREATE POLICY "notes_director_select"
-  ON public.notes FOR SELECT TO authenticated
+-- Director can manage all notes in their school
+CREATE POLICY "notes_director_all"
+  ON public.notes FOR ALL TO authenticated
   USING (
+    public.get_my_role() = 'director'
+    AND EXISTS (
+      SELECT 1 FROM public.eleves e
+      WHERE e.id = notes.eleve_id
+        AND e.ecole_id = public.get_my_ecole_id()
+    )
+  )
+  WITH CHECK (
     public.get_my_role() = 'director'
     AND EXISTS (
       SELECT 1 FROM public.eleves e
@@ -231,7 +240,10 @@ CREATE POLICY "notes_teacher_all"
   )
   WITH CHECK (
     public.get_my_role() = 'teacher'
-    AND professeur_id = (SELECT id FROM public.profiles WHERE user_id = auth.uid() LIMIT 1)
+    AND (
+      professeur_id = (SELECT id FROM public.profiles WHERE user_id = auth.uid() LIMIT 1)
+      OR professeur_id IS NULL 
+    )
   );
 
 

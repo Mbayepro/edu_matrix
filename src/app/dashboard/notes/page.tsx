@@ -319,6 +319,7 @@ export default function NotesPage() {
           eleve_id: eleve.id,
           evaluation_id: selectedEvaluation,
           note: notes[eleve.id],
+          professeur_id: profile?.id,
         }))
 
       if (notesToInsert.length === 0) {
