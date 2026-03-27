@@ -14,6 +14,7 @@ import {
   Bell, ChevronRight, Settings, Calendar, FileText, BookMarked, UsersRound,
 } from 'lucide-react'
 import { ToastProvider } from '@/contexts/ToastContext'
+import InstallButton from './InstallButton'
 
 interface NavItem {
   label:    string
@@ -162,6 +163,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           />
         ))}
       </nav>
+
+      {/* PWA Install Button */}
+      <InstallButton />
 
       {/* User zone */}
       <div className="px-4 pb-6 mt-auto">
