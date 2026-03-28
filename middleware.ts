@@ -13,6 +13,21 @@ export async function middleware(request: NextRequest) {
     request,
   })
 
+  const { pathname } = request.nextUrl
+
+  // 1. FOOLPROOF PWA and static assets check (forces bypass for manifest/sw/icons)
+  if (
+    pathname.startsWith('/manifest.json') || 
+    pathname.startsWith('/sw.js') || 
+    pathname.startsWith('/icons/') ||
+    pathname.includes('workbox') ||
+    pathname.endsWith('.png') ||
+    pathname.endsWith('.ico')
+  ) {
+    return supabaseResponse
+  }
+
+  // 2. Initialisation Supabase
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -38,8 +53,7 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const { pathname } = request.nextUrl
-
+  // 3. Logique de protection des routes
   // Si pas connecté et route protégée → /login
   if (!user && !PUBLIC_ROUTES.includes(pathname)) {
     const loginUrl = request.nextUrl.clone()
