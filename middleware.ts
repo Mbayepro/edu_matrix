@@ -88,8 +88,10 @@ export const config = {
      * - _next/static (fichiers statiques)
      * - _next/image  (optimisation images)
      * - favicon.ico
-     * - fichiers avec extension (png, jpg…)
+     * - manifest.json
+     * - sw.js et autres fichiers JS/JSON de service worker
+     * - fichiers avec extension (png, jpg, json, js…)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|json|js)$).*)',
   ],
 }
