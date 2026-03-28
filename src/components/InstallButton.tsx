@@ -23,9 +23,16 @@ export default function InstallButton() {
     setChecked(true);
 
     // 3. Capturer le prompt d'installation (Chrome/Android/Desktop)
+    // Vérifier si le prompt a déjà été capturé par le script dans le layout
+    if ((window as any).deferredPrompt) {
+      setDeferredPrompt((window as any).deferredPrompt);
+      console.log('✅ PWA Install Prompt Restored from window');
+    }
+
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
+      (window as any).deferredPrompt = e; // On le garde aussi de manière globale
       console.log('✅ PWA Install Prompt Captured');
     };
 
@@ -34,6 +41,7 @@ export default function InstallButton() {
     window.addEventListener('appinstalled', () => {
       setIsInstalled(true);
       setDeferredPrompt(null);
+      (window as any).deferredPrompt = null;
     });
 
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);

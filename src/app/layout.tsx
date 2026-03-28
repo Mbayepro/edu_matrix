@@ -49,10 +49,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="fr" className={`${outfit.variable} ${jetbrains.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: `
+          // 1. Capture de l'événement d'installation
           window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             window.deferredPrompt = e;
+            console.log('Capture de beforeinstallprompt réussie !');
           });
+
+          // 2. Enregistrement explicite du Service Worker (Renforce next-pwa)
+          if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+              navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('✅ Service Worker enregistré !', reg.scope))
+                .catch(err => console.log('❌ Échec SW:', err));
+            });
+          }
         `}} />
       </head>
       <body className="font-sans antialiased bg-slate-50 text-slate-900">
