@@ -5,9 +5,10 @@ export default function BulletinPrimaire({ data }: { data: BulletinData }) {
   // 1. Adaptation sur 10.
   // Au primaire (Sénégal), les notes sont sur 10.
   const matieresAvecDomaines = data.matieres.map(m => {
-    const moyenneSur10 = m.moyenne / 2;
+    // La moyenne arrive déjà sur 10 depuis le CalculateurMoyennes
+    const moyenneSur10 = Number(m.moyenne);
     const observation = moyenneSur10 >= 7 ? 'Acquis (A)' : 
-                        moyenneSur10 >= 4 ? 'En cours d\'acquisition (ECA)' :
+                        moyenneSur10 >= 4.5 ? 'En cours d\'acquisition (ECA)' :
                         'Non Acquis (NA)';
 
     return {

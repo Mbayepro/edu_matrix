@@ -8,6 +8,8 @@ export interface MatiereDetails {
   nombre_evaluations: number;
   mcc?: number;
   composition_note?: number;
+  moyenne_controles?: number; // Pour compatibilité lib
+  note_examen?: number;        // Pour compatibilité lib
   est_bonus?: boolean;
   domaine?: string;
 }
@@ -44,19 +46,20 @@ export interface BulletinData {
 }
 
 export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }) {
-  // Calculs stricts Sénégalais: Total(moyen * coef), sommes...
+  // Calculs stricts Sénégalais: Total(moyen * coef), sommes..  // Calculs Renaissance School: Moyenne Simple (Somme / Nombre)
   const matieresCalculated = data.matieres.map((m) => {
-    const mcc = m.mcc != null ? Number(m.mcc) : null;
-    const compo = m.composition_note != null ? Number(m.composition_note) : null;
+    const mcc = m.mcc != null ? Number(m.mcc) : (m.moyenne_controles != null ? Number(m.moyenne_controles) : null);
+    const compo = m.composition_note != null ? Number(m.composition_note) : (m.note_examen != null ? Number(m.note_examen) : null);
     
-    // Si la moyenne n'est pas fournie, on la recalcule : (mcc + compo) / 2
+    // Logique de moyenne simple : (Somme des notes présentes) / (Nombre de notes présentes)
     let moyenne = Number(m.moyenne);
-    if (!moyenne && mcc != null && compo != null) {
-      moyenne = (mcc + compo) / 2;
-    } else if (!moyenne && mcc != null) {
-      moyenne = mcc;
-    } else if (!moyenne && compo != null) {
-      moyenne = compo;
+    if (!moyenne) {
+      const notes = [];
+      if (mcc !== null) notes.push(mcc);
+      if (compo !== null) notes.push(compo);
+      if (notes.length > 0) {
+        moyenne = notes.reduce((a, b) => a + b, 0) / notes.length;
+      }
     }
     
     const isBonus = m.est_bonus === true;
@@ -67,6 +70,7 @@ export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }
         total = (moyenne - 10) * m.coefficient;
       }
     } else {
+      // Calcul du total strict avant arrondi
       total = moyenne * m.coefficient;
     }
 
@@ -140,7 +144,7 @@ export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }
         </h1>
         <p className="text-lg font-bold mt-2">TRIMESTRE {data.trimestre}</p>
         {data.classe.cycle === 'secondaire' && (
-          <p className="text-sm font-semibold uppercase text-slate-700">CYLES SECONDAIRES - SÉRIE {data.classe.serie_code}</p>
+          <p className="text-sm font-semibold uppercase text-slate-700">CYCLES SECONDAIRES - SÉRIE {data.classe.serie_code}</p>
         )}
       </div>
 
@@ -163,11 +167,11 @@ export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }
           <thead className="bg-slate-200">
             <tr>
               <th className="border border-slate-800 p-2 text-left w-1/4">Matières</th>
-              <th className="border border-slate-800 p-2 text-center text-xs">Moy Devoirs<br/>(MCC)</th>
+              <th className="border border-slate-800 p-2 text-center text-xs">MOY. DEV.</th>
               <th className="border border-slate-800 p-2 text-center text-xs">Compo</th>
-              <th className="border border-slate-800 p-2 text-center bg-slate-300 font-bold">Moy / 20</th>
-              <th className="border border-slate-800 p-2 text-center">Coef</th>
-              <th className="border border-slate-800 p-2 text-center font-bold">Total<br/>(Moy × Coef)</th>
+              <th className="border border-slate-800 p-2 text-center font-bold">Coef</th>
+              <th className="border border-slate-800 p-2 text-center font-bold bg-amber-50">TOTAL POINTS</th>
+              <th className="border border-slate-800 p-2 text-center font-bold bg-slate-300">MOYENNE</th>
               <th className="border border-slate-800 p-2 text-left w-1/4">Appréciation</th>
             </tr>
           </thead>
@@ -179,9 +183,9 @@ export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }
                 </td>
                 <td className="border border-slate-800 p-2 text-center">{m.mccDisplay}</td>
                 <td className="border border-slate-800 p-2 text-center">{m.compoDisplay}</td>
-                <td className="border border-slate-800 p-2 text-center font-bold bg-slate-50">{m.moyenneDisplay}</td>
                 <td className="border border-slate-800 p-2 text-center">{!m.isBonus ? m.coefficient : '-'}</td>
-                <td className="border border-slate-800 p-2 text-center font-bold">{m.totalDisplay}</td>
+                <td className="border border-slate-800 p-2 text-center font-bold bg-amber-50/30">{m.totalDisplay}</td>
+                <td className="border border-slate-800 p-2 text-center font-bold bg-slate-50">{m.moyenneDisplay} / 20</td>
                 <td className="border border-slate-800 p-2 text-xs italic">
                   {m.moyenneNum ? getAppreciation(m.moyenneNum) : ''}
                 </td>
@@ -190,16 +194,16 @@ export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }
           </tbody>
           <tfoot className="bg-slate-200 border-2 border-slate-800">
             <tr>
-              <td colSpan={4} className="border border-slate-800 p-2 text-right font-bold uppercase">
-                Somme des totaux & coefficients :
+              <td colSpan={3} className="border border-slate-800 p-2 text-right font-bold uppercase text-xs">
+                Somme des coefficients & Totaux :
               </td>
               <td className="border border-slate-800 p-2 text-center font-black text-lg">
                 {sumCoeff}
               </td>
-              <td className="border border-slate-800 p-2 text-center font-black text-lg">
+              <td className="border border-slate-800 p-2 text-center font-black text-lg bg-amber-100">
                 {sumTotal.toFixed(2)}
               </td>
-              <td className="border border-slate-800 p-2 bg-slate-300"></td>
+              <td colSpan={2} className="border border-slate-800 p-2 bg-slate-300"></td>
             </tr>
           </tfoot>
         </table>

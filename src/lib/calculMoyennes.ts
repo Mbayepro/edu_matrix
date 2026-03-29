@@ -176,7 +176,8 @@ export class CalculateurMoyennes {
         const isBonus = (coeff.matiere as any)?.est_bonus || false
         const cycle = niveau.cycle
 
-        // --- CALCUL SÉNÉGALAIS (MCC + 2*COMP) / 3 ---
+        // --- CALCUL RENAISSANCE (Moyenne Simple) ---
+        // (Somme des notes) / (Nombre de notes)
         const normaliser = (n: any) => (Number(n.note) / Number(n.evaluation.bareme || 20)) * 20
         const notesCC = matiereNotes.filter((n: any) => n.evaluation.type !== 'composition')
         const noteComp = matiereNotes.find((n: any) => n.evaluation.type === 'composition')
@@ -186,52 +187,52 @@ export class CalculateurMoyennes {
           new Date(a.evaluation.date).getTime() - new Date(b.evaluation.date).getTime()
         )
 
-        let moyenneMatiere = 0
-        let mcc = 0
-        let comp = noteComp ? normaliser(noteComp) : null
+        let moyenneMatiereRaw = 0
+        let mccRaw = 0
+        let compRaw = noteComp ? normaliser(noteComp) : null
+
+        // Moyenne simplifiée exigée : somme / count
+        const sumAll = matiereNotes.reduce((acc: number, n: any) => acc + normaliser(n), 0)
+        moyenneMatiereRaw = sumAll / matiereNotes.length
 
         if (notesCC.length > 0) {
-          const sumCC = notesCC.reduce((acc: number, n: any) => acc + (normaliser(n) * Number(n.evaluation.coef || 1)), 0)
-          const sumCoeffCC = notesCC.reduce((acc: number, n: any) => acc + Number(n.evaluation.coef || 1), 0)
-          mcc = sumCC / sumCoeffCC
+          const sumCC = notesCC.reduce((acc: number, n: any) => acc + normaliser(n), 0)
+          mccRaw = sumCC / notesCC.length
         }
 
-        if (cycle === 'primaire') {
-          // Primaire : Simple moyenne
-          moyenneMatiere = matiereNotes.reduce((acc: number, n: any) => acc + normaliser(n), 0) / matiereNotes.length
-        } else {
-          // Moyen/Secondaire/Supérieur : (MCC + 2*Comp) / 3
-          if (notesCC.length > 0 && comp !== null) {
-            moyenneMatiere = (mcc + (2 * comp)) / 3
-          } else if (notesCC.length > 0) {
-            moyenneMatiere = mcc
-          } else if (comp !== null) {
-            moyenneMatiere = comp
-          }
-        }
+        const isPrimaire = (cycle === 'primaire' || cycle === 'elementaire')
+        
+        // Adaptation base 10/20
+        const scale = isPrimaire ? 10 : 20
+        const finalMoyenne = isPrimaire ? (moyenneMatiereRaw / 2) : moyenneMatiereRaw
+        const finalMCC = isPrimaire ? (mccRaw / 2) : mccRaw
+        const finalComp = compRaw !== null ? (isPrimaire ? compRaw / 2 : compRaw) : null
 
-        const appPath = this.genererAppreciation(moyenneMatiere)
+        const appPath = this.genererAppreciation(isPrimaire ? finalMoyenne * 2 : finalMoyenne)
+        
         const matiereResult: MoyenneMatiere = {
           matiere_id: coeff.matiere_id,
           matiere_nom: coeff.matiere!.nom,
           coefficient: Number(coeff.coefficient),
-          moyenne: Math.round(moyenneMatiere * 100) / 100,
-          bareme: 20,
+          moyenne: finalMoyenne, // Stocké selon la base du cycle
+          bareme: scale,
           appreciation: appPath,
           nombre_evaluations: matiereNotes.length,
           is_bonus: isBonus,
-          moyenne_controles: Math.round(mcc * 100) / 100,
-          note_examen: comp !== null ? Math.round(comp * 100) / 100 : undefined,
-          devoir1: devoirsSorted[0] ? Math.round(normaliser(devoirsSorted[0]) * 100) / 100 : undefined,
-          devoir2: devoirsSorted[1] ? Math.round(normaliser(devoirsSorted[1]) * 100) / 100 : undefined,
-          devoir3: devoirsSorted[2] ? Math.round(normaliser(devoirsSorted[2]) * 100) / 100 : undefined,
+          moyenne_controles: finalMCC,
+          note_examen: finalComp !== null ? finalComp : undefined,
+          devoir1: devoirsSorted[0] ? (isPrimaire ? normaliser(devoirsSorted[0])/2 : normaliser(devoirsSorted[0])) : undefined,
+          devoir2: devoirsSorted[1] ? (isPrimaire ? normaliser(devoirsSorted[1])/2 : normaliser(devoirsSorted[1])) : undefined,
+          devoir3: devoirsSorted[2] ? (isPrimaire ? normaliser(devoirsSorted[2])/2 : normaliser(devoirsSorted[2])) : undefined,
         }
 
         if (isBonus) {
-          matiereResult.points_bonus = Math.max(0, moyenneMatiere - 10) * Number(coeff.coefficient)
+          // Bonus : points au-dessus de la moyenne (5/10 ou 10/20)
+          const pivot = isPrimaire ? 5 : 10
+          matiereResult.points_bonus = Math.max(0, finalMoyenne - pivot) * Number(coeff.coefficient)
           totalPoints += matiereResult.points_bonus
         } else {
-          totalPoints += moyenneMatiere * Number(coeff.coefficient)
+          totalPoints += finalMoyenne * Number(coeff.coefficient)
           totalCoefficients += Number(coeff.coefficient)
         }
 
