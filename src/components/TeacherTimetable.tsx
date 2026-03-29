@@ -94,26 +94,39 @@ export default function TeacherTimetable({ enseignantId, ecoleId }: Props) {
   return (
     <div className="space-y-3">
       {/* Mobile: list view */}
-      <div className="space-y-3 md:hidden">
+      <div className="space-y-4 md:hidden">
         {[1,2,3,4,5,6].map(jour => {
           const daySlots = slotsForDay(jour)
           if (!daySlots.length) return null
           return (
-            <div key={jour} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-              <div className="px-4 py-2 bg-indigo-50 flex items-center gap-2">
-                <span className="font-bold text-indigo-700 text-sm">{JOURS[jour]}</span>
+            <div key={jour} className="bg-white rounded-3xl border border-slate-200/60 shadow-sm overflow-hidden">
+              <div className="px-5 py-4 bg-slate-50 border-b border-slate-100 flex items-center gap-3">
+                <div className="w-1.5 h-5 bg-indigo-500 rounded-full shadow-sm" />
+                <span className="font-black tracking-tight text-slate-800 text-sm uppercase">{JOURS[jour]}</span>
+                <span className="ml-auto text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-white shadow-[0_0_10px_rgba(0,0,0,0.03)] border border-slate-100 px-2 py-1 rounded-md">{daySlots.length} cours</span>
               </div>
-              <div className="p-3 space-y-2">
+              <div className="p-4 space-y-3">
                 {daySlots.map(s => {
-                  const color = s.matiere_id ? matiereColorMap[s.matiere_id] ?? COLORS[0] : 'bg-slate-100 text-slate-700 border-slate-200'
+                  const color = s.matiere_id ? matiereColorMap[s.matiere_id] ?? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-slate-100 text-slate-700 border-slate-200'
                   return (
-                    <div key={s.id} className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 ${color}`}>
-                      <div>
-                        <p className="font-bold text-xs">{s.heure_debut.slice(0,5)} – {s.heure_fin.slice(0,5)}</p>
+                    <div key={s.id} className={`flex items-stretch gap-3 rounded-2xl border p-3 shadow-sm hover:shadow-md transition-shadow ${color}`}>
+                      <div className="flex flex-col items-center justify-center border-r border-current/10 pr-3 min-w-[70px]">
+                        <p className="font-black text-xs leading-none">{s.heure_debut.slice(0,5)}</p>
+                        <div className="h-4 border-l-2 border-dashed border-current/20 my-1"></div>
+                        <p className="font-black text-xs leading-none">{s.heure_fin.slice(0,5)}</p>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm truncate">{s.matiere?.nom ?? 'Cours'}</p>
-                        <p className="text-xs opacity-70">{s.classe?.nom_classe}{s.salle ? ` · ${s.salle}` : ''}</p>
+                      <div className="flex-1 min-w-0 flex flex-col justify-center py-1">
+                        <p className="font-black text-sm truncate uppercase tracking-tight">{s.matiere?.nom ?? 'Cours'}</p>
+                        <div className="flex flex-wrap items-center gap-2 mt-2">
+                          <span className="inline-flex items-center px-2 py-1 rounded-[0.25rem] text-[9px] font-black uppercase tracking-widest bg-current/10 border border-current/5">
+                            {s.classe?.nom_classe}
+                          </span>
+                          {s.salle && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-[0.25rem] text-[9px] font-black uppercase tracking-widest bg-current/10 border border-current/5">
+                              Salle {s.salle}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )

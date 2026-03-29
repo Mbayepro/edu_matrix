@@ -202,9 +202,9 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
             <h3 className="font-black text-slate-900 uppercase tracking-tight text-xs truncate min-w-0">{matiere.nom}</h3>
             <button
               onClick={() => { setSelectedMatiereId(matiere.id); setShowNewEvalModal(true); }}
-              className="flex-shrink-0 flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-sm"
+              className="flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-md shadow-emerald-500/20 active:scale-95"
             >
-              <Plus className="w-3 h-3" /> <span className="hidden sm:inline">Nouvelle Éval.</span>
+              <Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Nouvelle Éval.</span>
             </button>
           </div>
 
@@ -311,39 +311,55 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
       )}
 
       {mobileEvalId && selectedEval && (
-        <div className="fixed inset-0 bg-slate-950 z-[100] flex flex-col animate-in slide-in-from-bottom duration-300">
-          <div className="bg-white px-6 py-4 flex items-center justify-between border-b border-slate-100">
-            <div>
-              <h3 className="text-xs font-black text-slate-900 uppercase">Saisie : {selectedEval.libelle || selectedEval.type}</h3>
-              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Barème : /{selectedEval.bareme}</p>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex flex-col justify-end animate-in fade-in duration-300">
+          <div className="bg-slate-50 h-[90vh] rounded-t-[2.5rem] flex flex-col overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300 relative">
+            <div className="absolute top-2.5 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-slate-300/50 rounded-full" />
+            <div className="bg-white px-6 py-5 flex items-center justify-between border-b border-slate-100 mt-4 rounded-t-[2.5rem]">
+              <div>
+                <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Saisie : {selectedEval.libelle || selectedEval.type}</h3>
+                <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest mt-0.5">Barème : /{selectedEval.bareme}</p>
+              </div>
+              <button onClick={() => setMobileEvalId(null)} className="p-2.5 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-600 transition-colors"><X className="w-5 h-5" /></button>
             </div>
-            <button onClick={() => setMobileEvalId(null)} className="p-2 bg-slate-100 rounded-full text-slate-600"><X className="w-5 h-5" /></button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50">
-            {eleves.map(eleve => {
-              const val = getNote(eleve.id, selectedEval.id);
-              return (
-                <div key={eleve.id} className="bg-white p-4 rounded-2xl flex items-center justify-between shadow-sm border border-slate-100">
-                  <div className="flex-1 min-w-0 pr-4">
-                    <p className="text-[11px] font-black text-slate-900 uppercase truncate">{eleve.prenom} {eleve.nom}</p>
-                    <p className="text-[9px] text-slate-400 font-bold">{eleve.matricule}</p>
+            
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {eleves.map(eleve => {
+                const val = getNote(eleve.id, selectedEval.id);
+                return (
+                  <div key={eleve.id} className="bg-white p-4 rounded-2xl flex items-center justify-between shadow-sm border border-slate-100">
+                    <div className="flex-1 min-w-0 pr-4">
+                      <p className="text-xs font-black text-slate-900 uppercase truncate">{eleve.prenom} {eleve.nom}</p>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{eleve.matricule}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        defaultValue={val?.toString() || ''}
+                        onBlur={(e) => handleNoteChange(eleve.id, selectedEval.id, e.target.value)}
+                        placeholder="--"
+                        className={`w-16 h-14 bg-slate-50 border-2 rounded-xl text-center text-sm font-black focus:ring-4 focus:ring-emerald-500/20 focus:bg-white transition-all
+                          ${val !== null 
+                            ? (val >= (selectedEval.bareme/2) ? 'border-emerald-200 text-emerald-700 bg-emerald-50/30' : 'border-red-200 text-red-600 bg-red-50/30') 
+                            : 'border-slate-100 text-slate-400 focus:border-emerald-300'}`}
+                      />
+                      <span className="text-[10px] font-black text-slate-300 w-6">/{selectedEval.bareme}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      defaultValue={val?.toString() || ''}
-                      onBlur={(e) => handleNoteChange(eleve.id, selectedEval.id, e.target.value)}
-                      placeholder="--"
-                      className={`w-16 h-12 bg-slate-100 border-none rounded-xl text-center text-sm font-black focus:ring-4 focus:ring-emerald-500/20 focus:bg-white ${val !== null ? (val >= (selectedEval.bareme/2) ? 'text-emerald-700' : 'text-red-600') : 'text-slate-400'}`}
-                    />
-                    <span className="text-[10px] font-black text-slate-300">/{selectedEval.bareme}</span>
-                  </div>
-                </div>
-              )
-            })}
+                )
+              })}
+              {/* padding for bottom bar */}
+              <div className="h-24"></div>
+            </div>
+
+            <div className="absolute bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-slate-100 pb-safe">
+              <button 
+                onClick={() => setMobileEvalId(null)} 
+                className="w-full py-4 bg-slate-900 active:bg-slate-800 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-slate-900/20 transition-all active:scale-[0.98]">
+                Enregistrer & Terminer
+              </button>
+            </div>
           </div>
-          <div className="p-4 bg-white border-t border-slate-100"><button onClick={() => setMobileEvalId(null)} className="w-full py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest">Terminer</button></div>
         </div>
       )}
     </div>

@@ -146,23 +146,23 @@ function ScanResultCard({ result, onReset }: { result: ScanResult; onReset: () =
   const Icon = c.icon
 
   return (
-    <div className={`rounded-2xl border-2 p-6 ${c.bg} ${c.border}`}>
-      <div className="flex items-start gap-4">
-        <Icon className={`w-8 h-8 shrink-0 mt-0.5 ${c.iconColor}`} />
-        <div className="flex-1">
+    <div className={`rounded-3xl border-2 p-6 md:p-8 ${c.bg} ${c.border} shadow-lg transition-all animate-in zoom-in-95 duration-300`}>
+      <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 sm:gap-6">
+        <Icon className={`w-12 h-12 shrink-0 ${c.iconColor} drop-shadow-sm`} />
+        <div className="flex-1 w-full">
           {result.studentName && (
-            <p className={`font-bold text-lg ${c.titleColor}`}>{result.studentName}</p>
+            <p className={`font-black text-xl md:text-2xl tracking-tight leading-tight ${c.titleColor}`}>{result.studentName}</p>
           )}
           {result.matricule && (
-            <p className="text-sm font-mono text-slate-500 mb-1">{result.matricule}</p>
+            <p className="text-sm font-bold opacity-60 uppercase tracking-widest mt-1 mb-2">{result.matricule}</p>
           )}
-          <p className={`text-sm ${c.titleColor}`}>{result.message}</p>
+          <p className={`text-base font-medium ${c.titleColor}`}>{result.message}</p>
           
           {result.statutPaiement && (
-            <div className="mt-3 pt-3 border-t border-black/5 flex flex-col gap-2">
+            <div className="mt-4 pt-4 border-t border-black/5 flex flex-col gap-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] uppercase font-black tracking-widest text-slate-400">Paiement</span>
-                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest ${
+                <span className={`text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-widest ${
                   result.statutPaiement === 'payé' ? 'bg-emerald-100 text-emerald-700' :
                   result.statutPaiement === 'partiel' ? 'bg-amber-100 text-amber-700' :
                   'bg-red-100 text-red-700'
@@ -171,9 +171,9 @@ function ScanResultCard({ result, onReset }: { result: ScanResult; onReset: () =
                 </span>
               </div>
               {result.paymentDetails && (
-                <div className="flex items-center gap-2 bg-black/5 p-2 rounded-xl border border-black/5">
-                  <div className={`w-1.5 h-1.5 rounded-full ${result.statutPaiement === 'payé' ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                  <span className="text-[10px] font-bold text-slate-700">{result.paymentDetails}</span>
+                <div className="flex items-center gap-3 bg-black/5 p-3 rounded-xl border border-black/5">
+                  <div className={`w-2 h-2 rounded-full shrink-0 ${result.statutPaiement === 'payé' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`} />
+                  <span className="text-xs font-bold text-slate-700 leading-tight">{result.paymentDetails}</span>
                 </div>
               )}
             </div>
@@ -182,7 +182,7 @@ function ScanResultCard({ result, onReset }: { result: ScanResult; onReset: () =
       </div>
       <button
         onClick={onReset}
-        className="mt-4 w-full flex items-center justify-center gap-2 text-sm bg-white border border-slate-200 rounded-xl py-2.5 hover:bg-slate-50 transition-colors text-slate-600"
+        className="mt-6 w-full flex items-center justify-center gap-2 text-sm font-bold bg-white border-2 border-slate-200/60 rounded-xl py-3.5 hover:bg-slate-50 transition-all text-slate-700 shadow-sm active:scale-95"
       >
         <RefreshCw className="w-4 h-4" />
         Scanner suivant
@@ -361,44 +361,47 @@ export default function AttendanceScanner({ classeId }: { classeId: string }) {
 
       {/* Scanner input */}
       {!result && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
-          <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center py-8 gap-3">
-            <QrCode className="w-12 h-12 text-slate-300" />
-            <p className="text-sm text-slate-500 text-center px-4">
-              Pointez le scanner QR vers la carte de l'élève,<br />
-              ou utilisez la caméra de votre téléphone.
-            </p>
-            <button
-              onClick={() => setShowCamera(true)}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 text-sm shadow-lg shadow-emerald-600/20 transition-all active:scale-95"
-            >
-              <Camera className="w-4 h-4" />
-              Ouvrir la Caméra
-            </button>
-          </div>
+        <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-4 sm:p-6 space-y-6">
+          <button
+            onClick={() => setShowCamera(true)}
+            className="w-full bg-slate-50 border-2 border-dashed border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/50 rounded-[1.5rem] flex flex-col items-center justify-center py-10 gap-4 transition-all group active:scale-[0.98]"
+          >
+            <div className="bg-white p-4 rounded-full shadow-sm group-hover:shadow-md transition-shadow group-hover:bg-emerald-500">
+              <QrCode className="w-10 h-10 text-slate-400 group-hover:text-white transition-colors" />
+            </div>
+            <div className="text-center px-4">
+              <p className="font-black text-slate-700 text-lg group-hover:text-emerald-700 transition-colors">Scanner par Caméra</p>
+              <p className="text-xs text-slate-500 mt-1 max-w-[200px] mx-auto">
+                Appuyez ici pour utiliser l'appareil photo de votre téléphone
+              </p>
+            </div>
+          </button>
 
-          <div className="flex gap-2">
+          <div className="relative flex items-center">
+            <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+              <CheckCircle2 className="w-5 h-5 text-slate-300" />
+            </div>
             <input
               ref={inputRef}
               type="text"
               value={manualId}
               onChange={(e) => setManualId(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="ID élève (scan auto ou manuel)"
-              className="flex-1 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-slate-50"
+              placeholder="ID élève manuel..."
+              className="w-full border-2 border-slate-100 rounded-2xl pl-12 pr-16 py-4 text-base font-bold placeholder:font-medium focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 bg-white transition-all shadow-sm"
               disabled={loading}
             />
             <button
               onClick={() => handleScan(manualId)}
               disabled={loading || !manualId.trim()}
-              className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white px-4 rounded-xl transition-colors flex items-center gap-1"
+              className="absolute right-2 top-2 bottom-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:hover:bg-emerald-600 text-white px-4 rounded-xl transition-all shadow-sm flex items-center justify-center"
             >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'OK'}
             </button>
           </div>
 
-          <p className="text-xs text-slate-400 text-center">
-            Le scanner physique enverra automatiquement l'ID et appuiera sur Entrée.
+          <p className="text-[10px] text-slate-400 text-center uppercase tracking-widest font-bold">
+            Un scanner physique appuyera sur entrée automatiquement
           </p>
         </div>
       )}
