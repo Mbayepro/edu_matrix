@@ -109,34 +109,50 @@ export default function BulletinPrimaire({ data }: { data: BulletinData }) {
           <table key={domaine.nom} className="w-full border-collapse border border-slate-800 text-sm mb-4">
             <thead className="bg-slate-200">
               <tr>
-                <th colSpan={3} className="border border-slate-800 p-2 text-left font-black uppercase text-sm bg-slate-300">
+                <th colSpan={5} className="border border-slate-800 p-2 text-left font-black uppercase text-sm bg-slate-300">
                   DOMAINE : {domaine.nom}
                 </th>
               </tr>
               <tr>
-                <th className="border border-slate-800 p-1 text-left w-1/2 bg-slate-100 font-semibold text-xs italic">Activité / Sous-compétence</th>
-                <th className="border border-slate-800 p-1 text-center w-1/4 bg-slate-100 font-semibold text-xs italic">Note / 10</th>
-                <th className="border border-slate-800 p-1 text-left w-1/4 bg-slate-100 font-semibold text-xs italic">Observation</th>
+                <th className="border border-slate-800 p-1 text-left w-1/3 bg-slate-100 font-semibold text-xs italic">Activité / Sous-compétence</th>
+                <th className="border border-slate-800 p-1 text-center bg-slate-100 font-semibold text-xs italic">Coef</th>
+                <th className="border border-slate-800 p-1 text-center bg-slate-100 font-semibold text-xs italic">Note (/10)</th>
+                <th className="border border-slate-800 p-1 text-center bg-slate-100 font-semibold text-xs italic">Total Points</th>
+                <th className="border border-slate-800 p-1 text-left bg-slate-100 font-semibold text-xs italic">Observation</th>
               </tr>
             </thead>
             <tbody>
-              {domaine.activites.map((act: any) => (
-                <tr key={act.id} className="hover:bg-slate-50">
-                  <td className="border border-slate-800 p-2 capitalize pl-6">• {act.nom}</td>
-                  <td className="border border-slate-800 p-2 text-center font-bold bg-slate-50">{act.moyenneSur10.toFixed(2)}</td>
-                  <td className="border border-slate-800 p-2 text-left text-xs italic text-slate-700">{act.observation}</td>
-                </tr>
-              ))}
+              {domaine.activites.map((act: any) => {
+                const coef = act.coefficient || 1;
+                const totalPoints = act.moyenneSur10 * coef;
+                return (
+                  <tr key={act.id} className="hover:bg-slate-50">
+                    <td className="border border-slate-800 p-2 capitalize pl-6">• {act.nom}</td>
+                    <td className="border border-slate-800 p-2 text-center">{coef}</td>
+                    <td className="border border-slate-800 p-2 text-center font-bold bg-slate-50">{act.moyenneSur10.toFixed(2)}</td>
+                    <td className="border border-slate-800 p-2 text-center font-bold bg-amber-50/30">{totalPoints.toFixed(2)}</td>
+                    <td className="border border-slate-800 p-2 text-left text-xs italic text-slate-700">{act.observation}</td>
+                  </tr>
+                );
+              })}
             </tbody>
             {/* Ligne de synthèse du domaine */}
             <tfoot className="border-t-[3px] border-slate-800 bg-slate-100">
               <tr>
-                <td className="border border-slate-800 p-2 flex justify-between uppercase text-xs font-bold text-slate-700">
-                  <span>Moyenne du domaine (/10) : <strong className="text-black ml-1 text-sm">{domaine.moyenne.toFixed(2)}</strong></span>
-                  <span>Coef : <strong className="text-black ml-1 text-sm">{domaine.coefficientDomaine}</strong></span>
+                <td className="border border-slate-800 p-2 uppercase text-xs font-bold text-slate-700">
+                  TOTAL DU DOMAINE
                 </td>
-                <td colSpan={2} className="border border-slate-800 p-2 text-center text-xs font-bold bg-slate-200 uppercase">
-                  Total Domaine : <span className="text-lg font-black ml-2">{domaine.total.toFixed(2)}</span>
+                <td className="border border-slate-800 p-2 text-center font-bold">
+                  {domaine.activites.reduce((acc: number, act: any) => acc + (act.coefficient || 1), 0)}
+                </td>
+                <td className="border border-slate-800 p-2 text-center font-bold bg-slate-200">
+                  {domaine.moyenne.toFixed(2)}
+                </td>
+                <td className="border border-slate-800 p-2 text-center text-xs font-bold bg-amber-100 uppercase">
+                   <span className="text-sm font-black">{domaine.total.toFixed(2)}</span>
+                </td>
+                <td className="border border-slate-800 p-2 bg-slate-200 text-xs italic">
+                  Moyenne: {(domaine.total / domaine.activites.reduce((acc: number, act: any) => acc + (act.coefficient || 1), 0)).toFixed(2)} / 10
                 </td>
               </tr>
             </tfoot>

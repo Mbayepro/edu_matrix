@@ -167,11 +167,11 @@ export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }
           <thead className="bg-slate-200">
             <tr>
               <th className="border border-slate-800 p-2 text-left w-1/4">Matières</th>
+              <th className="border border-slate-800 p-2 text-center font-bold">Coef</th>
               <th className="border border-slate-800 p-2 text-center text-xs">MOY. DEV.</th>
               <th className="border border-slate-800 p-2 text-center text-xs">Compo</th>
-              <th className="border border-slate-800 p-2 text-center font-bold">Coef</th>
+              <th className="border border-slate-800 p-2 text-center font-bold bg-slate-300">MOYENNE (/20)</th>
               <th className="border border-slate-800 p-2 text-center font-bold bg-amber-50">TOTAL POINTS</th>
-              <th className="border border-slate-800 p-2 text-center font-bold bg-slate-300">MOYENNE</th>
               <th className="border border-slate-800 p-2 text-left w-1/4">Appréciation</th>
             </tr>
           </thead>
@@ -181,11 +181,11 @@ export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }
                 <td className="border border-slate-800 p-2 font-semibold">
                   {m.nom} {m.isBonus && <span className="text-xs text-slate-500 italic">(Bonus)</span>}
                 </td>
+                <td className="border border-slate-800 p-2 text-center">{!m.isBonus ? m.coefficient : '-'}</td>
                 <td className="border border-slate-800 p-2 text-center">{m.mccDisplay}</td>
                 <td className="border border-slate-800 p-2 text-center">{m.compoDisplay}</td>
-                <td className="border border-slate-800 p-2 text-center">{!m.isBonus ? m.coefficient : '-'}</td>
+                <td className="border border-slate-800 p-2 text-center font-bold bg-slate-50">{m.moyenneDisplay}</td>
                 <td className="border border-slate-800 p-2 text-center font-bold bg-amber-50/30">{m.totalDisplay}</td>
-                <td className="border border-slate-800 p-2 text-center font-bold bg-slate-50">{m.moyenneDisplay} / 20</td>
                 <td className="border border-slate-800 p-2 text-xs italic">
                   {m.moyenneNum ? getAppreciation(m.moyenneNum) : ''}
                 </td>
@@ -194,16 +194,17 @@ export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }
           </tbody>
           <tfoot className="bg-slate-200 border-2 border-slate-800">
             <tr>
-              <td colSpan={3} className="border border-slate-800 p-2 text-right font-bold uppercase text-xs">
-                Somme des coefficients & Totaux :
+              <td colSpan={1} className="border border-slate-800 p-2 text-right font-bold uppercase text-xs">
+                TOTAUX :
               </td>
               <td className="border border-slate-800 p-2 text-center font-black text-lg">
                 {sumCoeff}
               </td>
+              <td colSpan={3} className="border border-slate-800 p-2 bg-slate-100"></td>
               <td className="border border-slate-800 p-2 text-center font-black text-lg bg-amber-100">
                 {sumTotal.toFixed(2)}
               </td>
-              <td colSpan={2} className="border border-slate-800 p-2 bg-slate-300"></td>
+              <td className="border border-slate-800 p-2 bg-slate-300"></td>
             </tr>
           </tfoot>
         </table>

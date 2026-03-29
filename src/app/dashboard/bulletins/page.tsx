@@ -246,34 +246,27 @@ export default function BulletinsPage() {
             <thead>
                 <tr>
                     <th style="text-align: left; padding-left: 10px;">Matières</th>
-                    <th class="text-center">Dev. 1</th>
-                    <th class="text-center">Dev. 2</th>
+                    <th class="text-center">Coef</th>
                     <th class="text-center">MOY. DEV.</th>
                     <th class="text-center">Comp.</th>
-                    <th class="text-center">Coef</th>
-                    <th class="text-center">TOTAL POINTS</th>
-                    <th class="text-center">Moyenne</th>
+                    <th class="text-center" style="background: #f1f5f9;">Moyenne ${bulletin.niveau?.cycle === 'primaire' ? '(/10)' : '(/20)'}</th>
+                    <th class="text-center" style="background: #fff7ed;">TOTAL POINTS</th>
                     <th>Appréciation</th>
                 </tr>
             </thead>
             <tbody>
                 ${bulletin.matieres.map(matiere => {
-                  const d1 = matiere.devoir1 !== undefined ? matiere.devoir1.toFixed(2) : '—';
-                  const d2 = matiere.devoir2 !== undefined ? matiere.devoir2.toFixed(2) : '—';
                   const moyDev = (matiere.moyenne_controles ?? 0).toFixed(2);
                   const comp = matiere.note_examen !== undefined ? matiere.note_examen.toFixed(2) : '—';
                   const totalPoints = (matiere.moyenne * matiere.coefficient).toFixed(2);
-                  const bareme = bulletin.niveau?.cycle === 'primaire' ? 10 : 20;
                   return `
                     <tr>
                         <td style="padding-left: 10px;"><strong>${matiere.matiere_nom}</strong></td>
-                        <td class="text-center">${d1}</td>
-                        <td class="text-center">${d2}</td>
-                        <td class="text-center" style="background:#f1f5f9;">${moyDev}</td>
-                        <td class="text-center" style="font-weight:bold;">${comp}</td>
                         <td class="text-center">${matiere.coefficient}</td>
-                        <td class="text-center" style="font-weight:900; background:#fff7ed;">${totalPoints}</td>
-                        <td class="text-center" style="font-weight:900;">${matiere.moyenne.toFixed(2)} / ${bareme}</td>
+                        <td class="text-center">${moyDev}</td>
+                        <td class="text-center">${comp}</td>
+                        <td class="text-center" style="font-weight:900; background: #f1f5f9;">${matiere.moyenne.toFixed(2)}</td>
+                        <td class="text-center" style="font-weight:900; background: #fff7ed;">${totalPoints}</td>
                         <td style="font-size:10px; font-style:italic;">${matiere.appreciation || ''}</td>
                     </tr>
                   `;
@@ -281,10 +274,10 @@ export default function BulletinsPage() {
             </tbody>
             <tfoot>
                 <tr style="background:#f8fafc; font-weight:900;">
-                    <td colspan="5" style="text-align:right; padding-right:15px;">TOTAL GÉNÉRAL :</td>
+                    <td colspan="1" style="text-align:right; padding-right:15px;">TOTAL :</td>
                     <td class="text-center">${bulletin.matieres.reduce((acc, m) => acc + (m.is_bonus ? 0 : m.coefficient), 0)}</td>
-                    <td class="text-center" style="background:#fff7ed;">${bulletin.matieres.reduce((acc, m) => acc + (m.moyenne * m.coefficient), 0).toFixed(2)}</td>
-                    <td></td>
+                    <td colspan="3"></td>
+                    <td class="text-center" style="background:#fff7ed; font-size: 14px;">${bulletin.matieres.reduce((acc, m) => acc + (m.moyenne * m.coefficient), 0).toFixed(2)}</td>
                     <td></td>
                 </tr>
             </tfoot>
