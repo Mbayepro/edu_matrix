@@ -60,13 +60,67 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
   const [niveau, setNiveau] = useState<any>(null);
   const [serie, setSerie] = useState<any>(null);
 
+  const [isOnline, setIsOnline] = useState(true);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+    const updatePending = () => {
+      const e = JSON.parse(localStorage.getItem('edumatrix_offline_evals') || '[]').length;
+      const n = JSON.parse(localStorage.getItem('edumatrix_offline_notes') || '[]').length;
+      setPendingCount(e + n);
+    };
+    updatePending();
+
+    const handleOnline = () => { setIsOnline(true); syncOfflineQueue(); };
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    }
+  }, []);
+
   useEffect(() => {
     if (classeId) loadData();
   }, [classeId, trimestre]);
 
+  async function syncOfflineQueue() {
+    if (!navigator.onLine) return;
+    const evals = JSON.parse(localStorage.getItem('edumatrix_offline_evals') || '[]');
+    const offlineNotes = JSON.parse(localStorage.getItem('edumatrix_offline_notes') || '[]');
+    if (!evals.length && !offlineNotes.length) return;
+
+    try {
+      for (const ev of evals) {
+        await supabase.from('evaluations').upsert(ev, { onConflict: 'id' });
+      }
+      localStorage.setItem('edumatrix_offline_evals', '[]');
+
+      for (const note of offlineNotes) {
+        await supabase.from('notes').upsert({
+          eleve_id: note.eleve_id,
+          evaluation_id: note.evaluation_id,
+          note: note.note,
+          professeur_id: note.professeur_id
+        }, { onConflict: 'eleve_id,evaluation_id' });
+      }
+      localStorage.setItem('edumatrix_offline_notes', '[]');
+      
+      setPendingCount(0);
+      loadData();
+    } catch (e) {
+      console.error('Erreur lors de la synchronisation', e);
+    }
+  }
+
   async function loadData() {
     setLoading(true);
     try {
+      if (!navigator.onLine) throw new Error('Offline');
+
       const { data: classe } = await supabase
         .from('classes')
         .select('*, niveaux(*), series(*)')
@@ -85,12 +139,13 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
         !c.serie_id || c.serie_id === classe?.serie_id
       ) || [];
 
-      setMatieres(filteredCoefs.map((c: any) => ({
+      const fetchedMatieres = filteredCoefs.map((c: any) => ({
         id: c.matieres.id,
         nom: c.matieres.nom,
         coefficient: parseFloat(c.coefficient),
         is_obligatoire: c.is_obligatoire
-      })));
+      }));
+      setMatieres(fetchedMatieres);
 
       const { data: listEleves } = await supabase
         .from('eleves')
@@ -106,12 +161,46 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
         .eq('trimestre', trimestre);
       setEvaluations(listEvals || []);
 
+      let fetchedNotes: any[] = [];
       if (listEvals?.length) {
         const { data: listNotes } = await supabase
           .from('notes')
           .select('*')
           .in('evaluation_id', listEvals.map((e: any) => e.id));
-        setNotes(listNotes || []);
+        fetchedNotes = listNotes || [];
+        setNotes(fetchedNotes);
+      } else {
+        setNotes([]);
+      }
+
+      // Save to cache
+      const cacheData = {
+        niveau: classe?.niveaux, serie: classe?.series,
+        matieres: fetchedMatieres, eleves: listEleves || [],
+        evaluations: listEvals || [], notes: fetchedNotes
+      };
+      localStorage.setItem(`edumatrix_offline_grades_${classeId}`, JSON.stringify(cacheData));
+
+    } catch (e) {
+      console.log('Passage en mode hors-ligne pour les notes', e);
+      const cached = localStorage.getItem(`edumatrix_offline_grades_${classeId}`);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        setNiveau(parsed.niveau); setSerie(parsed.serie);
+        setMatieres(parsed.matieres); setEleves(parsed.eleves);
+        
+        // Combine online evals with offline queued evals
+        const offlineEvals = JSON.parse(localStorage.getItem('edumatrix_offline_evals') || '[]');
+        const combinedEvals = [...parsed.evaluations, ...offlineEvals.filter((ev: any) => ev.classe_id === classeId && ev.trimestre === trimestre)];
+        setEvaluations(combinedEvals);
+
+        // Combine online notes with offline
+        const offlineNotes = JSON.parse(localStorage.getItem('edumatrix_offline_notes') || '[]');
+        let mergedNotes = [...parsed.notes];
+        offlineNotes.forEach((onote: any) => {
+          mergedNotes = mergedNotes.filter((mn: any) => !(mn.eleve_id === onote.eleve_id && mn.evaluation_id === onote.evaluation_id));
+        });
+        setNotes([...mergedNotes, ...offlineNotes]);
       }
     } finally {
       setLoading(false);
@@ -121,31 +210,39 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
   const handleCreateEval = async () => {
     if (!selectedMatiereId || !ecoleId) return;
     setSaving(true);
+    
+    const evalData = {
+      id: crypto.randomUUID(), // Temporarily local or final UUID
+      ecole_id: ecoleId,
+      classe_id: classeId,
+      matiere_id: selectedMatiereId,
+      trimestre,
+      type: newEval.type,
+      libelle: newEval.libelle,
+      date: newEval.date,
+      coef: 1,
+      bareme: newEval.bareme
+    };
+
     try {
-      const { data, error } = await supabase
-        .from('evaluations')
-        .insert({
-          ecole_id: ecoleId,
-          classe_id: classeId,
-          matiere_id: selectedMatiereId,
-          trimestre,
-          type: newEval.type,
-          libelle: newEval.libelle,
-          date: newEval.date,
-          coef: 1,
-          bareme: newEval.bareme
-        })
-        .select()
-        .single();
-
-
-      if (!error && data) {
+      if (!navigator.onLine) throw new Error('Offline');
+      const { data, error } = await supabase.from('evaluations').insert(evalData).select().single();
+      if (error) throw error;
+      if (data) {
         setEvaluations(prev => [...prev, data]);
-        setShowNewEvalModal(false);
-        setNewEval({ type: 'controle', date: new Date().toISOString().split('T')[0], coef: 1, bareme: 20, libelle: '' });
       }
+    } catch (e) {
+      // Hors-ligne ou erreur, on met en file d'attente
+      const offlineEvals = JSON.parse(localStorage.getItem('edumatrix_offline_evals') || '[]');
+      offlineEvals.push(evalData);
+      localStorage.setItem('edumatrix_offline_evals', JSON.stringify(offlineEvals));
+      
+      setEvaluations(prev => [...prev, evalData as Evaluation]);
+      setPendingCount(prev => prev + 1);
     } finally {
       setSaving(false);
+      setShowNewEvalModal(false);
+      setNewEval({ type: 'controle', date: new Date().toISOString().split('T')[0], coef: 1, bareme: 20, libelle: '' });
     }
   };
 
@@ -162,19 +259,36 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
     const num = parseFloat(val.replace(',', '.'));
     if (isNaN(num)) return;
 
-    // Optimistic update
-    const newNote = { id: Math.random().toString(), eleve_id: eleveId, evaluation_id: evalId, note: num };
-    setNotes(prev => {
-      const filtered = prev.filter(n => !(n.eleve_id === eleveId && n.evaluation_id === evalId));
-      return [...filtered, newNote as Note];
-    });
-
-    await supabase.from('notes').upsert({
-      eleve_id: eleveId,
-      evaluation_id: evalId,
+    const noteData = { 
+      id: crypto.randomUUID(), 
+      eleve_id: eleveId, 
+      evaluation_id: evalId, 
       note: num,
       professeur_id: profile?.id
-    }, { onConflict: 'eleve_id,evaluation_id' });
+    };
+
+    // Optimistic update
+    setNotes(prev => {
+      const filtered = prev.filter(n => !(n.eleve_id === eleveId && n.evaluation_id === evalId));
+      return [...filtered, noteData as Note];
+    });
+
+    try {
+      if (!navigator.onLine) throw new Error('Offline');
+      const { error } = await supabase.from('notes').upsert({
+        eleve_id: eleveId,
+        evaluation_id: evalId,
+        note: num,
+        professeur_id: profile?.id
+      }, { onConflict: 'eleve_id,evaluation_id' });
+      if (error) throw error;
+    } catch (e) {
+      const offlineNotes = JSON.parse(localStorage.getItem('edumatrix_offline_notes') || '[]');
+      const filtered = offlineNotes.filter((n: any) => !(n.eleve_id === eleveId && n.evaluation_id === evalId));
+      filtered.push(noteData);
+      localStorage.setItem('edumatrix_offline_notes', JSON.stringify(filtered));
+      setPendingCount(prev => prev + 1);
+    }
   };
 
   const getNote = (eleveId: string, evalId: string) => {
@@ -186,14 +300,20 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
   if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-emerald-600" /></div>
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-black text-slate-900 tracking-tight">Espace Notes</h2>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
             {niveau?.nom} • Trimestre {trimestre}
           </p>
         </div>
+        {pendingCount > 0 && (
+          <button onClick={syncOfflineQueue} disabled={!isOnline} className="flex flex-col items-center bg-indigo-50 border border-indigo-100 text-indigo-700 px-3 py-1.5 rounded-xl shadow-sm hover:bg-indigo-100 transition-colors">
+            <span className="text-[10px] uppercase font-black tracking-widest leading-none">Synchro. en attente</span>
+            <span className="text-xl font-black mt-1">{pendingCount}</span>
+          </button>
+        )}
       </div>
 
       {matieres.map(matiere => (

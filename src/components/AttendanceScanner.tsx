@@ -249,12 +249,17 @@ export default function AttendanceScanner({ classeId }: { classeId: string }) {
   }
 
   async function loadTodayCount() {
-    const today = new Date().toISOString().split('T')[0]
-    const { count } = await supabase
-      .from('presences')
-      .select('id', { count: 'exact', head: true })
-      .eq('date', today)
-    setTodayCount(count ?? 0)
+    if (!navigator.onLine) return;
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      const { count } = await supabase
+        .from('presences')
+        .select('id', { count: 'exact', head: true })
+        .eq('date', today)
+      setTodayCount(count ?? 0)
+    } catch (e) {
+      console.log('loadTodayCount offline', e)
+    }
   }
 
   async function handleScan(studentId: string) {
@@ -263,9 +268,28 @@ export default function AttendanceScanner({ classeId }: { classeId: string }) {
 
     // Offline: stocker localement puis afficher un message
     if (!isOnline) {
+      let realStudentId = trimmed;
+      let studentName = undefined;
+      let matricule = undefined;
+      let statutPaiement = undefined;
+
+      try {
+        const cached = localStorage.getItem(`edumatrix_offline_grades_${classeId}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          const eleve = parsed.eleves?.find((e: any) => e.id === trimmed || e.matricule === trimmed);
+          if (eleve) {
+            realStudentId = eleve.id;
+            studentName = `${eleve.prenom} ${eleve.nom}`;
+            matricule = eleve.matricule;
+            statutPaiement = eleve.statut_paiement;
+          }
+        }
+      } catch (e) {}
+
       const queue = loadOfflineQueue()
       const ev: OfflineAttendanceEvent = {
-        eleve_id: trimmed,
+        eleve_id: realStudentId,
         classe_id: classeId,
         created_at: new Date().toISOString(),
       }
@@ -275,7 +299,10 @@ export default function AttendanceScanner({ classeId }: { classeId: string }) {
       setTodayCount((c) => c + 1)
       setResult({
         status: 'success',
-        message: 'Présence enregistrée hors ligne. Elle sera synchronisée dès que la connexion reviendra.',
+        message: 'Présence enregistrée hors ligne (en attente de synchronisation).',
+        studentName,
+        matricule,
+        statutPaiement
       })
       setManualId('')
       return

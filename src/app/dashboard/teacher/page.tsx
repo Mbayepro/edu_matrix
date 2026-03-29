@@ -31,36 +31,58 @@ export default function TeacherDashboard() {
   const [activeTab, setActiveTab]   = useState<ActiveTab>('apercu')
   const [selectedClasse, setSelectedClasse] = useState<string>('')
   const [trimestre, setTrimestre] = useState<number>(1)
+  const [isOnline, setIsOnline]     = useState(true)
 
-  useEffect(() => { loadAll() }, [])
+  useEffect(() => { 
+    setIsOnline(navigator.onLine)
+    const handleOnline = () => setIsOnline(true)
+    const handleOffline = () => setIsOnline(false)
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    
+    loadAll() 
+
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
 
   async function loadAll() {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { window.location.href = '/login'; return }
+      if (!navigator.onLine) throw new Error('Offline mode')
 
-      const { data: prof } = await supabase
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError || !user) throw new Error('Auth required')
+
+      const { data: prof, error: profError } = await supabase
         .from('profiles').select('*').eq('user_id', user.id).single()
-      if (!prof) return
+      if (profError || !prof) throw new Error('Profile not found')
       setProfile(prof)
 
       // ── Restriction : ne charger que les classes assignées à cet enseignant ──
-      const { data: assignations } = await supabase
+      const { data: assignations, error: assigError } = await supabase
         .from('enseignants_classes')
         .select('classe_id')
         .eq('enseignant_id', prof.id)
 
-      // Si aucune assignation → tableau vide (pas toutes les classes de l'école)
-      if (!assignations?.length) { setLoading(false); return }
+      if (assigError) throw new Error('Assignations failed')
+      if (!assignations?.length) { 
+        setLoading(false); 
+        localStorage.setItem('edumatrix_teacher_stats', JSON.stringify([]))
+        localStorage.setItem('edumatrix_teacher_profile', JSON.stringify(prof))
+        return 
+      }
 
       const classeIds = assignations.map((a: any) => a.classe_id)
 
-      const { data: classes } = await supabase
+      const { data: classes, error: classesError } = await supabase
         .from('classes')
         .select('*')
         .in('id', classeIds)
         .order('nom_classe')
-      if (!classes?.length) { setLoading(false); return }
+      
+      if (classesError || !classes?.length) throw new Error('Classes failed')
 
       const today = new Date().toISOString().split('T')[0]
 
@@ -79,6 +101,23 @@ export default function TeacherDashboard() {
 
       setStats(classStats)
       if (classStats.length > 0) setSelectedClasse(classStats[0].classe.id)
+      
+      // Save to cache
+      localStorage.setItem('edumatrix_teacher_stats', JSON.stringify(classStats))
+      localStorage.setItem('edumatrix_teacher_profile', JSON.stringify(prof))
+    } catch (e) {
+      console.log("Erreur réseau ou chargement, passage en mode cache local", e)
+      const cachedStats = localStorage.getItem('edumatrix_teacher_stats')
+      const cachedProfile = localStorage.getItem('edumatrix_teacher_profile')
+      
+      if (cachedStats) {
+        const parsedStats = JSON.parse(cachedStats)
+        setStats(parsedStats)
+        if (parsedStats.length > 0) setSelectedClasse(parsedStats[0].classe.id)
+      }
+      if (cachedProfile) {
+        setProfile(JSON.parse(cachedProfile))
+      }
     } finally {
       setLoading(false)
     }
@@ -101,6 +140,14 @@ export default function TeacherDashboard() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-5">
+
+      {/* Offline Banner */}
+      {!isOnline && (
+        <div className="bg-amber-500 text-white px-4 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-3 shadow-lg animate-in slide-in-from-top-4">
+          <span className="text-xl">📶</span> 
+          <span>Mode Hors-Ligne Actif - Modifications sauvegardées localement</span>
+        </div>
+      )}
 
       {/* Welcome Mobile-Optimized */}
       <div className="bg-gradient-to-br from-emerald-900 via-teal-900 to-blue-900 rounded-[2rem] p-6 text-white relative overflow-hidden shadow-xl">
