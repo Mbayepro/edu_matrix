@@ -15,13 +15,15 @@ CREATE TABLE IF NOT EXISTS public.ecoles (
   logo_url      TEXT,
   tampon_url    TEXT,
   signature_url TEXT,
+  calculation_method TEXT NOT NULL DEFAULT 'BLOCKS' CHECK (calculation_method IN ('BLOCKS', 'WEIGHTED')),
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- For existing deployments, make schema.sql idempotent with new columns
 ALTER TABLE public.ecoles
   ADD COLUMN IF NOT EXISTS tampon_url    TEXT,
-  ADD COLUMN IF NOT EXISTS signature_url TEXT;
+  ADD COLUMN IF NOT EXISTS signature_url TEXT,
+  ADD COLUMN IF NOT EXISTS calculation_method TEXT NOT NULL DEFAULT 'BLOCKS';
 
 -- ─────────────────────────────────────────
 -- TABLE: profiles

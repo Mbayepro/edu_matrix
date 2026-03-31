@@ -14,6 +14,8 @@ import {
   DollarSign,
   Upload,
   Users,
+  Settings2,
+  GraduationCap
 } from 'lucide-react'
 import { useProfile } from '@/hooks/useProfile'
 import { useToast } from '@/contexts/ToastContext'
@@ -36,6 +38,7 @@ export default function SchoolSettingsPage() {
     logo_url: '',
     tampon_url: '',
     signature_url: '',
+    calculation_method: 'BLOCKS',
   })
 
   useEffect(() => {
@@ -65,6 +68,7 @@ export default function SchoolSettingsPage() {
           logo_url: ec.logo_url ?? '',
           tampon_url: ec.tampon_url ?? '',
           signature_url: ec.signature_url ?? '',
+          calculation_method: ec.calculation_method ?? 'BLOCKS',
         })
       }
     } catch (err) {
@@ -89,6 +93,7 @@ export default function SchoolSettingsPage() {
           logo_url: form.logo_url || null,
           tampon_url: form.tampon_url || null,
           signature_url: form.signature_url || null,
+          calculation_method: form.calculation_method,
         })
         .eq('id', ecole.id)
 
@@ -190,6 +195,7 @@ export default function SchoolSettingsPage() {
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
+        {/* Informations Générales */}
         <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-8 space-y-8">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
@@ -236,6 +242,43 @@ export default function SchoolSettingsPage() {
                 onChange={(e) => setForm((f) => ({ ...f, adresse: e.target.value }))}
                 className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all shadow-sm"
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Paramètres Pédagogiques */}
+        <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-8 space-y-8">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
+              <GraduationCap className="w-5 h-5 text-purple-600" />
+            </div>
+            <h2 className="text-base font-black uppercase tracking-widest text-slate-900">Paramètres Pédagogiques</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-3">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Méthode de calcul des moyennes</label>
+              <select
+                value={form.calculation_method}
+                onChange={(e) => setForm((f) => ({ ...f, calculation_method: e.target.value }))}
+                className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-purple-500/10 focus:bg-white transition-all shadow-sm appearance-none cursor-pointer"
+              >
+                <option value="BLOCKS">Méthode par BLOCKS (Par défaut)</option>
+                <option value="WEIGHTED">Méthode PONDÉRÉE (Composition compte double)</option>
+              </select>
+              <div className="p-4 bg-purple-50 rounded-2xl border border-purple-100">
+                <p className="text-[11px] text-purple-700 font-bold leading-relaxed">
+                  💡 La méthode de calcul des moyennes est définie par l’établissement dans les paramètres pédagogiques.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center p-6 bg-slate-50 rounded-[1.5rem] border border-dashed border-slate-200">
+              <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                <span className="font-bold text-slate-700 block mb-1">Impact sur les bulletins :</span>
+                Le changement de méthode recalculera automatiquement toutes les moyennes des bulletins générés. 
+                Assurez-vous de valider ce choix avec votre équipe pédagogique.
+              </p>
             </div>
           </div>
         </div>

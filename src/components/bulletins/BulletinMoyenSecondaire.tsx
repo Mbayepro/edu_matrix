@@ -12,6 +12,8 @@ export interface MatiereDetails {
   note_examen?: number;        // Pour compatibilité lib
   est_bonus?: boolean;
   domaine?: string;
+  total_points?: number;
+  points_bonus?: number;
 }
 
 export interface BulletinData {
@@ -47,39 +49,21 @@ export interface BulletinData {
 
 export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }) {
   // Calculs stricts Sénégalais: Total(moyen * coef), sommes..  // Calculs Renaissance School: Moyenne Simple (Somme / Nombre)
-  const matieresCalculated = data.matieres.map((m) => {
-    const mcc = m.mcc != null ? Number(m.mcc) : (m.moyenne_controles != null ? Number(m.moyenne_controles) : null);
-    const compo = m.composition_note != null ? Number(m.composition_note) : (m.note_examen != null ? Number(m.note_examen) : null);
-    
-    // Logique de moyenne simple : (Somme des notes présentes) / (Nombre de notes présentes)
-    let moyenne = Number(m.moyenne);
-    if (!moyenne) {
-      const notes = [];
-      if (mcc !== null) notes.push(mcc);
-      if (compo !== null) notes.push(compo);
-      if (notes.length > 0) {
-        moyenne = notes.reduce((a, b) => a + b, 0) / notes.length;
-      }
-    }
-    
-    const isBonus = m.est_bonus === true;
-    let total = 0;
-    
-    if (isBonus) {
-      if (moyenne > 10) {
-        total = (moyenne - 10) * m.coefficient;
-      }
-    } else {
-      // Calcul du total strict avant arrondi
-      total = moyenne * m.coefficient;
-    }
+  const matieresCalculated = data.matieres.map((m: any) => {
+    const mcc = m.moyenne_controles ?? null;
+    const compo = m.note_examen ?? null;
+    const moyenne = m.moyenne;
+    const isBonus = m.is_bonus === true;
+    const total = m.total_points ?? (moyenne * m.coefficient);
 
     return {
       ...m,
       mccDisplay: mcc != null ? mcc.toFixed(2) : '-',
       compoDisplay: compo != null ? compo.toFixed(2) : '-',
       moyenneDisplay: moyenne ? moyenne.toFixed(2) : '-',
-      totalDisplay: total > 0 ? total.toFixed(2) : (isBonus ? '-' : '0.00'),
+      totalDisplay: (isBonus && m.points_bonus !== undefined) 
+        ? m.points_bonus.toFixed(2) 
+        : (isBonus ? '-' : total.toFixed(2)),
       isBonus,
       total,
       moyenneNum: moyenne
@@ -258,9 +242,14 @@ export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }
         </div>
       </div>
       
-      {/* Footer Text */}
-      <div className="absolute bottom-4 left-0 right-0 text-center text-xs text-slate-500 z-10">
-        Généré le {new Date().toLocaleDateString('fr-FR')} par EduMatrix - Bulletin Scolaire Officiel
+      {/* Footer Text & Transparency Message */}
+      <div className="absolute bottom-4 left-0 right-0 text-center space-y-1 z-10">
+        <p className="text-[10px] font-bold text-slate-800 uppercase tracking-tight">
+          💡 La méthode de calcul des moyennes est définie par l’établissement dans les paramètres pédagogiques.
+        </p>
+        <p className="text-[9px] text-slate-500 italic">
+          Généré le {new Date().toLocaleDateString('fr-FR')} par EduMatrix - Bulletin Scolaire Officiel • Système de calcul standardisé (Sénégal)
+        </p>
       </div>
     </div>
   );

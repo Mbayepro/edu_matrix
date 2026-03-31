@@ -4,16 +4,14 @@ import { BulletinData } from './BulletinMoyenSecondaire'; // À refactoriser ave
 export default function BulletinPrimaire({ data }: { data: BulletinData }) {
   // 1. Adaptation sur 10.
   // Au primaire (Sénégal), les notes sont sur 10.
-  const matieresAvecDomaines = data.matieres.map(m => {
-    // La moyenne arrive déjà sur 10 depuis le CalculateurMoyennes
+  const matieresAvecDomaines = data.matieres.map((m: any) => {
     const moyenneSur10 = Number(m.moyenne);
-    const observation = moyenneSur10 >= 7 ? 'Acquis (A)' : 
+    const observation = m.appreciation || (moyenneSur10 >= 7 ? 'Acquis (A)' : 
                         moyenneSur10 >= 4.5 ? 'En cours d\'acquisition (ECA)' :
-                        'Non Acquis (NA)';
+                        'Non Acquis (NA)');
 
     return {
       ...m,
-      // Fallback sémantique juste pour les anciennes matières non migrées
       domaine: m.domaine || 'Activités Diverses',
       moyenneSur10,
       observation
@@ -34,7 +32,7 @@ export default function BulletinPrimaire({ data }: { data: BulletinData }) {
   }, {} as Record<string, any>);
 
   // Calculs par domaines
-  Object.values(domaines).forEach(d => {
+  Object.values(domaines).forEach((d: any) => {
     const sumMoyennes = d.activites.reduce((sum: number, act: any) => sum + act.moyenneSur10, 0);
     const moyenneDomaine = sumMoyennes / d.activites.length;
     d.moyenne = moyenneDomaine;
@@ -203,9 +201,14 @@ export default function BulletinPrimaire({ data }: { data: BulletinData }) {
         </div>
       </div>
       
-      {/* Footer Text */}
-      <div className="absolute bottom-4 left-0 right-0 text-center text-xs text-slate-500 z-10 print:text-slate-400">
-        Conforme au Cadre d'Orientation du Curriculum (Sénégal) • Généré par EduMatrix
+      {/* Footer Text & Transparency Message */}
+      <div className="absolute bottom-4 left-0 right-0 text-center space-y-1 z-10 print:text-slate-400">
+        <p className="text-[10px] font-bold text-slate-800 uppercase tracking-tight">
+          💡 La méthode de calcul des moyennes est définie par l’établissement dans les paramètres pédagogiques.
+        </p>
+        <p className="text-[9px] text-slate-500 italic">
+          Conforme au Cadre d'Orientation du Curriculum (Sénégal) • Généré par EduMatrix • Système de calcul standardisé
+        </p>
       </div>
     </div>
   );

@@ -19,6 +19,7 @@ export interface Ecole {
   logo_url: string | null
   tampon_url: string | null
   signature_url: string | null
+  calculation_method?: 'BLOCKS' | 'WEIGHTED'
   statut: StatutEcole
   created_at: string
 }

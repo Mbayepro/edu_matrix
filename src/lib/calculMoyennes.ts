@@ -5,13 +5,14 @@ export interface MoyenneMatiere {
   matiere_id: string
   matiere_nom: string
   coefficient: number
-  moyenne: number // Moyenne générale de la matière sur 20
+  moyenne: number // Note brute sur le barème (10 ou 20)
+  total_points: number // moyenne * coefficient (NON ARRONDI pour le calcul MG)
   bareme: number
   appreciation?: string
   nombre_evaluations: number
   is_bonus?: boolean
   points_bonus?: number
-  moyenne_controles?: number // Moyenne des devoirs
+  moyenne_controles?: number // Moyenne des devoirs (CC)
   note_examen?: number        // Note de la composition
   devoir1?: number
   devoir2?: number
@@ -104,22 +105,61 @@ export class CalculateurMoyennes {
   }
 
   /**
+   * MÉTHODE PURE DE CALCUL (Sénégal)
+   * Centralise les formules BLOCKS et WEIGHTED avec gestion des cycles.
+   */
+  static calculerMoyenneMatiereBase(
+    notesCC: number[], // Notes déjà normalisées sur 20
+    noteComp: number | null, // Note déjà normalisée sur 20
+    methode: 'BLOCKS' | 'WEIGHTED',
+    isPrimaire: boolean
+  ): { moyenne: number; moyenne_controles: number } {
+    let moyCC20 = 0
+    if (notesCC.length > 0) {
+      moyCC20 = notesCC.reduce((acc: number, n: number) => acc + n, 0) / notesCC.length
+    }
+
+    const comp20 = noteComp ?? 0
+    let moyenneBrute20 = 0
+
+    if (methode === 'WEIGHTED') {
+      const sumCC20 = notesCC.reduce((acc: number, n: number) => acc + n, 0)
+      moyenneBrute20 = (sumCC20 + (comp20 * 2)) / (notesCC.length + (noteComp !== null ? 2 : 0))
+    } else {
+      moyenneBrute20 = (moyCC20 + comp20) / 2
+    }
+
+    const scaleFactor = isPrimaire ? 2 : 1
+    return {
+      moyenne: moyenneBrute20 / scaleFactor,
+      moyenne_controles: moyCC20 / scaleFactor
+    }
+  }
+
+  /**
    * GÉNÉRATION OPTIMISÉE POUR UNE CLASSE ENTIÈRE
-   * Réduit les appels DB de 600 à environ 4 requêtes globales.
+   * Réduit les appels DB et centralise le calcul selon les normes sénégalaises.
    */
   static async genererBulletinsClasse(
     classe_id: string,
     trimestre: number,
-    annee_scolaire: string = '2025-2026'
+    annee_scolaire: string = '2024-2025'
   ): Promise<BulletinData[]> {
-    // 1. Charger tout le nécessaire en parallèle
+    // 1. Déterminer l'école pour charger ses paramètres
+    const { data: classeRaw } = await supabase.from('classes').select('ecole_id').eq('id', classe_id).single()
+    if (!classeRaw) throw new Error("Classe introuvable.")
+    const ecoleId = classeRaw.ecole_id
+
+    // 2. Charger tout le nécessaire en parallèle
     const [
       { data: classeData, error: clErr },
+      { data: ecoleData, error: ecErr },
       { data: eleves, error: elErr },
       { data: allNotes, error: ntErr },
       { data: allPresences, error: prErr }
     ] = await Promise.all([
       supabase.from('classes').select('*, serie:series(*)').eq('id', classe_id).single(),
+      supabase.from('ecoles').select('*').eq('id', ecoleId).single(),
       supabase.from('eleves').select('*, classe:classes(*)').eq('classe_id', classe_id).order('nom, prenom'),
       supabase.from('notes')
         .select('*, evaluation:evaluations!inner(*)')
@@ -131,124 +171,110 @@ export class CalculateurMoyennes {
         .eq('classe_id', classe_id)
     ])
 
-    if (clErr || elErr || ntErr || prErr) throw new Error("Erreur lors de la récupération groupée des données.")
+    if (clErr || ecErr || elErr || ntErr || prErr) throw new Error("Erreur lors de la récupération groupée des données.")
     if (!eleves || eleves.length === 0) return []
 
     const classe = classeData as any
     const serie = classe.serie
+    const ecole = ecoleData as any
+    const calculationMethod = ecole.calculation_method || 'BLOCKS' // 'BLOCKS' | 'WEIGHTED'
 
-    // 2. Charger le niveau avec plus de souplesse
+    // 3. Charger le niveau avec plus de souplesse
     let { data: niveau } = await supabase
       .from('niveaux')
       .select('*')
       .ilike('code', classe.niveau)
-      .eq('ecole_id', classe.ecole_id)
+      .eq('ecole_id', ecoleId)
       .maybeSingle()
     
-    // Fallback: Si pas trouvé par code exact, on crée un objet niveau par défaut basé sur le cycle estimé
     if (!niveau) {
-      console.warn(`Niveau ${classe.niveau} introuvable pour l'école ${classe.ecole_id}. Utilisation d'un profil par défaut.`)
+      console.warn(`Niveau ${classe.niveau} introuvable pour l'école ${ecoleId}.`)
       niveau = {
         code: classe.niveau,
         nom: classe.niveau,
         cycle: (classe.niveau.includes('CM') || classe.niveau.includes('CE') || classe.niveau.includes('CP') || classe.niveau.includes('CI')) ? 'primaire' : 'moyen',
-        ecole_id: classe.ecole_id
+        ecole_id: ecoleId
       } as any
     }
 
-    // 2. Charger les coefficients une seule fois
-    const coefficients = await this.getCoefficientsMatieres(classe.ecole_id, classe.niveau, serie?.id)
+    const isPrimaire = (niveau.cycle === 'primaire' || niveau.cycle === 'elementaire')
+    const baremeMatiere = isPrimaire ? 10 : 20
 
-    // 3. Calculer les bulletins élève par élève
+    // 4. Charger les coefficients une seule fois
+    const coefficients = await this.getCoefficientsMatieres(ecoleId, classe.niveau, serie?.id)
+
+    // 5. Calculer les bulletins élève par élève
     const bulletins: BulletinData[] = eleves.map((eleve: any) => {
       const studentNotes = (allNotes || []).filter((n: any) => n.eleve_id === eleve.id)
       
-      let totalPoints = 0
-      let totalCoefficients = 0
+      let totalPointsEleve = 0
+      let totalCoefficientsEleve = 0
       const matieresCalculated: MoyenneMatiere[] = []
 
       for (const coeff of coefficients) {
         const matiereNotes = studentNotes.filter((n: any) => n.evaluation.matiere_id === coeff.matiere_id)
-        if (matiereNotes.length === 0) {
-          continue 
-        }
+        if (matiereNotes.length === 0) continue 
 
         const isBonus = (coeff.matiere as any)?.est_bonus || false
-        const cycle = niveau.cycle
-
-        // --- CALCUL RENAISSANCE (Moyenne Simple) ---
-        // (Somme des notes) / (Nombre de notes)
+        
+        // --- NORMALISATION DES NOTES SUR 20 ---
         const normaliser = (n: any) => (Number(n.note) / Number(n.evaluation.bareme || 20)) * 20
         const notesCC = matiereNotes.filter((n: any) => n.evaluation.type !== 'composition')
         const noteComp = matiereNotes.find((n: any) => n.evaluation.type === 'composition')
+        
+        const resMatiere = this.calculerMoyenneMatiereBase(
+          notesCC.map((n: any) => normaliser(n)),
+          noteComp ? normaliser(noteComp) : null,
+          calculationMethod,
+          isPrimaire
+        )
 
-        // --- EXTRACTION INDIVIDUELLE DES DEVOIRS ---
+        const finalMoyenneMatiere = resMatiere.moyenne
+        const finalMoyCC = resMatiere.moyenne_controles
+        const finalComp = noteComp ? (normaliser(noteComp) / (isPrimaire ? 2 : 1)) : undefined
+        
+        const totalPointsMatiere = finalMoyenneMatiere * Number(coeff.coefficient)
+
         const devoirsSorted = [...notesCC].sort((a: any, b: any) => 
           new Date(a.evaluation.date).getTime() - new Date(b.evaluation.date).getTime()
         )
 
-        let moyenneMatiereRaw = 0
-        let mccRaw = 0
-        let compRaw = noteComp ? normaliser(noteComp) : null
-
-        // Moyenne simplifiée exigée : somme / count
-        const sumAll = matiereNotes.reduce((acc: number, n: any) => acc + normaliser(n), 0)
-        moyenneMatiereRaw = sumAll / matiereNotes.length
-
-        if (notesCC.length > 0) {
-          const sumCC = notesCC.reduce((acc: number, n: any) => acc + normaliser(n), 0)
-          mccRaw = sumCC / notesCC.length
-        }
-
-        const isPrimaire = (cycle === 'primaire' || cycle === 'elementaire')
-        
-        // Adaptation base 10/20
-        const scale = isPrimaire ? 10 : 20
-        const finalMoyenne = isPrimaire ? (moyenneMatiereRaw / 2) : moyenneMatiereRaw
-        const finalMCC = isPrimaire ? (mccRaw / 2) : mccRaw
-        const finalComp = compRaw !== null ? (isPrimaire ? compRaw / 2 : compRaw) : null
-
-        const appPath = this.genererAppreciation(isPrimaire ? finalMoyenne * 2 : finalMoyenne)
-        
         const matiereResult: MoyenneMatiere = {
           matiere_id: coeff.matiere_id,
           matiere_nom: coeff.matiere!.nom,
           coefficient: Number(coeff.coefficient),
-          moyenne: finalMoyenne, // Stocké selon la base du cycle
-          bareme: scale,
-          appreciation: appPath,
+          moyenne: finalMoyenneMatiere,
+          total_points: totalPointsMatiere,
+          bareme: baremeMatiere,
+          appreciation: this.genererAppreciation(isPrimaire ? finalMoyenneMatiere * 2 : finalMoyenneMatiere),
           nombre_evaluations: matiereNotes.length,
           is_bonus: isBonus,
-          moyenne_controles: finalMCC,
-          note_examen: finalComp !== null ? finalComp : undefined,
-          devoir1: devoirsSorted[0] ? (isPrimaire ? normaliser(devoirsSorted[0])/2 : normaliser(devoirsSorted[0])) : undefined,
-          devoir2: devoirsSorted[1] ? (isPrimaire ? normaliser(devoirsSorted[1])/2 : normaliser(devoirsSorted[1])) : undefined,
-          devoir3: devoirsSorted[2] ? (isPrimaire ? normaliser(devoirsSorted[2])/2 : normaliser(devoirsSorted[2])) : undefined,
+          moyenne_controles: finalMoyCC,
+          note_examen: finalComp,
+          devoir1: devoirsSorted[0] ? (normaliser(devoirsSorted[0]) / (isPrimaire ? 2 : 1)) : undefined,
+          devoir2: devoirsSorted[1] ? (normaliser(devoirsSorted[1]) / (isPrimaire ? 2 : 1)) : undefined,
+          devoir3: devoirsSorted[2] ? (normaliser(devoirsSorted[2]) / (isPrimaire ? 2 : 1)) : undefined,
         }
 
         if (isBonus) {
-          // Bonus : points au-dessus de la moyenne (5/10 ou 10/20)
           const pivot = isPrimaire ? 5 : 10
-          matiereResult.points_bonus = Math.max(0, finalMoyenne - pivot) * Number(coeff.coefficient)
-          totalPoints += matiereResult.points_bonus
+          matiereResult.points_bonus = Math.max(0, finalMoyenneMatiere - pivot) * Number(coeff.coefficient)
+          totalPointsEleve += matiereResult.points_bonus
         } else {
-          totalPoints += finalMoyenne * Number(coeff.coefficient)
-          totalCoefficients += Number(coeff.coefficient)
+          totalPointsEleve += totalPointsMatiere
+          totalCoefficientsEleve += Number(coeff.coefficient)
         }
 
         matieresCalculated.push(matiereResult)
       }
 
-      const mg = totalCoefficients > 0 ? totalPoints / totalCoefficients : 0
+      const mg = totalCoefficientsEleve > 0 ? totalPointsEleve / totalCoefficientsEleve : 0
 
       // Calculer l'assiduité par trimestre
       const studentPresences = (allPresences || []).filter((p: any) => {
         if (p.eleve_id !== eleve.id) return false
         const date = new Date(p.date)
-        const month = date.getMonth() + 1 // 1-12
-        // T1: 10, 11, 12
-        // T2: 1, 2, 3
-        // T3: 4, 5, 6 (ou reste)
+        const month = date.getMonth() + 1
         if (trimestre === 1) return month >= 10 || month <= 12
         if (trimestre === 2) return month >= 1 && month <= 3
         if (trimestre === 3) return month >= 4 && month <= 7
@@ -264,13 +290,13 @@ export class CalculateurMoyennes {
         trimestre,
         annee_scolaire,
         matieres: matieresCalculated,
-        moyenne_generale: Math.round(mg * 100) / 100,
-        mention: this.determinerMention(mg, niveau.cycle),
+        moyenne_generale: Math.round(mg * 100) / 100, // Arrondi uniquement à la toute fin
+        mention: this.determinerMention(isPrimaire ? mg * 2 : mg, niveau.cycle),
         attendance: { absences, retards }
       }
     })
 
-    // 4. Calculer les rangs sur l'ensemble des bulletins
+    // 6. Calculer les rangs sur l'ensemble des bulletins
     return this.calculerRangs(bulletins)
   }
 
