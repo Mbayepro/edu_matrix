@@ -113,27 +113,21 @@ export async function flushSyncQueue(): Promise<{ flushed: number; errors: numbe
 
 async function executeAction(action: SyncAction): Promise<void> {
   const { table, action: type, payload } = action
-  
-  // 🛡️ SCHEMA ALIGNMENT: Strip fields that don't exist in Supabase but are used in Dexie
-  let supabasePayload = { ...payload }
-  if (table === 'presences') {
-    delete (supabasePayload as any).ecole_id
-  }
 
   switch (type) {
     case 'INSERT': {
-      const { error } = await (supabase as any).from(table).insert(supabasePayload)
+      const { error } = await (supabase as any).from(table).insert(payload)
       if (error) throw new Error(error.message)
       break
     }
     case 'UPDATE': {
-      const { id, ...fields } = supabasePayload as { id: string; [key: string]: unknown }
+      const { id, ...fields } = payload as { id: string; [key: string]: unknown }
       const { error } = await (supabase as any).from(table).update(fields).eq('id', id)
       if (error) throw new Error(error.message)
       break
     }
     case 'DELETE': {
-      const { id } = supabasePayload as { id: string }
+      const { id } = payload as { id: string }
       const { error } = await (supabase as any).from(table).delete().eq('id', id)
       if (error) throw new Error(error.message)
       break
