@@ -25,7 +25,7 @@ export async function syncFromSupabase(ecoleId: string): Promise<void> {
 
   try {
     // Parallel fetching pour performance maximale
-    const [elevesRes, classesRes, matieresRes, evaluationsRes, notesRes, niveauxRes, seriesRes, presencesRes] = await Promise.all([
+    const [elevesRes, classesRes, matieresRes, evaluationsRes, notesRes, niveauxRes, seriesRes, presencesRes, profilesRes] = await Promise.all([
       supabase.from('eleves').select('*').eq('ecole_id', ecoleId),
       supabase.from('classes').select('*').eq('ecole_id', ecoleId),
       supabase.from('matieres').select('*').eq('ecole_id', ecoleId),
@@ -34,6 +34,7 @@ export async function syncFromSupabase(ecoleId: string): Promise<void> {
       supabase.from('niveaux').select('*').eq('ecole_id', ecoleId),
       supabase.from('series').select('*').eq('ecole_id', ecoleId),
       supabase.from('presences').select('*').eq('ecole_id', ecoleId),
+      supabase.from('profiles').select('*').eq('ecole_id', ecoleId),
     ])
 
     // Bulk upsert dans IndexedDB — séquentiels pour contourner la limite d'args Dexie
@@ -45,6 +46,7 @@ export async function syncFromSupabase(ecoleId: string): Promise<void> {
     if (niveauxRes.data?.length)     await db.niveaux.bulkPut(niveauxRes.data)
     if (seriesRes.data?.length)      await db.series.bulkPut(seriesRes.data)
     if (presencesRes.data?.length)    await db.presences.bulkPut(presencesRes.data)
+    if (profilesRes.data?.length)     await db.profiles.bulkPut(profilesRes.data)
 
     console.info('[EduMatrix Sync] ✅ Pull terminé',
       `(${elevesRes.data?.length ?? 0} élèves, ${notesRes.data?.length ?? 0} notes)`)

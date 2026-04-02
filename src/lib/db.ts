@@ -3,6 +3,7 @@
 // Miroir des tables Supabase essentielles pour le mode hors-ligne
 
 import Dexie, { type Table } from 'dexie'
+import { CalculateurMoyennes, type BulletinData } from './calculMoyennes'
 import type {
   Eleve,
   Classe,
@@ -12,6 +13,7 @@ import type {
   Evaluation,
   Niveau,
   Serie,
+  Profile,
 } from './supabase'
 
 // ─── Types locaux ─────────────────────────────────────────────────────────────
@@ -24,6 +26,7 @@ export interface LocalEvaluation extends Evaluation {}
 export interface LocalPresence extends Presence {}
 export interface LocalNiveau extends Niveau {}
 export interface LocalSerie extends Serie {}
+export interface LocalProfile extends Profile {}
 
 /**
  * Une action en attente de synchronisation vers Supabase.
@@ -51,6 +54,7 @@ export class EduMatrixDB extends Dexie {
   presences!:   Table<LocalPresence,   string>
   niveaux!:     Table<LocalNiveau,     string>
   series!:      Table<LocalSerie,      string>
+  profiles!:    Table<LocalProfile,    string>
   sync_queue!:  Table<SyncAction,      number>
 
   constructor() {
@@ -65,8 +69,57 @@ export class EduMatrixDB extends Dexie {
       presences:   'id, eleve_id, date, classe_id',
       niveaux:     'id, ecole_id',
       series:      'id, ecole_id',
+      profiles:    'id, ecole_id, role',
       sync_queue:  '++id, table, action, createdAt, attempts',
     })
+  }
+
+  // ─── Helpers Métier ────────────────────────────────────────────────────────
+  
+  async getBulletinsCalculés(
+    classeId: string,
+    trimestre: number,
+    anneeScolaire: string = '2025-2026'
+  ): Promise<BulletinData[]> {
+    const classe = await this.classes.get(classeId)
+    if (!classe) throw new Error('Classe introuvable en local.')
+
+    const ecoleId = classe.ecole_id
+    const [eleves, notes, evaluations, presences, coeffs] = await Promise.all([
+      this.eleves.where('classe_id').equals(classeId).toArray(),
+      this.notes.where('ecole_id').equals(ecoleId).toArray(),
+      this.evaluations.where('classe_id').equals(classeId).and(e => e.trimestre === trimestre).toArray(),
+      this.presences.where('classe_id').equals(classeId).toArray(),
+      // For coefficients, we'll try to find them or use defaults
+      this.matieres.where('ecole_id').equals(ecoleId).toArray(),
+    ])
+
+    // Mapper matieres en format "coefficients" attendu par le moteur
+    const coefficients = coeffs.map(m => ({
+      matiere_id: m.id,
+      coefficient: m.coefficient || 1,
+      matiere: m
+    }))
+
+    const isPrimaire = (classe.niveau?.includes('CM') || classe.niveau?.includes('CE') || classe.niveau?.includes('CP') || classe.niveau?.includes('CI'))
+    
+    const bulletins = CalculateurMoyennes.evaluerBulletins(
+      eleves as any,
+      notes as any,
+      evaluations as any,
+      presences as any,
+      coefficients as any,
+      trimestre,
+      anneeScolaire,
+      isPrimaire
+    )
+
+    // Fill missing Niveau/Serie info
+    bulletins.forEach(b => {
+      b.niveau = { cycle: isPrimaire ? 'primaire' : 'moyen', code: classe.niveau } as any
+    })
+
+    return bulletins
   }
 }
 

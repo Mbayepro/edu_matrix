@@ -105,13 +105,14 @@ export class CalculateurMoyennes {
   }
 
   /**
-   * MÉTHODE PURE DE CALCUL (Sénégal)
-   * Centralise les formules BLOCKS et WEIGHTED avec gestion des cycles.
+   * MÉTHODE PURE DE CALCUL (Sénégal - École Actuelle)
+   * Règle : (Moyenne des Devoirs + Composition) / 2
+   * Arrondi : 2 décimales.
    */
   static calculerMoyenneMatiereBase(
     notesCC: number[], // Notes déjà normalisées sur 20
     noteComp: number | null, // Note déjà normalisée sur 20
-    methode: 'BLOCKS' | 'WEIGHTED',
+    methode: 'BLOCKS' | 'WEIGHTED', // Inutilisé ici pour forcer la règle école
     isPrimaire: boolean
   ): { moyenne: number; moyenne_controles: number } {
     let moyCC20 = 0
@@ -122,18 +123,134 @@ export class CalculateurMoyennes {
     const comp20 = noteComp ?? 0
     let moyenneBrute20 = 0
 
-    if (methode === 'WEIGHTED') {
-      const sumCC20 = notesCC.reduce((acc: number, n: number) => acc + n, 0)
-      moyenneBrute20 = (sumCC20 + (comp20 * 2)) / (notesCC.length + (noteComp !== null ? 2 : 0))
+    // Force la règle demandée : (Moyenne CC + Comp) / 2
+    // Sauf si pas de composition du tout, on prend la moyenne des CC
+    if (noteComp === null) {
+      moyenneBrute20 = moyCC20
     } else {
       moyenneBrute20 = (moyCC20 + comp20) / 2
     }
 
     const scaleFactor = isPrimaire ? 2 : 1
+    
+    // Arrondi à 2 décimales dès le calcul par matière
+    const finalMoyenne = Math.round((moyenneBrute20 / scaleFactor) * 100) / 100
+    const finalMoyCC = Math.round((moyCC20 / scaleFactor) * 100) / 100
+
     return {
-      moyenne: moyenneBrute20 / scaleFactor,
-      moyenne_controles: moyCC20 / scaleFactor
+      moyenne: finalMoyenne,
+      moyenne_controles: finalMoyCC
     }
+  }
+
+  /**
+   * Traitement pur des données brutes (Indépendant du réseau)
+   */
+  static evaluerBulletins(
+    eleves: Eleve[],
+    notes: any[],
+    evaluations: any[],
+    presences: any[],
+    coefficients: any[],
+    trimestre: number,
+    annee_scolaire: string,
+    isPrimaire: boolean
+  ): BulletinData[] {
+    const baremeMatiere = isPrimaire ? 10 : 20
+    const evalsMap = new Map(evaluations.map(e => [e.id, e]))
+    
+    const bulletins: BulletinData[] = eleves.map(eleve => {
+      const studentNotes = notes.filter(n => n.eleve_id === eleve.id)
+      
+      let totalPointsEleve = 0
+      let totalCoefficientsEleve = 0
+      const matieresCalculated: MoyenneMatiere[] = []
+
+      for (const coeff of coefficients) {
+        const matiereNotes = studentNotes.filter(n => {
+          const ev = evalsMap.get(n.evaluation_id)
+          return ev?.matiere_id === coeff.matiere_id
+        })
+        if (matiereNotes.length === 0) continue
+
+        const isBonus = (coeff.matiere as any)?.est_bonus || false
+        
+        // Normalisation
+        const normaliser = (n: any) => {
+          const ev = evalsMap.get(n.evaluation_id)
+          return (Number(n.note) / Number(ev.bareme || 20)) * 20
+        }
+        
+        const notesCC = matiereNotes.filter(n => evalsMap.get(n.evaluation_id)?.type !== 'composition')
+        const noteComp = matiereNotes.find(n => evalsMap.get(n.evaluation_id)?.type === 'composition')
+        
+        const resMatiere = this.calculerMoyenneMatiereBase(
+          notesCC.map(n => normaliser(n)),
+          noteComp ? normaliser(noteComp) : null,
+          'BLOCKS',
+          isPrimaire
+        )
+
+        const finalMoyenneMatiere = resMatiere.moyenne
+        const finalMoyCC = resMatiere.moyenne_controles
+        const finalComp = noteComp ? (normaliser(noteComp) / (isPrimaire ? 2 : 1)) : undefined
+        
+        const totalPointsMatiere = Math.round(finalMoyenneMatiere * Number(coeff.coefficient) * 100) / 100
+
+        const devoirsSorted = [...notesCC].sort((a: any, b: any) => {
+           const evA = evalsMap.get(a.evaluation_id)
+           const evB = evalsMap.get(b.evaluation_id)
+           return new Date(evA.date).getTime() - new Date(evB.date).getTime()
+        })
+
+        const matiereResult: MoyenneMatiere = {
+          matiere_id: coeff.matiere_id,
+          matiere_nom: coeff.matiere!.nom,
+          coefficient: Number(coeff.coefficient),
+          moyenne: finalMoyenneMatiere,
+          total_points: totalPointsMatiere,
+          bareme: baremeMatiere,
+          appreciation: this.genererAppreciation(isPrimaire ? finalMoyenneMatiere * 2 : finalMoyenneMatiere),
+          nombre_evaluations: matiereNotes.length,
+          is_bonus: isBonus,
+          moyenne_controles: finalMoyCC,
+          note_examen: finalComp ? Math.round(finalComp * 100) / 100 : undefined,
+          devoir1: devoirsSorted[0] ? Math.round((normaliser(devoirsSorted[0]) / (isPrimaire ? 2 : 1)) * 100) / 100 : undefined,
+          devoir2: devoirsSorted[1] ? Math.round((normaliser(devoirsSorted[1]) / (isPrimaire ? 2 : 1)) * 100) / 100 : undefined,
+          devoir3: devoirsSorted[2] ? Math.round((normaliser(devoirsSorted[2]) / (isPrimaire ? 2 : 1)) * 100) / 100 : undefined,
+        }
+
+        if (isBonus) {
+          const pivot = isPrimaire ? 5 : 10
+          matiereResult.points_bonus = Math.max(0, finalMoyenneMatiere - pivot) * Number(coeff.coefficient)
+          totalPointsEleve += matiereResult.points_bonus
+        } else {
+          totalPointsEleve += totalPointsMatiere
+          totalCoefficientsEleve += Number(coeff.coefficient)
+        }
+
+        matieresCalculated.push(matiereResult)
+      }
+
+      const mg = totalCoefficientsEleve > 0 ? totalPointsEleve / totalCoefficientsEleve : 0
+      const studentPresences = presences.filter(p => p.eleve_id === eleve.id) // Filter by trimestre logic should be here or outside
+      
+      const absences = studentPresences.filter((p: any) => p.statut === 'absent').length
+      const retards = studentPresences.filter((p: any) => p.statut === 'retard').length
+
+      return {
+        eleve,
+        niveau: {} as any, // Will be filled by caller
+        trimestre,
+        annee_scolaire,
+        matieres: matieresCalculated,
+        moyenne_generale: Math.round(mg * 100) / 100,
+        mention: this.determinerMention(isPrimaire ? mg * 2 : mg, isPrimaire ? 'primaire' : 'moyen'),
+        attendance: { absences, retards }
+      }
+    })
+
+    return this.calculerRangs(bulletins)
   }
 
   /**

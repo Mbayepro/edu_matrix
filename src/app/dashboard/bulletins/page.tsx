@@ -16,9 +16,12 @@ import {
   Award,
   Eye,
   AlertCircle,
+  Cloud,
 } from 'lucide-react'
 import { useToast } from '@/contexts/ToastContext'
 import { useTeacherClasses } from '@/hooks/useTeacherClasses'
+import { useNetwork } from '@/hooks/useNetwork'
+import { db } from '@/lib/db'
 
 export default function BulletinsPage() {
   const [ecoleId, setEcoleId] = useState<string | null>(null)
@@ -35,6 +38,8 @@ export default function BulletinsPage() {
   const [generating, setGenerating] = useState<string | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const { showToast } = useToast()
+  
+  const { isOnline } = useNetwork()
 
   // Professeur : uniquement ses classes assignées
   const { classeIds: teacherClasseIds, loading: teacherLoading } = useTeacherClasses(
@@ -67,7 +72,7 @@ export default function BulletinsPage() {
     if (selectedClasse && selectedTrimestre && anneeScolaire) {
       loadBulletins()
     }
-  }, [selectedClasse, selectedTrimestre, anneeScolaire])
+  }, [selectedClasse, selectedTrimestre, anneeScolaire, isOnline])
 
   async function init() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -99,6 +104,14 @@ export default function BulletinsPage() {
 
   async function loadClasses() {
     if (!ecoleId) return
+    
+    // Fallback Dexie si offline ou pour rapidité
+    const localClasses = await db?.classes.where('ecole_id').equals(ecoleId).toArray()
+    if (localClasses?.length) {
+      setClasses(localClasses as any)
+      return
+    }
+
     if (isTeacher) {
       if (teacherClasseIds.length === 0) {
         setClasses([])
@@ -117,10 +130,19 @@ export default function BulletinsPage() {
     setLoadingBulletins(true)
     setErrorMsg(null)
     try {
-      const bulletinsData = await CalculateurMoyennes.genererBulletinsClasse(selectedClasse, selectedTrimestre, anneeScolaire)
-      setBulletins(bulletinsData)
-      if (bulletinsData.length > 0 && bulletinsData.filter(b => b.matieres.length > 0).length > 0) {
-        showToast(`${bulletinsData.length} bulletins calculés.`, 'success')
+      if (isOnline) {
+        const bulletinsData = await CalculateurMoyennes.genererBulletinsClasse(selectedClasse, selectedTrimestre, anneeScolaire)
+        setBulletins(bulletinsData)
+        if (bulletinsData.length > 0 && bulletinsData.filter(b => b.matieres.length > 0).length > 0) {
+          showToast(`${bulletinsData.length} bulletins calculés (Cloud).`, 'success')
+        }
+      } else {
+        // OFFLINE MODE via Dexie
+        const bulletinsData = await db?.getBulletinsCalculés(selectedClasse, selectedTrimestre, anneeScolaire)
+        setBulletins(bulletinsData || [])
+        if (bulletinsData && bulletinsData.length > 0) {
+          showToast(`${bulletinsData.length} bulletins calculés (Mode Hors-ligne).`, 'info')
+        }
       }
     } catch (error: any) {
       console.error(error)
@@ -132,6 +154,10 @@ export default function BulletinsPage() {
   }
 
   async function generateBulletinPDF(bulletin: BulletinData) {
+    if (!isOnline) {
+      showToast("Connexion internet requise pour générer le PDF officiel.", "error")
+      return
+    }
     setGenerating(bulletin.eleve.id)
     try {
       const html = generateBulletinHTML(bulletin)
@@ -140,7 +166,6 @@ export default function BulletinsPage() {
         printWindow.document.write(html)
         printWindow.document.close()
         printWindow.focus()
-        // wait for onload before print handled inside the script of the html
       }
     } finally {
       setGenerating(null)
@@ -148,8 +173,13 @@ export default function BulletinsPage() {
   }
 
   async function generateAllBulletinsPDF() {
+    if (!isOnline) {
+      showToast("Connexion internet requise pour imprimer tous les bulletins.", "error")
+      return
+    }
     if (bulletins.length === 0) return
     setGenerating('all')
+// ... (rest of the combinedHtml logic remains same but checking for online)
     try {
       let combinedHtml = `
       <!DOCTYPE html>
@@ -212,7 +242,7 @@ export default function BulletinsPage() {
   }
 
   function generateBulletinHTML(bulletin: BulletinData, insideCombined: boolean = false): string {
-    const displayMoyenneTotal = bulletin.niveau?.cycle === 'primaire' ? bulletin.moyenne_generale / 2 : bulletin.moyenne_generale;
+    const displayMoyenneTotal = bulletin.moyenne_generale;
 
     const content = `
     <div class="bulletin">
@@ -249,7 +279,7 @@ export default function BulletinsPage() {
                     <th class="text-center">Coef</th>
                     <th class="text-center">MOY. DEV.</th>
                     <th class="text-center">Comp.</th>
-                    <th class="text-center" style="background: #f1f5f9;">Moyenne ${bulletin.niveau?.cycle === 'primaire' ? '(/10)' : '(/20)'}</th>
+                    <th class="text-center" style="background: #f8fafc;">Moyenne ${bulletin.niveau?.cycle === 'primaire' ? '(/10)' : '(/20)'}</th>
                     <th class="text-center" style="background: #fff7ed;">TOTAL POINTS</th>
                     <th>Appréciation</th>
                 </tr>
@@ -378,7 +408,7 @@ export default function BulletinsPage() {
   return (
     <div className="space-y-8 pb-10">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
+        <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
             <div className="w-8 h-8 rounded-lg bg-emerald-600/10 flex items-center justify-center">
               <FileText className="w-4 h-4 text-emerald-600" />
@@ -387,15 +417,33 @@ export default function BulletinsPage() {
           </div>
           <p className="text-sm text-slate-500 font-medium tracking-tight">Générez les bulletins officiels de vos élèves.</p>
         </div>
-        {bulletins.length > 0 && (
-          <button
-            onClick={generateAllBulletinsPDF}
-            className="flex items-center gap-2 px-6 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all hover:bg-emerald-600 shadow-lg shadow-slate-900/20"
-          >
-            {generating === 'all' ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-            Tout Imprimer
-          </button>
-        )}
+        
+        <div className="flex items-center gap-3">
+          {/* Cloud Indicator */}
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all ${
+            isOnline ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-slate-50 border-slate-100 text-slate-400'
+          }`}>
+            <Cloud className={`w-4 h-4 ${isOnline ? 'fill-emerald-600 animate-pulse' : 'fill-slate-400'}`} />
+            <span className="text-[10px] font-black uppercase tracking-widest">
+              {isOnline ? 'Prêt à imprimer' : 'Hors-ligne'}
+            </span>
+          </div>
+
+          {bulletins.length > 0 && (
+            <button
+              onClick={generateAllBulletinsPDF}
+              disabled={!isOnline}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg ${
+                isOnline 
+                ? 'bg-slate-900 text-white hover:bg-emerald-600 shadow-slate-900/20' 
+                : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+              }`}
+            >
+              {generating === 'all' ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+              Imprimer tout
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-8">
@@ -424,6 +472,17 @@ export default function BulletinsPage() {
         </div>
       </div>
 
+      {!isOnline && bulletins.length > 0 && (
+         <div className="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-2xl animate-in slide-in-from-left duration-300">
+           <div className="flex items-center gap-3">
+             <AlertCircle className="w-5 h-5 text-amber-600" />
+             <p className="text-sm font-bold text-amber-800">
+               Mode Consultation activé. Reconnectez-vous pour générer les PDF officiels.
+             </p>
+           </div>
+         </div>
+      )}
+
       {bulletins.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in duration-500">
           {bulletins.map((bulletin) => (
@@ -439,10 +498,18 @@ export default function BulletinsPage() {
                 <div className="flex items-center gap-4">
                   <div className="text-right">
                     <p className="text-[10px] uppercase font-black text-slate-400">Moyenne</p>
-                    <p className="text-xl font-black text-slate-900">{(bulletin.niveau?.cycle === 'primaire' ? bulletin.moyenne_generale / 2 : bulletin.moyenne_generale).toFixed(2)}</p>
+                    <p className="text-xl font-black text-slate-900">{bulletin.moyenne_generale.toFixed(2)}</p>
                   </div>
-                  <button onClick={() => generateBulletinPDF(bulletin)} className="p-3 bg-emerald-600 text-white rounded-xl hover:bg-slate-900 transition-all shadow-lg shadow-emerald-600/20">
-                    <Download className="w-5 h-5" />
+                  <button 
+                    onClick={() => generateBulletinPDF(bulletin)} 
+                    disabled={!isOnline}
+                    className={`p-3 rounded-xl transition-all shadow-lg ${
+                      isOnline 
+                      ? 'bg-emerald-600 text-white hover:bg-slate-900 shadow-emerald-600/20' 
+                      : 'bg-slate-100 text-slate-300 cursor-not-allowed shadow-none'
+                    }`}
+                  >
+                    {isOnline ? <Download className="w-5 h-5" /> : <Cloud className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
