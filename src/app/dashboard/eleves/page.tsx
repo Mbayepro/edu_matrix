@@ -20,6 +20,10 @@ import { useProfile } from '@/hooks/useProfile'
 import { useToast } from '@/contexts/ToastContext'
 import { useTeacherClasses } from '@/hooks/useTeacherClasses'
 
+import { useNetwork } from '@/hooks/useNetwork'
+import { db } from '@/lib/db'
+import { syncFromSupabase } from '@/lib/syncService'
+
 const StudentCard = dynamic(() => import('@/components/StudentCard'), { ssr: false })
 
 const PAGE_SIZE = 15
@@ -53,6 +57,8 @@ export default function ElevesPage() {
   const fileRef = useRef<HTMLInputElement>(null)
   const uploadingFor = useRef<string | null>(null)
 
+  const { isOnline } = useNetwork();
+
   useEffect(() => {
     if (profileLoading) return
     if (!ecoleId) return
@@ -70,90 +76,102 @@ export default function ElevesPage() {
   }, [page, search, filterClasse, filterStatut, ecoleId, profileLoading, isTeacher, teacherLoading, teacherClasseIds.join(',')])
 
   async function loadClasses() {
-    if (!ecoleId) return
+    if (!ecoleId || !db) return
     try {
       setLoading(true)
-      let cls: Classe[] = []
-
+      
+      // 1. Lire depuis le cache local Dexie
+      let cls = await db.classes.where('ecole_id').equals(ecoleId).sortBy('nom_classe')
+      
       if (isTeacher) {
-        // Prof : uniquement ses classes assignées
-        if (teacherClasseIds.length === 0) {
-          setClasses([])
-          return
-        }
-        const { data } = await supabase
-          .from('classes')
-          .select('*')
-          .in('id', teacherClasseIds)
-          .order('nom_classe')
-        cls = data ?? []
-      } else {
-        // Directeur / superadmin : toutes les classes de l'école
-        const { data } = await supabase
-          .from('classes')
-          .select('*')
-          .eq('ecole_id', ecoleId)
-          .order('nom_classe')
-        cls = data ?? []
+        cls = cls.filter(c => teacherClasseIds.includes(c.id))
       }
-
-      setClasses(cls)
-      // Si prof et une seule classe, pré-sélectionner automatiquement
+      
+      setClasses(cls as unknown as Classe[])
+      
       if (isTeacher && cls.length === 1 && !filterClasse) {
         setFilterClasse(cls[0].id)
       }
+
+      // 2. Si online, Sync du fond
+      if (isOnline) {
+        await syncFromSupabase(ecoleId)
+        // Refresh local après sync si online
+        let freshCls = await db.classes.where('ecole_id').equals(ecoleId).sortBy('nom_classe')
+        if (isTeacher) freshCls = freshCls.filter(c => teacherClasseIds.includes(c.id))
+        setClasses(freshCls as unknown as Classe[])
+      }
+
     } catch (err) {
       console.error(err)
     } finally {
       setLoading(false)
     }
   }
+
   async function loadEleves() {
-    if (!ecoleId) return
+    if (!ecoleId || !db) return
     setLoading(true)
     try {
-      let query = supabase
-        .from('eleves')
-        .select('*, classe:classes(nom_classe, niveau)', { count: 'exact' })
-        .eq('ecole_id', ecoleId)
-        .order('nom')
-        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
-
-      // Profeseur : restreindre aux classes assignées
+      // 1. Logic de filtrage locale dans Dexie (Totalement fonctionnelle hors-ligne)
+      let collection = db.eleves.where('ecole_id').equals(ecoleId)
+      
+      // Filtre prof
       if (isTeacher) {
         if (teacherClasseIds.length === 0) {
           setEleves([])
           setTotal(0)
           return
         }
-        // Si un filtre classe est actif, vérifier qu'il appartient au prof
         if (filterClasse && teacherClasseIds.includes(filterClasse)) {
-          query = query.eq('classe_id', filterClasse)
+          collection = db.eleves.where('classe_id').equals(filterClasse).and(e => e.ecole_id === ecoleId)
         } else {
-          // Sinon forcer toutes ses classes
-          query = query.in('classe_id', teacherClasseIds)
+          // Filtrage complexe (in)
+          collection = db.eleves.where('classe_id').anyOf(teacherClasseIds).and(e => e.ecole_id === ecoleId)
         }
-      } else {
-        if (filterClasse) query = query.eq('classe_id', filterClasse)
+      } else if (filterClasse) {
+        collection = db.eleves.where('classe_id').equals(filterClasse).and(e => e.ecole_id === ecoleId)
       }
 
+      // Filtre statut paiement
+      if (filterStatut !== 'tous') {
+        const prevCollection = collection
+        collection = prevCollection.and(e => e.statut_paiement === filterStatut)
+      }
+
+      // Filtre recherche
       if (search.trim()) {
-        query = query.or(
-          `nom.ilike.%${search}%,prenom.ilike.%${search}%,matricule.ilike.%${search}%`
+        const s = search.toLowerCase()
+        const prevCollection = collection
+        collection = prevCollection.and(e => 
+          e.nom.toLowerCase().includes(s) || 
+          e.prenom.toLowerCase().includes(s) || 
+          (e.matricule?.toLowerCase().includes(s) ?? false)
         )
       }
-      if (filterStatut !== 'tous')   query = query.eq('statut_paiement', filterStatut)
 
-      const { data, count, error } = await query
-      
-      if (error) {
-        console.error('Erreur loadEleves:', error)
-        showToast('Erreur lors du chargement des élèves : ' + error.message, 'error')
-        return
-      }
+      const allFiltered = await collection.toArray()
+      const sorted = allFiltered.sort((a, b) => a.nom.localeCompare(b.nom))
+      const count = sorted.length
+      const pageData = sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
-      setEleves((data ?? []) as Eleve[])
-      setTotal(count ?? 0)
+      // Récupérer les infos de classe pour chaque élève
+      const elevesWithClasse = await Promise.all(pageData.map(async (e) => {
+        const classe = await db.classes.get(e.classe_id)
+        return {
+          ...e,
+          classe: classe ? { nom_classe: classe.nom_classe, niveau: (classe as any).niveau } : undefined
+        }
+      }))
+
+      setEleves(elevesWithClasse as unknown as Eleve[])
+      setTotal(count)
+
+      // 2. Si Online, optionnellement déclencher loadEleves depuis Supabase pour sync 
+      // Mais syncFromSupabase() appelé dans loadClasses ou via SyncInitializer suffit souvent.
+    } catch (error) {
+      console.error('Erreur loadEleves Dexie:', error)
+      showToast('Erreur lors du chargement des élèves.', 'error')
     } finally {
       setLoading(false)
     }

@@ -1,13 +1,15 @@
 'use client'
 
-// src/components/AttendanceScanner.tsx
-// QR-based attendance registration
 import { useState, useEffect, useRef } from 'react'
-import { supabase } from '@/lib/supabase'
 import {
   QrCode, CheckCircle2, AlertCircle, Clock,
-  Loader2, UserCheck, X, RefreshCw, Camera
+  Loader2, UserCheck, RefreshCw, Camera
 } from 'lucide-react'
+import { useProfile } from '@/hooks/useProfile'
+import { db } from '@/lib/db'
+import { addToSyncQueue } from '@/lib/syncService'
+import { useNetwork } from '@/hooks/useNetwork'
+import CameraQRCodeScanner from './CameraQRCodeScanner'
 
 interface ScanResult {
   status: 'success' | 'already' | 'error' | 'not_found'
@@ -15,59 +17,36 @@ interface ScanResult {
   studentName?: string
   matricule?: string
   statutPaiement?: string
-  paymentDetails?: string
 }
 
-import CameraQRCodeScanner from './CameraQRCodeScanner'
-
-interface OfflineAttendanceEvent {
-  eleve_id: string
-  classe_id: string
-  created_at: string
-}
-
-const OFFLINE_KEY = 'edumatrix_offline_attendance'
-
 // ─────────────────────────────────────────
-// Process a scanned student ID
+// Process a scanned student ID (Offline-compatible)
 // ─────────────────────────────────────────
-async function processAttendance(studentId: string, classeId: string): Promise<ScanResult> {
+async function processAttendance(studentId: string, classeId: string, ecoleId: string): Promise<ScanResult> {
+  if (!db) return { status: 'error', message: 'Base de données non initialisée.' }
+  
   try {
-    // 1. Fetch student
-    let { data: eleve, error: eleveError } = await supabase
-      .from('eleves')
-      .select('id, prenom, nom, matricule, classe_id, statut_paiement')
-      .eq('id', studentId)
-      .single()
-
+    // 1. Fetch student from Dexie
+    let eleve = await db.eleves.get(studentId)
+    
     // Fallback: search by matricule if not found by UUID
-    if (eleveError || !eleve) {
-      const { data: eleveByMatricule, error: matError } = await supabase
-        .from('eleves')
-        .select('id, prenom, nom, matricule, classe_id, statut_paiement')
-        .eq('matricule', studentId)
-        .single()
-      
-      if (matError || !eleveByMatricule) {
-        return { status: 'not_found', message: 'Élève introuvable dans le système.' }
-      }
-      eleve = eleveByMatricule
+    if (!eleve) {
+      eleve = await db.eleves.where('matricule').equals(studentId).first()
     }
 
-    // CRITICAL: Use the resolved UUID from the database, not the input string (which might be a matricule)
+    if (!eleve) {
+      return { status: 'not_found', message: 'Élève introuvable dans le cache local.' }
+    }
+
     const realStudentId = eleve.id
     const today = new Date().toISOString().split('T')[0]
     const now   = new Date().toTimeString().split(' ')[0]
 
-    // 2. Check if already registered today
-    const { data: existing } = await supabase
-      .from('presences')
-      .select('id, statut, heure')
-      .eq('eleve_id', realStudentId)
-      .eq('date', today)
-      .maybeSingle() // Use maybeSingle to avoid 406 errors if not found
-
-    const { data: payDetails } = await supabase.rpc('get_payment_coverage_status', { p_eleve_id: realStudentId })
+    // 2. Check if already registered today in Dexie
+    const existing = await db.presences
+      .where('eleve_id').equals(realStudentId)
+      .and(p => p.date === today)
+      .first()
 
     if (existing) {
       return {
@@ -76,27 +55,30 @@ async function processAttendance(studentId: string, classeId: string): Promise<S
         studentName: `${eleve.prenom} ${eleve.nom}`,
         matricule:   eleve.matricule ?? undefined,
         statutPaiement: eleve.statut_paiement,
-        paymentDetails: payDetails ?? 'Statut inconnu'
       }
     }
 
     // 3. Determine status (retard if after 8:30)
-    const hour = new Date().getHours()
-    const min  = new Date().getMinutes()
+    const d = new Date()
+    const hour = d.getHours()
+    const min  = d.getMinutes()
     const statut = (hour > 8 || (hour === 8 && min >= 30)) ? 'retard' : 'présent'
 
-    // 4. Insert presence
-    const { error: insertError } = await supabase
-      .from('presences')
-      .insert({
-        eleve_id:  realStudentId,
-        classe_id: eleve.classe_id,
-        date:      today,
-        heure:     now,
-        statut,
-      })
+    const presenceData = {
+      id: crypto.randomUUID(),
+      ecole_id: ecoleId,
+      eleve_id:  realStudentId,
+      classe_id: eleve.classe_id,
+      date:      today,
+      heure:     now,
+      statut,
+    }
 
-    if (insertError) throw insertError
+    // 4. Save to Dexie
+    await db.presences.put(presenceData as any)
+
+    // 5. Add to Sync Queue
+    await addToSyncQueue('presences', 'INSERT', presenceData as any, ecoleId)
 
     return {
       status: 'success',
@@ -106,30 +88,11 @@ async function processAttendance(studentId: string, classeId: string): Promise<S
       studentName: `${eleve.prenom} ${eleve.nom}`,
       matricule:   eleve.matricule ?? undefined,
       statutPaiement: eleve.statut_paiement,
-      paymentDetails: payDetails ?? 'Statut inconnu'
     }
   } catch (error) {
     console.error('Error in processAttendance:', error)
-    return { status: 'error', message: 'Erreur lors de l\'enregistrement. Réessayez.' }
+    return { status: 'error', message: 'Erreur lors de l\'enregistrement hors-ligne.' }
   }
-}
-
-function loadOfflineQueue(): OfflineAttendanceEvent[] {
-  if (typeof window === 'undefined') return []
-  try {
-    const raw = window.localStorage.getItem(OFFLINE_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return []
-    return parsed
-  } catch {
-    return []
-  }
-}
-
-function saveOfflineQueue(events: OfflineAttendanceEvent[]) {
-  if (typeof window === 'undefined') return
-  window.localStorage.setItem(OFFLINE_KEY, JSON.stringify(events))
 }
 
 // ─────────────────────────────────────────
@@ -170,12 +133,6 @@ function ScanResultCard({ result, onReset }: { result: ScanResult; onReset: () =
                   {result.statutPaiement}
                 </span>
               </div>
-              {result.paymentDetails && (
-                <div className="flex items-center gap-3 bg-black/5 p-3 rounded-xl border border-black/5">
-                  <div className={`w-2 h-2 rounded-full shrink-0 ${result.statutPaiement === 'payé' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`} />
-                  <span className="text-xs font-bold text-slate-700 leading-tight">{result.paymentDetails}</span>
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -193,123 +150,44 @@ function ScanResultCard({ result, onReset }: { result: ScanResult; onReset: () =
 
 // ─────────────────────────────────────────
 // Main Scanner Component
-// Uses manual input as fallback (no camera API needed)
 // ─────────────────────────────────────────
 export default function AttendanceScanner({ classeId }: { classeId: string }) {
   const [manualId, setManualId]   = useState('')
   const [result, setResult]       = useState<ScanResult | null>(null)
   const [loading, setLoading]     = useState(false)
   const [todayCount, setTodayCount] = useState(0)
-  const [isOnline, setIsOnline]   = useState(true)
-  const [pendingOffline, setPendingOffline] = useState(0)
+  const { isOnline, pendingCount } = useNetwork()
   const [showCamera, setShowCamera] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  const { profile } = useProfile()
+  const ecoleId = profile?.ecole_id
 
   useEffect(() => {
     loadTodayCount()
     // Auto-focus input for scanner device
     inputRef.current?.focus()
-    setIsOnline(typeof navigator !== 'undefined' ? navigator.onLine : true)
-    const updateOnline = () => setIsOnline(true)
-    const updateOffline = () => setIsOnline(false)
-    window.addEventListener('online', updateOnline)
-    window.addEventListener('offline', updateOffline)
-    // initial pending
-    setPendingOffline(loadOfflineQueue().length)
-    // try sync on mount
-    if (navigator.onLine) {
-      void syncOfflineEvents()
-    }
-    return () => {
-      window.removeEventListener('online', updateOnline)
-      window.removeEventListener('offline', updateOffline)
-    }
   }, [])
 
-  async function syncOfflineEvents() {
-    const queue = loadOfflineQueue()
-    if (!queue.length) return
-    const remaining: OfflineAttendanceEvent[] = []
-    for (const ev of queue) {
-      try {
-        const r = await processAttendance(ev.eleve_id, ev.classe_id)
-        if (r.status === 'success' || r.status === 'already') {
-          // ok, do not requeue
-        } else {
-          remaining.push(ev)
-        }
-      } catch {
-        remaining.push(ev)
-      }
-    }
-    saveOfflineQueue(remaining)
-    setPendingOffline(remaining.length)
-    // refresh count from server
-    await loadTodayCount()
-  }
-
   async function loadTodayCount() {
-    if (!navigator.onLine) return;
+    if (!db) return
     try {
       const today = new Date().toISOString().split('T')[0]
-      const { count } = await supabase
-        .from('presences')
-        .select('id', { count: 'exact', head: true })
-        .eq('date', today)
-      setTodayCount(count ?? 0)
+      const count = await db.presences
+        .where('date').equals(today)
+        .count()
+      setTodayCount(count)
     } catch (e) {
-      console.log('loadTodayCount offline', e)
+      console.log('loadTodayCount dexie error', e)
     }
   }
 
   async function handleScan(studentId: string) {
-    if (!studentId.trim()) return
+    if (!studentId.trim() || !ecoleId) return
     const trimmed = studentId.trim()
 
-    // Offline: stocker localement puis afficher un message
-    if (!isOnline) {
-      let realStudentId = trimmed;
-      let studentName = undefined;
-      let matricule = undefined;
-      let statutPaiement = undefined;
-
-      try {
-        const cached = localStorage.getItem(`edumatrix_offline_grades_${classeId}`);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          const eleve = parsed.eleves?.find((e: any) => e.id === trimmed || e.matricule === trimmed);
-          if (eleve) {
-            realStudentId = eleve.id;
-            studentName = `${eleve.prenom} ${eleve.nom}`;
-            matricule = eleve.matricule;
-            statutPaiement = eleve.statut_paiement;
-          }
-        }
-      } catch (e) {}
-
-      const queue = loadOfflineQueue()
-      const ev: OfflineAttendanceEvent = {
-        eleve_id: realStudentId,
-        classe_id: classeId,
-        created_at: new Date().toISOString(),
-      }
-      const updated = [...queue, ev]
-      saveOfflineQueue(updated)
-      setPendingOffline(updated.length)
-      setTodayCount((c) => c + 1)
-      setResult({
-        status: 'success',
-        message: 'Présence enregistrée hors ligne (en attente de synchronisation).',
-        studentName,
-        matricule,
-        statutPaiement
-      })
-      setManualId('')
-      return
-    }
-
     setLoading(true)
-    const r = await processAttendance(trimmed, classeId)
+    const r = await processAttendance(trimmed, classeId, ecoleId)
     setResult(r)
     if (r.status === 'success') {
       setTodayCount((c) => c + 1)
@@ -331,37 +209,6 @@ export default function AttendanceScanner({ classeId }: { classeId: string }) {
   return (
     <div className="max-w-md mx-auto space-y-4">
 
-      {/* ── Offline Banner ── */}
-      {!isOnline && (
-        <div className="flex items-center gap-3 bg-amber-50 border-2 border-amber-300 rounded-2xl px-4 py-3 animate-pulse">
-          <span className="text-2xl">📶</span>
-          <div className="flex-1 min-w-0">
-            <p className="font-bold text-amber-800 text-sm">Mode Hors-Ligne activé</p>
-            <p className="text-amber-600 text-xs mt-0.5 leading-tight">
-              Les présences sont sauvegardées localement.
-              Elles seront <strong>synchronisées automatiquement</strong> dès le retour du réseau.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* ── Pending sync banner (shown when back online with pending items) ── */}
-      {isOnline && pendingOffline > 0 && (
-        <button
-          type="button"
-          onClick={() => void syncOfflineEvents()}
-          className="w-full flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3 text-left hover:bg-blue-100 transition-colors group"
-        >
-          <span className="text-xl">🔄</span>
-          <div className="flex-1 min-w-0">
-            <p className="font-bold text-blue-800 text-sm">Synchronisation en attente</p>
-            <p className="text-blue-600 text-xs">
-              {pendingOffline} présence(s) hors-ligne à synchroniser. Cliquez pour synchroniser maintenant.
-            </p>
-          </div>
-        </button>
-      )}
-
       {/* Header */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
         <div className="flex items-center gap-3 mb-1">
@@ -380,8 +227,11 @@ export default function AttendanceScanner({ classeId }: { classeId: string }) {
             <span className="w-1.5 h-1.5 rounded-full bg-current" />
             {isOnline ? 'En ligne' : 'Hors ligne'}
           </span>
-          {isOnline && pendingOffline === 0 && (
+          {isOnline && pendingCount === 0 && (
             <span className="text-slate-400">Tout synchronisé ✓</span>
+          )}
+          {pendingCount > 0 && (
+            <span className="text-amber-600 font-bold">{pendingCount} en attente...</span>
           )}
         </div>
       </div>

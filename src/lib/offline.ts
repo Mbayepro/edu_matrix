@@ -1,21 +1,28 @@
 // src/lib/offline.ts
-// Gestion hors-ligne : stocke les présences en localStorage
-// et les synchronise quand la connexion revient
+// Gestion hors-ligne — couche de compatibilité + migration vers Dexie
+// ─────────────────────────────────────────────────────────────────────
+// Ce fichier conserve l'API originale (localStorage) pour les présences
+// et redirige les nouvelles mutations vers Dexie sync_queue.
+
 import { supabase } from './supabase'
+import { addToSyncQueue, flushSyncQueue, getPendingActionsCount } from './syncService'
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SECTION 1 — API ORIGINALE (localStorage) — CONSERVÉE POUR COMPATIBILITÉ
+// ══════════════════════════════════════════════════════════════════════════════
 
 const QUEUE_KEY = 'edumatrix_offline_presences'
 
 interface OfflinePresence {
-  id:        string   // uuid local temporaire
+  id:        string
   eleve_id:  string
   classe_id: string
   date:      string
   heure:     string
   statut:    'présent' | 'absent' | 'retard'
-  createdAt: number   // timestamp
+  createdAt: number
 }
 
-// ── Lecture / écriture queue ──────────────────────────
 function getQueue(): OfflinePresence[] {
   if (typeof window === 'undefined') return []
   try {
@@ -30,8 +37,12 @@ function saveQueue(queue: OfflinePresence[]) {
   localStorage.setItem(QUEUE_KEY, JSON.stringify(queue))
 }
 
-// ── Ajoute une présence à la queue hors-ligne ─────────
+/**
+ * @deprecated Préférer addToSyncQueue() via syncService.ts
+ * Conservé pour compatibilité avec le code existant.
+ */
 export function queuePresence(presence: Omit<OfflinePresence, 'id' | 'createdAt'>) {
+  // Ajoute dans localStorage (rétrocompatibilité)
   const queue = getQueue()
   const entry: OfflinePresence = {
     ...presence,
@@ -40,26 +51,48 @@ export function queuePresence(presence: Omit<OfflinePresence, 'id' | 'createdAt'
   }
   queue.push(entry)
   saveQueue(queue)
+
+  // 🆕 Ajoute aussi dans Dexie sync_queue (si disponible)
+  addToSyncQueue('presences', 'INSERT', {
+    eleve_id:  presence.eleve_id,
+    classe_id: presence.classe_id,
+    date:      presence.date,
+    heure:     presence.heure,
+    statut:    presence.statut,
+  }).catch(() => {/* IndexedDB pas encore prêt — localStorage suffit */})
+
   console.info('[EduMatrix Offline] Présence mise en file d\'attente :', entry)
 }
 
-// ── Nombre d'entrées en attente ───────────────────────
+/**
+ * Nombre d'entrées en attente (localStorage + Dexie).
+ * Pour la rétrocompatibilité, retourne uniquement le count localStorage.
+ * Utiliser getPendingActionsCount() de syncService pour le total Dexie.
+ */
 export function getPendingCount(): number {
   return getQueue().length
 }
 
-// ── Synchronisation quand on revient en ligne ─────────
+/**
+ * @deprecated Préférer flushSyncQueue() via syncService.ts
+ * Conservé pour compatibilité avec OfflineBanner.tsx existant.
+ */
 export async function syncOfflinePresences(): Promise<{ synced: number; errors: number }> {
-  const queue = getQueue()
-  if (queue.length === 0) return { synced: 0, errors: 0 }
+  // 1. Tente de vider la Dexie sync_queue (plus robuste)
+  const dexieResult = await flushSyncQueue().catch(() => ({ flushed: 0, errors: 0 }))
 
-  let synced = 0
-  let errors = 0
+  // 2. Conserve la logique localStorage pour les entrées déjà présentes
+  const queue = getQueue()
+  if (queue.length === 0) {
+    return { synced: dexieResult.flushed, errors: dexieResult.errors }
+  }
+
+  let synced = dexieResult.flushed
+  let errors  = dexieResult.errors
   const remaining: OfflinePresence[] = []
 
   for (const p of queue) {
     try {
-      // Vérifie si déjà enregistré (doublon possible)
       const { data: existing } = await supabase
         .from('presences')
         .select('id')
@@ -79,9 +112,9 @@ export async function syncOfflinePresences(): Promise<{ synced: number; errors: 
       }
       synced++
     } catch (err) {
-      console.error('[EduMatrix Offline] Erreur sync :', err)
+      console.error('[EduMatrix Offline] Erreur sync présence :', err)
       errors++
-      remaining.push(p)   // on garde celles qui ont échoué
+      remaining.push(p)
     }
   }
 
@@ -90,37 +123,40 @@ export async function syncOfflinePresences(): Promise<{ synced: number; errors: 
   return { synced, errors }
 }
 
-// ── Hook React : écoute le retour en ligne ────────────
-// Usage dans un composant :
-//   useOnlineSync()
+// ══════════════════════════════════════════════════════════════════════════════
+// SECTION 2 — NOUVELLES APIS DEXIE (à utiliser dans le nouveau code)
+// ══════════════════════════════════════════════════════════════════════════════
+
+// Ré-export des nouvelles APIs pour un import unique depuis offline.ts
+export { addToSyncQueue, flushSyncQueue, getPendingActionsCount } from './syncService'
+
+// ── Hook React : écoute le retour en ligne ────────────────────────────────────
+// Conservé pour rétrocompatibilité. Préférer useNetwork() de @/hooks/useNetwork
+
 export function useOnlineSync() {
   if (typeof window === 'undefined') return
 
   const handleOnline = async () => {
-    const pending = getPendingCount()
-    if (pending === 0) return
+    const localPending = getPendingCount()
+    const dexiePending = await getPendingActionsCount()
 
-    console.info(`[EduMatrix Offline] Retour en ligne — ${pending} présence(s) à synchroniser`)
+    if (localPending === 0 && dexiePending === 0) return
+
+    console.info(`[EduMatrix Offline] Retour en ligne — sync en cours...`)
     const result = await syncOfflinePresences()
 
-    if (result.synced > 0) {
-      // Notification légère (sans dépendance externe)
-      if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('EduMatrix', {
-          body: `${result.synced} présence(s) synchronisée(s) avec succès.`,
-          icon: '/favicon.ico',
-        })
-      }
+    if (result.synced > 0 && 'Notification' in window && Notification.permission === 'granted') {
+      new Notification('EduMatrix', {
+        body: `${result.synced} action(s) synchronisée(s) avec succès.`,
+        icon: '/favicon.ico',
+      })
     }
   }
 
   window.addEventListener('online', handleOnline)
-  // Retourne une fonction de cleanup
   return () => window.removeEventListener('online', handleOnline)
 }
 
-// ── Composant Bandeau hors-ligne ──────────────────────
-// À placer dans le layout du dashboard
 export function isOffline(): boolean {
   if (typeof window === 'undefined') return false
   return !navigator.onLine

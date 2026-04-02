@@ -6,6 +6,10 @@ import { Loader2, FileText, Plus, X, Trash2, Edit2 } from 'lucide-react';
 import { useProfile } from '@/hooks/useProfile';
 
 
+import { useNetwork } from '@/hooks/useNetwork';
+import { db } from '@/lib/db';
+import { addToSyncQueue, syncFromSupabase } from '@/lib/syncService';
+
 interface Matiere {
   id: string;
   nom: string;
@@ -21,6 +25,9 @@ interface Evaluation {
   bareme: number;
   matiere_id: string;
   libelle?: string;
+  ecole_id?: string;
+  classe_id?: string;
+  trimestre?: number;
 }
 
 interface Note {
@@ -28,6 +35,7 @@ interface Note {
   evaluation_id: string;
   eleve_id: string;
   note: number;
+  professeur_id?: string;
 }
 
 interface GradesEntryProps {
@@ -60,148 +68,74 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
   const [niveau, setNiveau] = useState<any>(null);
   const [serie, setSerie] = useState<any>(null);
 
-  const [isOnline, setIsOnline] = useState(true);
-  const [pendingCount, setPendingCount] = useState(0);
-
-  useEffect(() => {
-    setIsOnline(navigator.onLine);
-    const updatePending = () => {
-      const e = JSON.parse(localStorage.getItem('edumatrix_offline_evals') || '[]').length;
-      const n = JSON.parse(localStorage.getItem('edumatrix_offline_notes') || '[]').length;
-      setPendingCount(e + n);
-    };
-    updatePending();
-
-    const handleOnline = () => { setIsOnline(true); syncOfflineQueue(); };
-    const handleOffline = () => setIsOnline(false);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    }
-  }, []);
+  const { isOnline, pendingCount } = useNetwork();
 
   useEffect(() => {
     if (classeId) loadData();
   }, [classeId, trimestre]);
 
-  async function syncOfflineQueue() {
-    if (!navigator.onLine) return;
-    const evals = JSON.parse(localStorage.getItem('edumatrix_offline_evals') || '[]');
-    const offlineNotes = JSON.parse(localStorage.getItem('edumatrix_offline_notes') || '[]');
-    if (!evals.length && !offlineNotes.length) return;
-
-    try {
-      for (const ev of evals) {
-        await supabase.from('evaluations').upsert(ev, { onConflict: 'id' });
-      }
-      localStorage.setItem('edumatrix_offline_evals', '[]');
-
-      for (const note of offlineNotes) {
-        await supabase.from('notes').upsert({
-          eleve_id: note.eleve_id,
-          evaluation_id: note.evaluation_id,
-          note: note.note,
-          professeur_id: note.professeur_id
-        }, { onConflict: 'eleve_id,evaluation_id' });
-      }
-      localStorage.setItem('edumatrix_offline_notes', '[]');
-      
-      setPendingCount(0);
-      loadData();
-    } catch (e) {
-      console.error('Erreur lors de la synchronisation', e);
-    }
-  }
-
   async function loadData() {
+    if (!classeId) return;
     setLoading(true);
     try {
-      if (!navigator.onLine) throw new Error('Offline');
-
-      const { data: classe } = await supabase
-        .from('classes')
-        .select('*, niveaux(*), series(*)')
-        .eq('id', classeId)
-        .single();
-      
-      setNiveau(classe?.niveaux);
-      setSerie(classe?.series);
-
-      const { data: coefs } = await supabase
-        .from('coefficients_matieres')
-        .select('*, matieres(*)')
-        .eq('niveau_id', classe?.niveau_id);
-      
-      const filteredCoefs = coefs?.filter((c: any) => 
-        !c.serie_id || c.serie_id === classe?.serie_id
-      ) || [];
-
-      const fetchedMatieres = filteredCoefs.map((c: any) => ({
-        id: c.matieres.id,
-        nom: c.matieres.nom,
-        coefficient: parseFloat(c.coefficient),
-        is_obligatoire: c.is_obligatoire
-      }));
-      setMatieres(fetchedMatieres);
-
-      const { data: listEleves } = await supabase
-        .from('eleves')
-        .select('*')
-        .eq('classe_id', classeId)
-        .order('nom');
-      setEleves(listEleves || []);
-
-      const { data: listEvals } = await supabase
-        .from('evaluations')
-        .select('*')
-        .eq('classe_id', classeId)
-        .eq('trimestre', trimestre);
-      setEvaluations(listEvals || []);
-
-      let fetchedNotes: any[] = [];
-      if (listEvals?.length) {
-        const { data: listNotes } = await supabase
-          .from('notes')
-          .select('*')
-          .in('evaluation_id', listEvals.map((e: any) => e.id));
-        fetchedNotes = listNotes || [];
-        setNotes(fetchedNotes);
-      } else {
-        setNotes([]);
-      }
-
-      // Save to cache
-      const cacheData = {
-        niveau: classe?.niveaux, serie: classe?.series,
-        matieres: fetchedMatieres, eleves: listEleves || [],
-        evaluations: listEvals || [], notes: fetchedNotes
-      };
-      localStorage.setItem(`edumatrix_offline_grades_${classeId}`, JSON.stringify(cacheData));
-
-    } catch (e) {
-      console.log('Passage en mode hors-ligne pour les notes', e);
-      const cached = localStorage.getItem(`edumatrix_offline_grades_${classeId}`);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        setNiveau(parsed.niveau); setSerie(parsed.serie);
-        setMatieres(parsed.matieres); setEleves(parsed.eleves);
+      // 1. Lire depuis le cache local (Dexie) d'abord
+      if (db) {
+        const cachedEleves = await db.eleves.where('classe_id').equals(classeId).toArray();
+        const cachedEvals = await db.evaluations
+          .where('classe_id').equals(classeId)
+          .and(e => e.trimestre === trimestre)
+          .toArray();
+        const cachedNotes = await db.notes
+          .where('evaluation_id').anyOf(cachedEvals.map(e => e.id))
+          .toArray();
         
-        // Combine online evals with offline queued evals
-        const offlineEvals = JSON.parse(localStorage.getItem('edumatrix_offline_evals') || '[]');
-        const combinedEvals = [...parsed.evaluations, ...offlineEvals.filter((ev: any) => ev.classe_id === classeId && ev.trimestre === trimestre)];
-        setEvaluations(combinedEvals);
+        if (cachedEleves.length > 0) {
+          setEleves(cachedEleves);
+          setEvaluations(cachedEvals as unknown as Evaluation[]);
+          setNotes(cachedNotes as unknown as Note[]);
+          // Si on a des données locales, on peut déjà arrêter le loader pour une UI réactive
+          setLoading(false);
+        }
 
-        // Combine online notes with offline
-        const offlineNotes = JSON.parse(localStorage.getItem('edumatrix_offline_notes') || '[]');
-        let mergedNotes = [...parsed.notes];
-        offlineNotes.forEach((onote: any) => {
-          mergedNotes = mergedNotes.filter((mn: any) => !(mn.eleve_id === onote.eleve_id && mn.evaluation_id === onote.evaluation_id));
-        });
-        setNotes([...mergedNotes, ...offlineNotes]);
+        // Charger classe / niveau / série depuis Dexie
+        const classe = await db.classes.get(classeId);
+        if (classe) {
+          const niv = classe.niveau_id ? await db.niveaux.get(classe.niveau_id) : null;
+          const ser = classe.serie_id ? await db.series.get(classe.serie_id) : null;
+          setNiveau(niv);
+          setSerie(ser);
+        }
+
+        // Charger matières depuis Dexie
+        if (classe && ecoleId) {
+          const fetchedMatieres = await db.matieres.where('ecole_id').equals(ecoleId).toArray();
+          setMatieres(fetchedMatieres as unknown as Matiere[]);
+        }
       }
+
+      // 2. Si on est en ligne, rafraîchir depuis Supabase
+      if (navigator.onLine && ecoleId) {
+        // Déclencher un Sync de fond
+        await syncFromSupabase(ecoleId);
+        
+        // Recharger les données fraîches depuis Dexie (vu que syncFromSupabase les a mis à jour)
+        if (db) {
+          const freshEleves = await db.eleves.where('classe_id').equals(classeId).toArray();
+          const freshEvals = await db.evaluations
+            .where('classe_id').equals(classeId)
+            .and(e => e.trimestre === trimestre)
+            .toArray();
+          const freshNotes = await db.notes
+            .where('evaluation_id').anyOf(freshEvals.map(ev => ev.id))
+            .toArray();
+          
+          setEleves(freshEleves);
+          setEvaluations(freshEvals as unknown as Evaluation[]);
+          setNotes(freshNotes as unknown as Note[]);
+        }
+      }
+    } catch (e) {
+      console.warn('[GradesEntry] Erreur loadData:', e);
     } finally {
       setLoading(false);
     }
@@ -211,8 +145,8 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
     if (!selectedMatiereId || !ecoleId) return;
     setSaving(true);
     
-    const evalData = {
-      id: crypto.randomUUID(), // Temporarily local or final UUID
+    const evalData: Evaluation = {
+      id: crypto.randomUUID(),
       ecole_id: ecoleId,
       classe_id: classeId,
       matiere_id: selectedMatiereId,
@@ -225,20 +159,19 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
     };
 
     try {
-      if (!navigator.onLine) throw new Error('Offline');
-      const { data, error } = await supabase.from('evaluations').insert(evalData).select().single();
-      if (error) throw error;
-      if (data) {
-        setEvaluations(prev => [...prev, data]);
+      // 1. Sauvegarde locale immédiate (Optimistic UI)
+      if (db) {
+        await db.evaluations.put(evalData as any);
+        setEvaluations(prev => [...prev, evalData]);
       }
-    } catch (e) {
-      // Hors-ligne ou erreur, on met en file d'attente
-      const offlineEvals = JSON.parse(localStorage.getItem('edumatrix_offline_evals') || '[]');
-      offlineEvals.push(evalData);
-      localStorage.setItem('edumatrix_offline_evals', JSON.stringify(offlineEvals));
+
+      // 2. Enregistrement dans la file de synchronisation (Sync Queue)
+      if (ecoleId) {
+        await addToSyncQueue('evaluations', 'INSERT', evalData as any, ecoleId);
+      }
       
-      setEvaluations(prev => [...prev, evalData as Evaluation]);
-      setPendingCount(prev => prev + 1);
+    } catch (e) {
+      console.error('Erreur create eval:', e);
     } finally {
       setSaving(false);
       setShowNewEvalModal(false);
@@ -248,10 +181,21 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
 
   const handleDeleteEval = async (id: string) => {
     if (!confirm('Supprimer cette évaluation ?')) return;
-    const { error } = await supabase.from('evaluations').delete().eq('id', id);
-    if (!error) {
-      setEvaluations(prev => prev.filter(e => e.id !== id));
-      setNotes(prev => prev.filter(n => n.evaluation_id !== id));
+    try {
+      // 1. Local
+      if (db) {
+        await db.evaluations.delete(id);
+        await db.notes.where('evaluation_id').equals(id).delete();
+        setEvaluations(prev => prev.filter(e => e.id !== id));
+        setNotes(prev => prev.filter(n => n.evaluation_id !== id));
+      }
+
+      // 2. Queue
+      if (ecoleId) {
+        await addToSyncQueue('evaluations', 'DELETE', { id } as any, ecoleId);
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -259,35 +203,31 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
     const num = parseFloat(val.replace(',', '.'));
     if (isNaN(num)) return;
 
-    const noteData = { 
-      id: crypto.randomUUID(), 
+    const noteData: Note = { 
+      id: `${eleveId}_${evalId}`, // ID stable pour upsert
       eleve_id: eleveId, 
       evaluation_id: evalId, 
       note: num,
       professeur_id: profile?.id
     };
 
-    // Optimistic update
-    setNotes(prev => {
-      const filtered = prev.filter(n => !(n.eleve_id === eleveId && n.evaluation_id === evalId));
-      return [...filtered, noteData as Note];
-    });
-
     try {
-      if (!navigator.onLine) throw new Error('Offline');
-      const { error } = await supabase.from('notes').upsert({
-        eleve_id: eleveId,
-        evaluation_id: evalId,
-        note: num,
-        professeur_id: profile?.id
-      }, { onConflict: 'eleve_id,evaluation_id' });
-      if (error) throw error;
+      // 1. Optimistic & Local
+      if (db) {
+        await db.notes.put(noteData as any);
+        setNotes(prev => {
+          const filtered = prev.filter(n => !(n.eleve_id === eleveId && n.evaluation_id === evalId));
+          return [...filtered, noteData];
+        });
+      }
+
+      // 2. Queue (Supabase utilise upsert sur eleve_id, evaluation_id)
+      if (ecoleId) {
+        await addToSyncQueue('notes', 'INSERT', noteData as any, ecoleId);
+      }
+      
     } catch (e) {
-      const offlineNotes = JSON.parse(localStorage.getItem('edumatrix_offline_notes') || '[]');
-      const filtered = offlineNotes.filter((n: any) => !(n.eleve_id === eleveId && n.evaluation_id === evalId));
-      filtered.push(noteData);
-      localStorage.setItem('edumatrix_offline_notes', JSON.stringify(filtered));
-      setPendingCount(prev => prev + 1);
+      console.error('Erreur note change:', e);
     }
   };
 
@@ -309,10 +249,10 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
           </p>
         </div>
         {pendingCount > 0 && (
-          <button onClick={syncOfflineQueue} disabled={!isOnline} className="flex flex-col items-center bg-indigo-50 border border-indigo-100 text-indigo-700 px-3 py-1.5 rounded-xl shadow-sm hover:bg-indigo-100 transition-colors">
+          <div className="flex flex-col items-center bg-indigo-50 border border-indigo-100 text-indigo-700 px-3 py-1.5 rounded-xl shadow-sm">
             <span className="text-[10px] uppercase font-black tracking-widest leading-none">Synchro. en attente</span>
             <span className="text-xl font-black mt-1">{pendingCount}</span>
-          </button>
+          </div>
         )}
       </div>
 

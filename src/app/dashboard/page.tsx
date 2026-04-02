@@ -249,7 +249,7 @@ export default function DashboardPage() {
             </div>
             <div className="bg-white/5 backdrop-blur-md rounded-3xl p-6 border border-white/10 text-center min-w-[120px]">
               <p className="text-3xl font-black text-amber-400">{stats?.elevesImpayes ?? 0}</p>
-              <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1 text-amber-500">Impayés</p>
+              <p className="text-[10px] text-amber-500 font-black uppercase tracking-widest mt-1">Impayés</p>
             </div>
           </div>
         </div>

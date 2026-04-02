@@ -13,6 +13,9 @@ import { useProfile } from '@/hooks/useProfile'
 import { useToast } from '@/contexts/ToastContext'
 import PhotoInput from '@/components/PhotoInput'
 
+import { db } from '@/lib/db'
+import { addToSyncQueue } from '@/lib/syncService'
+
 /** Génère un matricule unique : format EL-YYYYMMDD-XXXX */
 function generateMatricule(): string {
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, '')
@@ -51,16 +54,15 @@ export default function NouveauElevePage() {
   }, [ecoleId, profileLoading])
 
   async function loadClasses(schoolId: string) {
+    if (!db) return
     try {
       setLoading(true)
-      const { data: cls } = await supabase
-        .from('classes')
-        .select('*')
-        .eq('ecole_id', schoolId)
-        .order('nom_classe')
-      
-      setClasses(cls || [])
+      // Charger classes de l'école depuis Dexie
+      const cls = await db.classes.where('ecole_id').equals(schoolId).toArray()
+      setClasses(cls as unknown as Classe[])
       if (cls && cls.length > 0) setClasseId(cls[0].id)
+    } catch (e) {
+      console.warn('Erreur chargement classes Dexie:', e)
     } finally {
       setLoading(false)
     }
@@ -77,29 +79,33 @@ export default function NouveauElevePage() {
       return
     }
 
-    try {
-      const { error: insertError } = await supabase.from('eleves').insert({
-        ecole_id: profile.ecole_id,
-        classe_id: classeId,
-        prenom,
-        nom,
-        matricule: matricule.trim() || null,
-        date_naissance: dateNaissance || null,
-        photo_url: photoUrl || null,
-      })
+    const eleveData = {
+      id: crypto.randomUUID(),
+      ecole_id: profile.ecole_id,
+      classe_id: classeId,
+      prenom,
+      nom,
+      matricule: matricule.trim() || null,
+      date_naissance: dateNaissance || null,
+      photo_url: photoUrl || null,
+      statut_paiement: 'impayé' as const,
+    }
 
-      if (insertError) throw insertError
+    try {
+      // 1. Sauvegarde locale immédiate (Optimistic UI)
+      if (db) {
+        await db.eleves.put(eleveData as any)
+      }
+
+      // 2. Enregistrement dans la file de synchronisation (Sync Queue)
+      await addToSyncQueue('eleves', 'INSERT', eleveData as any, profile.ecole_id)
 
       showToast('Élève inscrit avec succès !', 'success')
       router.push('/dashboard/eleves')
-      router.refresh()
+      // router.refresh() 
     } catch (err: any) {
       console.error(err)
-      if (err.message?.includes('eleves_matricule_key')) {
-        setError("Ce matricule est déjà utilisé. Cliquez sur ↺ pour en générer un nouveau.")
-      } else {
-        setError("Une erreur s'est produite lors de l'inscription.")
-      }
+      setError("Une erreur s'est produite lors de l'inscription.")
     } finally {
       setSaving(false)
     }

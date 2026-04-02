@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hors-ligne · EduMatrix</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/favicon.ico" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:  #059669;
+      --dark:   #0f172a;
+      --card:   #1e293b;
+      --muted:  #94a3b8;
+      --text:   #f1f5f9;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--dark);
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .icon-wrapper {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      background: rgba(5, 150, 105, 0.12);
+      border: 2px solid rgba(5, 150, 105, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 2rem;
+      animation: pulse 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.3); }
+      50%       { box-shadow: 0 0 0 20px rgba(5, 150, 105, 0); }
+    }
+
+    svg.icon { width: 48px; height: 48px; color: var(--green); }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      letter-spacing: -0.02em;
+    }
+
+    h1 span { color: var(--green); }
+
+    p {
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.6;
+      max-width: 420px;
+      margin: 0 auto 2rem;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      max-width: 420px;
+      width: 100%;
+      margin-bottom: 2rem;
+      text-align: left;
+    }
+
+    .card-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 1rem;
+    }
+
+    .tip { display: flex; align-items: flex-start; gap: 0.75rem; margin-bottom: 0.75rem; }
+    .tip:last-child { margin-bottom: 0; }
+    .tip-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+    .tip-text { font-size: 0.9rem; color: var(--muted); line-height: 1.4; }
+    .tip-text strong { color: var(--text); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--green);
+      color: #fff;
+      border: none;
+      padding: 0.75rem 1.75rem;
+      border-radius: 0.75rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.88; }
+
+    #status {
+      margin-top: 1.5rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+      min-height: 1.2em;
+    }
+    #status.online { color: var(--green); }
+  </style>
+</head>
+<body>
+
+  <div class="icon-wrapper">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M1 6s4-4 11-4 11 4 11 4"/>
+      <path d="M5 10s2.5-2.5 7-2.5 7 2.5 7 2.5"/>
+      <line x1="1" y1="1" x2="23" y2="23"/>
+      <circle cx="12" cy="20" r="1" fill="currentColor"/>
+    </svg>
+  </div>
+
+  <h1>Mode <span>Hors-ligne</span></h1>
+  <p>
+    Vous n'avez pas de connexion internet pour le moment.
+    EduMatrix a sauvegardé vos données localement — elles seront synchronisées automatiquement dès le retour du réseau.
+  </p>
+
+  <div class="card">
+    <div class="card-title">Ce que vous pouvez faire</div>
+    <div class="tip">
+      <span class="tip-icon">📋</span>
+      <span class="tip-text"><strong>Consulter</strong> les élèves, notes et bulletins déjà chargés</span>
+    </div>
+    <div class="tip">
+      <span class="tip-icon">✏️</span>
+      <span class="tip-text"><strong>Saisir</strong> des notes et présences (enregistrées localement)</span>
+    </div>
+    <div class="tip">
+      <span class="tip-icon">🔄</span>
+      <span class="tip-text"><strong>Sync automatique</strong> dès que le réseau revient</span>
+    </div>
+  </div>
+
+  <button class="btn" onclick="retry()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+      <path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+      <path d="M8 16H3v5"/>
+    </svg>
+    Réessayer la connexion
+  </button>
+
+  <div id="status"></div>
+
+  <script>
+    function retry() {
+      if (navigator.onLine) {
+        window.location.reload()
+      } else {
+        const s = document.getElementById('status')
+        s.textContent = '❌ Toujours hors-ligne…'
+        s.className = ''
+      }
+    }
+
+    window.addEventListener('online', () => {
+      const s = document.getElementById('status')
+      s.textContent = '🟢 Connexion rétablie ! Rechargement…'
+      s.className = 'online'
+      setTimeout(() => window.location.reload(), 1200)
+    })
+
+    window.addEventListener('offline', () => {
+      const s = document.getElementById('status')
+      s.textContent = '🔴 Connexion perdue'
+      s.className = ''
+    })
+  </script>
+</body>
+</html>

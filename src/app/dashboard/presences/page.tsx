@@ -8,6 +8,9 @@ import { useRouter } from 'next/navigation'
 import AttendanceScanner from '@/components/AttendanceScanner'
 import { UserCheck, BookOpen, Clock, AlertCircle, Loader2, QrCode } from 'lucide-react'
 import { useTeacherClasses } from '@/hooks/useTeacherClasses'
+import { db } from '@/lib/db'
+import { addToSyncQueue, syncFromSupabase } from '@/lib/syncService'
+import { useNetwork } from '@/hooks/useNetwork'
 
 interface ElevePresence {
   id: string
@@ -29,6 +32,8 @@ export default function PresencesPage() {
   const { classeIds: teacherClasseIds, loading: teacherLoading } = useTeacherClasses(
     isTeacher ? profile?.id : null
   )
+
+  const { isOnline, pendingCount } = useNetwork();
 
   const [classes, setClasses] = useState<Classe[]>([])
   
@@ -60,17 +65,20 @@ export default function PresencesPage() {
 
   // Directeur / superadmin : toutes les classes de l'école
   async function loadData(schoolId: string) {
+    if (!db) return
     try {
       setLoading(true)
-      const { data: cls } = await supabase
-        .from('classes')
-        .select('*')
-        .eq('ecole_id', schoolId)
-        .order('nom_classe')
-      
-      setClasses(cls || [])
-      if (cls && cls.length > 0) {
-        setSelectedClasseId(cls[0].id)
+      // 1. Lire depuis Dexie
+      let cls = await db.classes.where('ecole_id').equals(schoolId).sortBy('nom_classe')
+      setClasses(cls as unknown as Classe[])
+      if (cls && cls.length > 0) setSelectedClasseId(cls[0].id)
+
+      // 2. Si Online, Sync du fond
+      if (isOnline) {
+        await syncFromSupabase(schoolId)
+        // Refresh local
+        const freshCls = await db.classes.where('ecole_id').equals(schoolId).sortBy('nom_classe')
+        setClasses(freshCls as unknown as Classe[])
       }
     } finally {
       setLoading(false)
@@ -79,21 +87,24 @@ export default function PresencesPage() {
 
   // Professeur : seulement ses classes assignées
   async function loadDataForTeacher() {
+    if (!ecoleId || !db) return
     try {
       setLoading(true)
       if (!teacherClasseIds.length) {
         setClasses([])
         return
       }
-      const { data: cls } = await supabase
-        .from('classes')
-        .select('*')
-        .in('id', teacherClasseIds)
-        .order('nom_classe')
+      // 1. Lire depuis Dexie
+      let cls = await db.classes.where('ecole_id').equals(ecoleId).toArray()
+      cls = cls.filter(c => teacherClasseIds.includes(c.id))
+      cls.sort((a, b) => a.nom_classe.localeCompare(b.nom_classe))
       
-      setClasses(cls || [])
-      if (cls && cls.length > 0) {
-        setSelectedClasseId(cls[0].id)
+      setClasses(cls as unknown as Classe[])
+      if (cls && cls.length > 0) setSelectedClasseId(cls[0].id)
+
+      // 2. Si Online, Sync
+      if (isOnline) {
+        await syncFromSupabase(ecoleId)
       }
     } finally {
       setLoading(false)
@@ -101,28 +112,25 @@ export default function PresencesPage() {
   }
 
   async function loadTodayPresences(cId: string) {
+    if (!db) return
     const today = new Date().toISOString().split('T')[0]
     
-    // Load all students for the class
-    const { data: studentsData } = await supabase
-      .from('eleves')
-      .select('id, prenom, nom, matricule')
-      .eq('classe_id', cId)
-      .order('nom')
+    // Load all students for the class from Dexie
+    const studentsData = await db.eleves.where('classe_id').equals(cId).toArray()
+    const sortedStudents = studentsData.sort((a,b) => a.nom.localeCompare(b.nom))
 
-    // Load today's presences
-    const { data: presencesData } = await supabase
-      .from('presences')
-      .select('id, eleve_id, statut, heure')
-      .eq('classe_id', cId)
-      .eq('date', today)
+    // Load today's presences from Dexie
+    const presencesData = await db.presences
+      .where('classe_id').equals(cId)
+      .and(p => p.date === today)
+      .toArray()
 
     const presencesMap = new Map()
     if (presencesData) {
       presencesData.forEach((p: any) => presencesMap.set(p.eleve_id, p))
     }
 
-    const combined = (studentsData || []).map((s: any) => {
+    const combined = sortedStudents.map((s: any) => {
       const p = presencesMap.get(s.id)
       return {
         ...s,
@@ -132,7 +140,7 @@ export default function PresencesPage() {
       }
     })
 
-    setEleves(combined)
+    setEleves(combined as ElevePresence[])
   }
 
   async function markPresenceManually(eleveId: string, statut: 'présent' | 'absent' | 'retard') {
@@ -140,30 +148,30 @@ export default function PresencesPage() {
     try {
       const today = new Date().toISOString().split('T')[0]
       const now = new Date().toTimeString().split(' ')[0]
-
-      // Check if already exists
       const existing = eleves.find(e => e.id === eleveId)
+      
+      const pId = existing?.presence_id || crypto.randomUUID()
 
-      if (existing?.presence_id) {
-        // Update
-        await supabase
-          .from('presences')
-          .update({ statut, heure: now })
-          .eq('id', existing.presence_id)
-      } else {
-        // Insert
-        await supabase
-          .from('presences')
-          .insert({
-            eleve_id: eleveId,
-            classe_id: selectedClasseId,
-            date: today,
-            heure: now,
-            statut
-          })
+      const presenceData = {
+        id: pId,
+        ecole_id: ecoleId,
+        eleve_id: eleveId,
+        classe_id: selectedClasseId,
+        date: today,
+        heure: now,
+        statut
       }
-      // Reload
-      await loadTodayPresences(selectedClasseId)
+
+      // 1. Local & Optimistic
+      if (db) {
+        await db.presences.put(presenceData as any)
+        setEleves(prev => prev.map(e => e.id === eleveId ? { ...e, presence_id: pId, statut, heure: now } : e))
+      }
+
+      // 2. Queue
+      if (ecoleId) {
+        await addToSyncQueue('presences', 'INSERT', presenceData as any, ecoleId)
+      }
     } finally {
       setMarking(null)
     }
