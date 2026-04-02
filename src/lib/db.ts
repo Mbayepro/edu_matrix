@@ -14,6 +14,10 @@ import type {
   Niveau,
   Serie,
   Profile,
+  Emargement,
+  FraisScolaire,
+  EleveFrais,
+  Paiement,
 } from './supabase'
 
 // ─── Types locaux ─────────────────────────────────────────────────────────────
@@ -27,6 +31,10 @@ export interface LocalPresence extends Presence {}
 export interface LocalNiveau extends Niveau {}
 export interface LocalSerie extends Serie {}
 export interface LocalProfile extends Profile {}
+export interface LocalEmargement extends Emargement {}
+export interface LocalFraisScolaire extends FraisScolaire {}
+export interface LocalEleveFrais extends EleveFrais {}
+export interface LocalPaiement extends Paiement {}
 
 /**
  * Une action en attente de synchronisation vers Supabase.
@@ -55,12 +63,16 @@ export class EduMatrixDB extends Dexie {
   niveaux!:     Table<LocalNiveau,     string>
   series!:      Table<LocalSerie,      string>
   profiles!:    Table<LocalProfile,    string>
+  emargements!: Table<LocalEmargement, string>
+  frais_scolaires!: Table<LocalFraisScolaire, string>
+  eleves_frais!: Table<LocalEleveFrais, string>
+  paiements!:   Table<LocalPaiement,   string>
   sync_queue!:  Table<SyncAction,      number>
 
   constructor() {
     super('EduMatrixDB')
 
-    this.version(1).stores({
+    this.version(2).stores({
       eleves:      'id, ecole_id, classe_id',
       classes:     'id, ecole_id',
       matieres:    'id, ecole_id',
@@ -70,6 +82,10 @@ export class EduMatrixDB extends Dexie {
       niveaux:     'id, ecole_id',
       series:      'id, ecole_id',
       profiles:    'id, ecole_id, role',
+      emargements: 'id, prof_id, classe_id, matiere_id, ecole_id',
+      frais_scolaires: 'id, ecole_id',
+      eleves_frais: 'id, eleve_id, ecole_id',
+      paiements:   'id, eleve_id, ecole_id',
       sync_queue:  '++id, table, action, createdAt, attempts',
     })
   }

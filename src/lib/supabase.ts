@@ -159,6 +159,16 @@ export interface Presence {
   eleve?: Eleve
 }
 
+export interface Emargement {
+  id: string
+  prof_id: string
+  classe_id: string
+  matiere_id: string
+  date_heure: string
+  sujet_cours: string
+  ecole_id: string
+}
+
 export interface FraisScolaire {
   id: string
   ecole_id: string
@@ -243,6 +253,7 @@ export type Database = {
       paiements:       { Row: Paiement;      Insert: Omit<Paiement,      'id' | 'created_at'>; Update: Partial<Omit<Paiement, 'id' | 'created_at'>> }
       enseignants_classes: { Row: EnseignantClasse; Insert: Omit<EnseignantClasse, 'id' | 'created_at'>; Update: Partial<Omit<EnseignantClasse, 'id' | 'created_at'>> }
       emploi_du_temps: { Row: EmploiDuTemps; Insert: Omit<EmploiDuTemps, 'id' | 'created_at'>; Update: Partial<Omit<EmploiDuTemps, 'id' | 'created_at'>> }
+      emargements:     { Row: Emargement;     Insert: Omit<Emargement,     'id'>; Update: Partial<Omit<Emargement, 'id'>> }
     }
     Views: {
       v_moyennes_matieres: { Row: any; Insert: never; Update: never }

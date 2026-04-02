@@ -12,7 +12,9 @@ import {
   GraduationCap, LayoutGrid, Users, BookOpen,
   TrendingUp, UserCheck, LogOut, Menu, X,
   Bell, ChevronRight, Settings, Calendar, FileText, BookMarked, UsersRound,
+  ClipboardList, Wallet, Wifi, WifiOff, RefreshCw
 } from 'lucide-react'
+import { useNetwork } from '@/hooks/useNetwork'
 import { ToastProvider } from '@/contexts/ToastContext'
 import InstallButton from './InstallButton'
 
@@ -28,6 +30,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Vue Globale',         href: '/dashboard/superadmin',            icon: LayoutGrid,    roles: ['superadmin'] },
   { label: 'Tableau de bord',     href: '/dashboard',                       icon: LayoutGrid,    roles: ['director'] },
   { label: 'Mon tableau de bord', href: '/dashboard/teacher',               icon: LayoutGrid,    roles: ['teacher'] },
+  { label: 'Cahier de Textes',    href: '/dashboard/teacher/emargement',    icon: ClipboardList, roles: ['teacher'] },
   { label: 'Validation',          href: '/dashboard/admin/validation',      icon: BookOpen,      roles: ['superadmin'] },
   { label: 'Toutes les écoles',   href: '/dashboard/admin/ecoles',          icon: LayoutGrid,    roles: ['superadmin'] },
   { label: 'Classes',             href: '/dashboard/classes',               icon: BookOpen,      roles: ['director', 'superadmin'] },
@@ -39,7 +42,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Bulletins',           href: '/dashboard/bulletins',             icon: FileText,      roles: ['superadmin', 'director', 'teacher'] },
   { label: 'Conseil de Classe',   href: '/dashboard/conseil-classe',        icon: UsersRound,    roles: ['superadmin', 'director'] },
   { label: 'Présences',           href: '/dashboard/presences',             icon: UserCheck,     roles: ['superadmin', 'director', 'teacher'] },
-  { label: 'Paiements',           href: '/dashboard/paiements',             icon: TrendingUp,    roles: ['superadmin', 'director'] },
+  { label: 'Caisse & Paiements',  href: '/dashboard/paiements',             icon: Wallet,        roles: ['superadmin', 'director'] },
   { label: 'Paramètres',          href: '/dashboard/parametres',            icon: Settings,      roles: ['superadmin', 'director'] },
 ]
 
@@ -123,6 +126,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return <div className="min-h-screen bg-slate-50 flex items-center justify-center">Chargement...</div>
   }
 
+  const NetworkBadge = () => {
+    const { isOnline, pendingCount, isSyncing } = useNetwork()
+    return (
+      <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[9px] font-black uppercase tracking-widest transition-all ${
+        isOnline 
+          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+          : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+      }`}>
+        <div className={`w-1 h-1 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
+        {isOnline ? 'Connecté' : 'Hors-ligne'}
+        {pendingCount > 0 && (
+          <span className="ml-1 text-amber-400 flex items-center gap-0.5">
+            ({pendingCount})
+          </span>
+        )}
+        {isSyncing && <RefreshCw className="w-2 h-2 animate-spin ml-1" />}
+      </div>
+    )
+  }
+
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo Zone */}
@@ -132,11 +155,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
         <div className="min-w-0">
           <p className="font-black text-lg text-white leading-none tracking-tight">EduMatrix</p>
-          <div className="flex items-center gap-1.5 mt-1.5">
-            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-            <p className="text-slate-500 text-[10px] uppercase font-bold tracking-widest truncate">
-              {ecole?.nom ?? 'Chargement…'}
-            </p>
+          <div className="mt-1.5 flex items-center gap-2">
+             <NetworkBadge />
           </div>
         </div>
       </div>
@@ -247,7 +267,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               )?.label ?? 'EduMatrix'}
             </h2>
             <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest hidden sm:block">
                 {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
               </p>

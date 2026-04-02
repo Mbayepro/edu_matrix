@@ -23,9 +23,19 @@ import {
   X,
 } from 'lucide-react'
 import { useProfile } from '@/hooks/useProfile'
+import { useNetwork } from '@/hooks/useNetwork'
 import { useToast } from '@/contexts/ToastContext'
 import { generatePaiementRecuPDF, printPaiementRecuPDF, sharePaiementRecu, PaiementRecuInfo } from '@/lib/pdfRecuGenerator'
 import { Skeleton } from '@/components/Skeleton'
+import { db } from '@/lib/db'
+import { syncFromSupabase, addToSyncQueue } from '@/lib/syncService'
+import type { 
+  LocalEleve, 
+  LocalFraisScolaire, 
+  LocalEleveFrais, 
+  LocalPaiement,
+  LocalClasse
+} from '@/lib/db'
 
 interface EleveWithClasse extends Omit<Eleve, 'classe'> {
   classe?: { nom_classe: string }
@@ -51,6 +61,8 @@ export default function PaiementsPage() {
   const [shareOpenId, setShareOpenId] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
+  const { isOnline } = useNetwork()
+
   useEffect(() => {
     if (ecoleId) {
       loadAllData(ecoleId)
@@ -60,75 +72,82 @@ export default function PaiementsPage() {
   }, [ecoleId, profileLoading])
 
   async function loadAllData(schoolId: string) {
+    if (!db) return
     setLoading(true)
     try {
+      // 1. Load from DEXIE (Local First)
       await Promise.all([
-        loadEleves(schoolId),
-        loadFrais(schoolId),
-        loadElevesFrais(schoolId),
-        loadPaiements(schoolId),
+        loadElevesLocal(schoolId),
+        loadFraisLocal(schoolId),
+        loadElevesFraisLocal(schoolId),
+        loadPaiementsLocal(schoolId),
       ])
+
+      // 2. If online, trigger background refresh
+      if (isOnline) {
+        await syncFromSupabase(schoolId)
+        // Re-load after sync to get latest
+        await Promise.all([
+          loadElevesLocal(schoolId),
+          loadFraisLocal(schoolId),
+          loadElevesFraisLocal(schoolId),
+          loadPaiementsLocal(schoolId),
+        ])
+      }
     } finally {
       setLoading(false)
     }
   }
 
-  // Re-filter eleves when search changes
-  useEffect(() => {
-    if (ecoleId) void loadEleves(ecoleId)
-  }, [search])
-
-  async function loadEleves(schoolId: string) {
-    try {
-      let query = supabase
-        .from('eleves')
-        .select('*, classe:classes(nom_classe)')
-        .eq('ecole_id', schoolId)
-        .order('nom')
-
-      if (search.trim()) {
-        query = query.or(
-          `nom.ilike.%${search}%,prenom.ilike.%${search}%,matricule.ilike.%${search}%`
-        )
-      }
-
-      const { data } = await query
-      setEleves((data ?? []) as EleveWithClasse[])
-    } catch (e) {
-      console.error(e)
+  // Local Loaders
+  async function loadElevesLocal(schoolId: string) {
+    if (!db) return
+    const data = await db.eleves.where('ecole_id').equals(schoolId).toArray()
+    let filtered = data
+    if (search.trim()) {
+      const s = search.toLowerCase()
+      filtered = data.filter((e: LocalEleve) => 
+        e.nom.toLowerCase().includes(s) || 
+        e.prenom.toLowerCase().includes(s) || 
+        (e.matricule && e.matricule.toLowerCase().includes(s))
+      )
     }
+    // Enrich with class name
+    const classes = await db.classes.where('ecole_id').equals(schoolId).toArray()
+    const classMap = new Map(classes.map((c: LocalClasse) => [c.id, c.nom_classe]))
+    
+    setEleves(filtered.map((e: LocalEleve) => ({
+      ...e,
+      classe: { nom_classe: classMap.get(e.classe_id) || 'N/A' }
+    })) as EleveWithClasse[])
   }
 
-  async function loadFrais(schoolId: string) {
-    const { data } = await supabase
-      .from('frais_scolaires')
-      .select('*')
-      .eq('ecole_id', schoolId)
-      .eq('is_active', true)
-      .order('libelle')
-    setFrais((data ?? []) as FraisScolaire[])
+  async function loadFraisLocal(schoolId: string) {
+    if (!db) return
+    const data = await db.frais_scolaires.where('ecole_id').equals(schoolId).toArray()
+    setFrais(data.filter((f: LocalFraisScolaire) => f.is_active))
   }
 
-  async function loadElevesFrais(schoolId: string) {
-    const { data } = await supabase
-      .from('eleves_frais')
-      .select('*')
-      .eq('ecole_id', schoolId)
-    setElevesFrais((data ?? []) as EleveFrais[])
+  async function loadElevesFraisLocal(schoolId: string) {
+    if (!db) return
+    const data = await db.eleves_frais.where('ecole_id').equals(schoolId).toArray()
+    setElevesFrais(data)
   }
 
-  async function loadPaiements(schoolId: string) {
-    const { data } = await supabase
-      .from('paiements')
-      .select('*')
-      .eq('ecole_id', schoolId)
-      .order('date_paiement', { ascending: false })
-    setPaiements((data ?? []) as Paiement[])
+  async function loadPaiementsLocal(schoolId: string) {
+    if (!db) return
+    const data = await db.paiements.where('ecole_id').equals(schoolId).toArray()
+    setPaiements(data.sort((a: LocalPaiement, b: LocalPaiement) => new Date(b.date_paiement).getTime() - new Date(a.date_paiement).getTime()))
   }
+
+  // Re-filter when search changes
+  useEffect(() => {
+    if (ecoleId) void loadElevesLocal(ecoleId)
+  }, [search])
 
   async function enregistrerPaiement(e: React.FormEvent) {
     e.preventDefault()
-    if (!selectedEleve || !selectedFraisId || !montant || !ecoleId) return
+    if (!selectedEleve || !selectedFraisId || !montant || !ecoleId || !db) return
     setSaving(true)
     try {
       const m = Number(montant.replace(',', '.'))
@@ -137,28 +156,45 @@ export default function PaiementsPage() {
         return
       }
 
-      const { error: insertError } = await supabase
-        .from('paiements')
-        .insert({
-          ecole_id: ecoleId,
-          eleve_id: selectedEleve.id,
-          frais_id: selectedFraisId,
-          montant: m,
-          mode: mode || null,
-          reference: reference || null,
-          date_paiement: new Date().toISOString(),
-        })
+      const paymentId = crypto.randomUUID()
+      const newPaiement: Paiement = {
+        id: paymentId,
+        ecole_id: ecoleId,
+        eleve_id: selectedEleve.id,
+        frais_id: selectedFraisId,
+        montant: m,
+        mode: mode || null,
+        reference: reference || null,
+        date_paiement: new Date().toISOString(),
+        created_at: new Date().toISOString()
+      }
 
-      if (insertError) {
-        showToast(insertError.message, 'error')
-        return
+      // 1. Enregistrement Paiement (Dexie + Sync Queue)
+      await db.paiements.add(newPaiement)
+      await addToSyncQueue('paiements', 'INSERT', newPaiement as any, ecoleId)
+
+      // 2. Mise à jour Balance Eleve (Offline-First Calculation)
+      const eleveFraisRow = elevesFrais.find(ef => ef.eleve_id === selectedEleve.id && ef.frais_id === selectedFraisId)
+      if (eleveFraisRow) {
+        const newRestant = Math.max(0, eleveFraisRow.montant_a_payer - m)
+        await db.eleves_frais.update(eleveFraisRow.id, { montant_a_payer: newRestant })
+        await addToSyncQueue('eleves_frais', 'UPDATE', { id: eleveFraisRow.id, montant_a_payer: newRestant }, ecoleId)
       }
 
       showToast('Paiement enregistré avec succès.', 'success')
       setMontant('')
       setMode('')
       setReference('')
-      await loadAllData(ecoleId)
+      
+      // Reload UI
+      await Promise.all([
+        loadElevesFraisLocal(ecoleId),
+        loadPaiementsLocal(ecoleId)
+      ])
+
+    } catch (err: any) {
+      console.error(err)
+      showToast('Erreur lors de l\'enregistrement.', 'error')
     } finally {
       setSaving(false)
     }
