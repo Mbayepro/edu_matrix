@@ -32,21 +32,27 @@ async function processAttendance(studentId: string, classeId: string, ecoleId: s
 
     // 1. Fetch Student: Try Supabase first if online
     if (isOnline) {
-      const { data, error } = await (supabase as any)
-        .from('eleves')
-        .select('*')
-        .or(`id.eq.${studentId},matricule.eq.${studentId}`)
+      // Check if studentId is a valid UUID to avoid 400 error on id.eq
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(studentId)
+      
+      let query = (supabase as any).from('eleves').select('*')
+      if (isUUID) {
+        query = query.or(`id.eq.${studentId},matricule.eq.${studentId}`)
+      } else {
+        query = query.eq('matricule', studentId)
+      }
+      
+      const { data, error } = await query
         .eq('ecole_id', ecoleId)
         .maybeSingle()
       
       if (!error && data) {
         eleve = data
-        // Silent background update to Dexie to keep it fresh
         if (db) void db.eleves.put(data)
       }
     }
 
-    // 2. Fallback to Dexie if offline or not found on server
+    // 2. Fallback to Dexie
     if (!eleve && db) {
       eleve = await db.eleves.get(studentId)
       if (!eleve) {

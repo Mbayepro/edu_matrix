@@ -18,49 +18,49 @@ import { getDb, type SyncAction } from './db'
  */
 export async function syncFromSupabase(ecoleId: string): Promise<void> {
   if (typeof window === 'undefined') return
-  if (!navigator.onLine) return
+  if (!navigator.onLine || !ecoleId) return
 
   console.info('[EduMatrix Sync] ⬇️  Pull Supabase → IndexedDB...')
   const db = getDb()
 
-  try {
-    // Parallel fetching pour performance maximale
-    const [elevesRes, classesRes, matieresRes, evaluationsRes, notesRes, niveauxRes, seriesRes, presencesRes, profilesRes, emargementsRes, fraisRes, eleveFraisRes, paiementsRes] = await Promise.all([
-      supabase.from('eleves').select('*').eq('ecole_id', ecoleId),
-      supabase.from('classes').select('*').eq('ecole_id', ecoleId),
-      supabase.from('matieres').select('*').eq('ecole_id', ecoleId),
-      supabase.from('evaluations').select('*').eq('ecole_id', ecoleId),
-      supabase.from('notes').select('*').eq('ecole_id', ecoleId),
-      supabase.from('niveaux').select('*').eq('ecole_id', ecoleId),
-      supabase.from('series').select('*').eq('ecole_id', ecoleId),
-      supabase.from('presences').select('*').eq('ecole_id', ecoleId),
-      supabase.from('profiles').select('*').eq('ecole_id', ecoleId),
-      supabase.from('emargements').select('*').eq('ecole_id', ecoleId),
-      supabase.from('frais_scolaires').select('*').eq('ecole_id', ecoleId),
-      supabase.from('eleves_frais').select('*').eq('ecole_id', ecoleId),
-      supabase.from('paiements').select('*').eq('ecole_id', ecoleId),
-    ])
+  const tables = [
+    { name: 'ecoles', query: supabase.from('ecoles').select('*').eq('id', ecoleId) },
+    { name: 'niveaux', query: supabase.from('niveaux').select('*').eq('ecole_id', ecoleId) },
+    { name: 'series', query: supabase.from('series').select('*').eq('ecole_id', ecoleId) },
+    { name: 'classes', query: supabase.from('classes').select('*').eq('ecole_id', ecoleId) },
+    { name: 'matieres', query: supabase.from('matieres').select('*').eq('ecole_id', ecoleId) },
+    { name: 'coefficients_matieres', query: supabase.from('coefficients_matieres').select('*').eq('ecole_id', ecoleId) },
+    { name: 'evaluations', query: supabase.from('evaluations').select('*').eq('ecole_id', ecoleId) },
+    { name: 'eleves', query: supabase.from('eleves').select('*').eq('ecole_id', ecoleId) },
+    { name: 'notes', query: supabase.from('notes').select('*').eq('ecole_id', ecoleId) },
+    // Use slightly different query for presences (no ecole_id column)
+    { name: 'presences', query: supabase.from('presences').select('*') },
+    { name: 'profiles', query: supabase.from('profiles').select('*').eq('ecole_id', ecoleId) },
+    { name: 'frais_scolaires', query: supabase.from('frais_scolaires').select('*').eq('ecole_id', ecoleId) },
+    { name: 'eleves_frais', query: supabase.from('eleves_frais').select('*').eq('ecole_id', ecoleId) },
+    { name: 'paiements', query: supabase.from('paiements').select('*').eq('ecole_id', ecoleId) },
+    { name: 'emargements', query: supabase.from('emargements').select('*') } // Might fail if table missing
+  ]
 
-    // Bulk upsert dans IndexedDB — séquentiels pour contourner la limite d'args Dexie
-    if (elevesRes.data?.length)      await db.eleves.bulkPut(elevesRes.data)
-    if (classesRes.data?.length)     await db.classes.bulkPut(classesRes.data)
-    if (matieresRes.data?.length)    await db.matieres.bulkPut(matieresRes.data)
-    if (evaluationsRes.data?.length) await db.evaluations.bulkPut(evaluationsRes.data)
-    if (notesRes.data?.length)       await db.notes.bulkPut(notesRes.data)
-    if (niveauxRes.data?.length)     await db.niveaux.bulkPut(niveauxRes.data)
-    if (seriesRes.data?.length)      await db.series.bulkPut(seriesRes.data)
-    if (presencesRes.data?.length)    await db.presences.bulkPut(presencesRes.data)
-    if (profilesRes.data?.length)     await db.profiles.bulkPut(profilesRes.data)
-    if (emargementsRes.data?.length)  await db.emargements.bulkPut(emargementsRes.data)
-    if (fraisRes.data?.length)        await db.frais_scolaires.bulkPut(fraisRes.data)
-    if (eleveFraisRes.data?.length)   await db.eleves_frais.bulkPut(eleveFraisRes.data)
-    if (paiementsRes.data?.length)    await db.paiements.bulkPut(paiementsRes.data)
-
-    console.info('[EduMatrix Sync] ✅ Pull terminé',
-      `(${elevesRes.data?.length ?? 0} élèves, ${notesRes.data?.length ?? 0} notes)`)
-  } catch (err) {
-    console.error('[EduMatrix Sync] ❌ Erreur pull :', err)
+  for (const t of tables) {
+    try {
+      const { data, error } = await t.query
+      if (error) {
+        console.warn(`[EduMatrix Sync] ⚠️ Skip ${t.name}: ${error.message}`)
+        continue
+      }
+      if (data && data.length > 0) {
+        const tableObj = (db as any)[t.name]
+        if (tableObj) {
+          await tableObj.bulkPut(data)
+        }
+      }
+    } catch (err) {
+      console.warn(`[EduMatrix Sync] ❌ Fail ${t.name}:`, err)
+    }
   }
+  
+  console.info('[EduMatrix Sync] ✅ Pull terminé.')
 }
 
 // ─── PUSH : sync_queue → Supabase ────────────────────────────────────────────

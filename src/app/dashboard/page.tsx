@@ -153,23 +153,31 @@ export default function DashboardPage() {
       if (isOnlineSafe) {
         setIsRefreshing(true)
         // Parallel fetching from server
+        // Note: 'presences' table might not have 'ecole_id' directly. 
+        // We filter by checking if we have any total count or using a count of eleves.
         const [elRes, profRes, clRes, presRes] = await Promise.all([
           supabase.from('eleves').select('id, statut_paiement').eq('ecole_id', schoolId),
           supabase.from('profiles').select('id').eq('ecole_id', schoolId).eq('role', 'teacher'),
           supabase.from('classes').select('id').eq('ecole_id', schoolId),
-          supabase.from('presences').select('id').eq('ecole_id', schoolId).eq('date', today).in('statut', ['présent', 'retard']),
+          supabase.from('presences').select('id').eq('date', today).in('statut', ['présent', 'retard']),
         ])
 
         if (elRes.error || profRes.error || clRes.error || presRes.error) {
           console.error('[Dashboard] Supabase error:', { elRes, profRes, clRes, presRes })
           showToast('Erreur de mise à jour en temps réel. Affichage cache local.', 'error')
         } else {
+          // For presences today, since we can't filter by ecole_id directly in Supabase without a join,
+          // and we want speed, we'll use a slightly broader count or just skip it if it's too complex.
+          // BUT, we have elRes, so we could ideally filter presRes by elRes ids.
+          const schoolEleveIds = new Set(elRes.data?.map((e: any) => e.id) || [])
+          const filteredPresences = presRes.data?.filter((p: any) => schoolEleveIds.has(p.eleve_id)) || []
+
           const s: DashboardStats = {
             totalEleves: elRes.data?.length || 0,
             totalEnseignants: profRes.data?.length || 0,
             elevesImpayes: elRes.data?.filter((e: any) => e.statut_paiement === 'impayé').length || 0,
             totalClasses: clRes.data?.length || 0,
-            presencesAujourd: presRes.data?.length || 0,
+            presencesAujourd: filteredPresences.length,
           }
           setStats(s)
           
