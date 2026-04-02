@@ -165,7 +165,7 @@ export default function DashboardPage() {
           supabase.from('eleves').select('id, statut_paiement').eq('ecole_id', schoolId),
           supabase.from('profiles').select('id').eq('ecole_id', schoolId).eq('role', 'teacher'),
           supabase.from('classes').select('id').eq('ecole_id', schoolId),
-          supabase.from('presences').select('id').eq('date', today).in('statut', ['présent', 'retard']),
+          supabase.from('presences').select('id, eleve_id').eq('ecole_id', schoolId).eq('date', today).in('statut', ['présent', 'retard']),
         ])
 
         if (elRes.error || profRes.error || clRes.error || presRes.error) {
