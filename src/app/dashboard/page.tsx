@@ -15,6 +15,8 @@ import {
   LineChart, Line, CartesianGrid,
 } from 'recharts'
 import { Skeleton, SkeletonCard } from '@/components/Skeleton'
+import { useToast } from '@/contexts/ToastContext'
+import { RefreshCw } from 'lucide-react'
 
 interface DashboardStats {
   totalEleves:      number
@@ -89,6 +91,8 @@ export default function DashboardPage() {
   const { profile, ecole, loading: profileLoading } = useProfile()
   const ecoleId = profile?.ecole_id || null
   const { isOnline, pendingCount } = useNetwork()
+  const { showToast } = useToast()
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   useEffect(() => {
     if (profile?.role === 'superadmin') {
@@ -147,6 +151,7 @@ export default function DashboardPage() {
 
       // 2. REAL-TIME UPDATE FROM SUPABASE (If Online)
       if (isOnlineSafe) {
+        setIsRefreshing(true)
         // Parallel fetching from server
         const [elRes, profRes, clRes, presRes] = await Promise.all([
           supabase.from('eleves').select('id, statut_paiement').eq('ecole_id', schoolId),
@@ -155,8 +160,11 @@ export default function DashboardPage() {
           supabase.from('presences').select('id').eq('ecole_id', schoolId).eq('date', today).in('statut', ['présent', 'retard']),
         ])
 
-        if (!elRes.error && !profRes.error && !clRes.error && !presRes.error) {
-          const s = {
+        if (elRes.error || profRes.error || clRes.error || presRes.error) {
+          console.error('[Dashboard] Supabase error:', { elRes, profRes, clRes, presRes })
+          showToast('Erreur de mise à jour en temps réel. Affichage cache local.', 'error')
+        } else {
+          const s: DashboardStats = {
             totalEleves: elRes.data?.length || 0,
             totalEnseignants: profRes.data?.length || 0,
             elevesImpayes: elRes.data?.filter((e: any) => e.statut_paiement === 'impayé').length || 0,
@@ -165,9 +173,10 @@ export default function DashboardPage() {
           }
           setStats(s)
           
-          // Trigger a background sync pull to keep Dexie fresh for the charts
+          // Background pull to update local charts
           void syncFromSupabase(schoolId)
         }
+        setIsRefreshing(false)
       }
 
       // 3. Load Charts (Dexie remains the source for complex chart calculations)
@@ -294,6 +303,14 @@ export default function DashboardPage() {
           </div>
           
           <div className="flex gap-4">
+            <button 
+              onClick={() => ecoleId && loadAll(ecoleId)}
+              className="bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-3xl p-4 border border-white/20 flex flex-col items-center justify-center transition-all active:scale-95 group/btn"
+              title="Synchroniser maintenant"
+            >
+              <RefreshCw className={`w-8 h-8 text-emerald-400 mb-1 ${isRefreshing ? 'animate-spin' : 'group-hover/btn:rotate-180 transition-transform duration-700'}`} />
+              <p className="text-[8px] font-black uppercase tracking-widest opacity-60">Actualiser</p>
+            </button>
             <div className="bg-white/5 backdrop-blur-md rounded-3xl p-6 border border-white/10 text-center min-w-[120px]">
               <p className="text-3xl font-black text-emerald-400">{stats?.presencesAujourd ?? 0}</p>
               <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1">Présences</p>
