@@ -103,7 +103,8 @@ async function processAttendance(studentId: string, classeId: string, ecoleId: s
     const min  = d.getMinutes()
     const statut = (hour > 8 || (hour === 8 && min >= 30)) ? 'retard' : 'présent'
 
-    const presenceData = {
+    // 🛡️ DEXIE PAYLOAD (With local-only fields for indexing)
+    const localPresence = {
       id: crypto.randomUUID(),
       ecole_id: ecoleId,
       eleve_id:  realStudentId,
@@ -113,26 +114,45 @@ async function processAttendance(studentId: string, classeId: string, ecoleId: s
       statut,
     }
 
+    // 🛡️ SUPABASE PAYLOAD (Clean: minimal fields to satisfy RLS and schema)
+    // We omit 'id' to let Supabase generate it (prevents 403/Forbidden on ID ownership)
+    // We omit 'ecole_id' because the column doesn't exist on server (verified 400)
+    const supabasePayload = {
+      eleve_id:  realStudentId,
+      classe_id: eleve.classe_id,
+      date:      today,
+      heure:     now,
+      statut,
+    }
+
     // 5. Save Presence: Try Supabase first if online
     if (isOnline) {
-      const { error } = await (supabase as any)
-        .from('presences')
-        .insert(presenceData)
-      
-      if (error) {
-        // If server fails (e.g. temporary lag), fallback to sync queue
-        if (db) {
-          await db.presences.put(presenceData as any)
-          await addToSyncQueue('presences', 'INSERT', presenceData as any, ecoleId)
+      try {
+        const { error } = await (supabase as any)
+          .from('presences')
+          .insert(supabasePayload)
+        
+        if (error) {
+          console.warn('[Attendance] Supabase error, falling back to local:', error)
+          if (db) {
+            await db.presences.put(localPresence as any)
+            await addToSyncQueue('presences', 'INSERT', supabasePayload as any, ecoleId)
+          }
+        } else if (db) {
+          // Success: update Dexie cache
+          await db.presences.put(localPresence as any)
         }
-      } else if (db) {
-        // Success: update Dexie cache
-        await db.presences.put(presenceData as any)
+      } catch (err) {
+        console.warn('[Attendance] Network exception:', err)
+        if (db) {
+          await db.presences.put(localPresence as any)
+          await addToSyncQueue('presences', 'INSERT', supabasePayload as any, ecoleId)
+        }
       }
     } else if (db) {
       // Offline mode
-      await db.presences.put(presenceData as any)
-      await addToSyncQueue('presences', 'INSERT', presenceData as any, ecoleId)
+      await db.presences.put(localPresence as any)
+      await addToSyncQueue('presences', 'INSERT', supabasePayload as any, ecoleId)
     }
 
     return {
