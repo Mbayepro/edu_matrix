@@ -83,7 +83,7 @@ function ChartTooltip({ active, payload, label }: any) {
 
 import { CalculateurMoyennes } from '@/lib/calculMoyennes'
 import { db } from '@/lib/db'
-import { syncFromSupabase } from '@/lib/syncService'
+import { syncFromSupabase, flushSyncQueue } from '@/lib/syncService'
 import { useNetwork } from '@/hooks/useNetwork'
 
 export default function DashboardPage() {
@@ -129,6 +129,12 @@ export default function DashboardPage() {
     
     try {
       const today = new Date().toISOString().split('T')[0]
+
+      // 0. PUSH PENDING DATA FIRST (Garantit que le serveur est à jour avant de lire les stats)
+      if (isOnlineSafe) {
+        setIsRefreshing(true)
+        await flushSyncQueue()
+      }
       
       // 1. FAST LOAD FROM DEXIE (Instant UI)
       if (db) {
