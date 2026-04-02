@@ -12,7 +12,7 @@ import {
   GraduationCap, LayoutGrid, Users, BookOpen,
   TrendingUp, UserCheck, LogOut, Menu, X,
   Bell, ChevronRight, Settings, Calendar, FileText, BookMarked, UsersRound,
-  ClipboardList, Wallet, Wifi, WifiOff, RefreshCw
+  ClipboardList, Wallet, Wifi, WifiOff, RefreshCw, Clock
 } from 'lucide-react'
 import { useNetwork } from '@/hooks/useNetwork'
 import { ToastProvider } from '@/contexts/ToastContext'
@@ -113,10 +113,53 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
            </div>
         </header>
 
-        <main className="flex-1">
-          <ToastProvider>
-            {children}
-          </ToastProvider>
+        <main className="flex-1 flex items-center justify-center p-6 bg-slate-950 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[100px] -mr-64 -mt-64" />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-[100px] -ml-48 -mb-48" />
+          
+          <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-[2.5rem] p-10 shadow-2xl relative z-10 text-center space-y-8 animate-in fade-in zoom-in duration-500">
+            <div className="w-20 h-20 bg-amber-500/10 border border-amber-500/20 rounded-3xl flex items-center justify-center mx-auto mb-2 group">
+              <Clock className="w-10 h-10 text-amber-500 group-hover:scale-110 transition-transform duration-500" />
+            </div>
+            
+            <div className="space-y-3">
+              <h1 className="text-3xl font-black text-white tracking-tight">Compte en attente</h1>
+              <p className="text-slate-400 text-sm font-medium leading-relaxed">
+                Votre demande d&apos;adhésion est en cours d&apos;examen par les administrateurs d&apos;EduMatrix.
+              </p>
+            </div>
+
+            <div className="p-5 bg-amber-500/5 rounded-2xl border border-amber-500/10 text-[11px] text-amber-200/70 font-bold uppercase tracking-widest leading-loose">
+              Délai moyen de validation : <span className="text-amber-400">24h à 48h</span>
+            </div>
+
+            <div className="space-y-4 pt-4">
+              <button 
+                onClick={async () => {
+                  const { reload } = (profile as any); // Cast for any reload provided by useProfile
+                  if (typeof (children as any)?.props?.reload === 'function') {
+                     // If we have access to context reload
+                  }
+                  window.location.reload(); // Hard refresh to force a full update from Supabase/Auth
+                }}
+                className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-emerald-600/20 active:scale-95"
+              >
+                Actualiser mon statut
+              </button>
+              
+              <button 
+                onClick={handleSignOut}
+                className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-2xl text-xs font-black uppercase tracking-widest transition-all"
+              >
+                Déconnexion
+              </button>
+            </div>
+
+            <div className="flex items-center justify-center gap-2 pt-4">
+              <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
+              <p className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em]">Vérification en temps réel</p>
+            </div>
+          </div>
         </main>
       </div>
     )

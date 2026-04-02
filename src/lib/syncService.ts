@@ -157,6 +157,11 @@ export async function addToSyncQueue(
     createdAt: Date.now(),
     attempts: 0,
   })
+
+  // Immediate Flush attempt if online
+  if (typeof window !== 'undefined' && navigator.onLine) {
+    void flushSyncQueue()
+  }
 }
 
 /**

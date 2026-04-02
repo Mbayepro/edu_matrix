@@ -10,6 +10,10 @@ import { useToast } from '@/contexts/ToastContext'
 import type { Classe, Profile } from '@/lib/supabase'
 import { BookOpen, Plus, Trash2, Loader2, Users, GraduationCap, Edit2, Check, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useNetwork } from '@/hooks/useNetwork'
+import { db } from '@/lib/db'
+import { syncFromSupabase, addToSyncQueue } from '@/lib/syncService'
+import type { LocalClasse, LocalEleve } from '@/lib/db'
 
 interface ClasseAvecEleves extends Classe {
   nb_eleves?: number
@@ -35,6 +39,8 @@ export default function ClassesPage() {
     '2nde', '1ère', 'Terminale',
   ]
 
+  const { isOnline } = useNetwork()
+
   useEffect(() => { 
     if (ecoleId) {
       loadClasses(ecoleId)
@@ -44,22 +50,29 @@ export default function ClassesPage() {
   }, [ecoleId, profileLoading])
 
   async function loadClasses(eid: string) {
+    if (!db) return
     try {
       setLoading(true)
-      // Single query: fetch all classes + count of students per class
-      const { data: cls } = await supabase
-        .from('classes')
-        .select('*, eleves(count)')
-        .eq('ecole_id', eid)
-        .order('nom_classe')
+      // 1. Load from LOCAL (Dexie)
+      const cls = await db.classes.where('ecole_id').equals(eid).toArray()
+      const eleves = await db.eleves.where('ecole_id').equals(eid).toArray()
 
-      if (!cls) { setClasses([]); return }
-
-      const withCounts: ClasseAvecEleves[] = cls.map((c: any) => ({
+      const withCounts: ClasseAvecEleves[] = cls.map((c: LocalClasse) => ({
         ...c,
-        nb_eleves: c.eleves?.[0]?.count ?? 0,
+        nb_eleves: eleves.filter((e: LocalEleve) => e.classe_id === c.id).length,
       }))
       setClasses(withCounts)
+
+      // 2. Background Pull if Online
+      if (isOnline) {
+        await syncFromSupabase(eid)
+        const updatedCls = await db.classes.where('ecole_id').equals(eid).toArray()
+        const updatedEleves = await db.eleves.where('ecole_id').equals(eid).toArray()
+        setClasses(updatedCls.map((c: LocalClasse) => ({
+          ...c,
+          nb_eleves: updatedEleves.filter((e: LocalEleve) => e.classe_id === c.id).length,
+        })))
+      }
     } finally {
       setLoading(false)
     }
@@ -67,33 +80,51 @@ export default function ClassesPage() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
-    if (!ecoleId || !form.nom_classe || !form.niveau) return
+    if (!ecoleId || !form.nom_classe || !form.niveau || !db) return
     setSaving(true)
     try {
-      const { error } = await supabase.from('classes').insert({
+      const newClasse: Classe = {
+        id: crypto.randomUUID(),
         ecole_id: ecoleId,
         nom_classe: form.nom_classe.trim(),
         niveau: form.niveau,
-      })
-      if (error) { showToast('Erreur : ' + error.message, 'error'); return }
+        created_at: new Date().toISOString()
+      }
+
+      // 1. Save Locally (Dexie)
+      await db.classes.add(newClasse)
+
+      // 2. Add to Sync Queue
+      await addToSyncQueue('classes', 'INSERT', newClasse as any, ecoleId)
+
       showToast('Classe créée avec succès !', 'success')
       setForm({ nom_classe: '', niveau: '' })
       await loadClasses(ecoleId)
+    } catch (err: any) {
+      showToast('Erreur : ' + err.message, 'error')
     } finally { setSaving(false) }
   }
 
   async function handleUpdate(id: string) {
-    if (!ecoleId) return
+    if (!ecoleId || !db) return
     setSaving(true)
     try {
-      const { error } = await supabase.from('classes').update({
+      const updates = {
         nom_classe: editForm.nom_classe.trim(),
         niveau: editForm.niveau,
-      }).eq('id', id)
-      if (error) { showToast('Erreur : ' + error.message, 'error'); return }
+      }
+
+      // 1. Update Locally
+      await db.classes.update(id, updates)
+
+      // 2. Sync Queue
+      await addToSyncQueue('classes', 'UPDATE', { id, ...updates }, ecoleId)
+
       showToast('Classe mise à jour avec succès !', 'success')
       setEditId(null)
       await loadClasses(ecoleId)
+    } catch (err: any) {
+      showToast('Erreur : ' + err.message, 'error')
     } finally { setSaving(false) }
   }
 
@@ -103,9 +134,20 @@ export default function ClassesPage() {
       return
     }
     if (!confirm('Supprimer cette classe ?')) return
-    await supabase.from('classes').delete().eq('id', id)
-    showToast('Classe supprimée.', 'success')
-    if (ecoleId) await loadClasses(ecoleId)
+    if (!db) return
+
+    try {
+      // 1. Delete Locally
+      await db.classes.delete(id)
+
+      // 2. Sync Queue
+      await addToSyncQueue('classes', 'DELETE', { id }, ecoleId!)
+
+      showToast('Classe supprimée.', 'success')
+      await loadClasses(ecoleId!)
+    } catch (err: any) {
+      showToast('Erreur.', 'error')
+    }
   }
 
   function startEdit(c: ClasseAvecEleves) {
