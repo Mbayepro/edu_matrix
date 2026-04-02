@@ -4,7 +4,6 @@
 // Gestion des classes de l'école (Directeur/Admin)
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
 import { useProfile } from '@/hooks/useProfile'
 import { useToast } from '@/contexts/ToastContext'
 import type { Classe, Profile } from '@/lib/supabase'
@@ -13,6 +12,7 @@ import { useRouter } from 'next/navigation'
 import { useNetwork } from '@/hooks/useNetwork'
 import { db } from '@/lib/db'
 import { syncFromSupabase, addToSyncQueue } from '@/lib/syncService'
+import { supabase } from '@/lib/supabase'
 import type { LocalClasse, LocalEleve } from '@/lib/db'
 
 interface ClasseAvecEleves extends Classe {
@@ -80,24 +80,41 @@ export default function ClassesPage() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
-    if (!ecoleId || !form.nom_classe || !form.niveau || !db) return
+    if (!ecoleId || !form.nom_classe || !form.niveau) return
     setSaving(true)
+    
+    const newClasse: Classe = {
+      id: crypto.randomUUID(),
+      ecole_id: ecoleId,
+      nom_classe: form.nom_classe.trim(),
+      niveau: form.niveau,
+      created_at: new Date().toISOString()
+    }
+
     try {
-      const newClasse: Classe = {
-        id: crypto.randomUUID(),
-        ecole_id: ecoleId,
-        nom_classe: form.nom_classe.trim(),
-        niveau: form.niveau,
-        created_at: new Date().toISOString()
+      if (isOnline) {
+        // 1. Try DIRECT Supabase
+        const { error } = await (supabase as any).from('classes').insert({
+          id: newClasse.id,
+          ecole_id: newClasse.ecole_id,
+          nom_classe: newClasse.nom_classe,
+          niveau: newClasse.niveau
+        })
+        
+        if (error) throw error
+        
+        // Success -> Update Dexie
+        if (db) await db.classes.add(newClasse)
+        showToast('Classe créée (En ligne) !', 'success')
+      } else {
+        // 2. Offline Fallback
+        if (db) {
+          await db.classes.add(newClasse)
+          await addToSyncQueue('classes', 'INSERT', newClasse as any, ecoleId)
+        }
+        showToast('Classe créée (Hors-ligne) !', 'success')
       }
 
-      // 1. Save Locally (Dexie)
-      await db.classes.add(newClasse)
-
-      // 2. Add to Sync Queue
-      await addToSyncQueue('classes', 'INSERT', newClasse as any, ecoleId)
-
-      showToast('Classe créée avec succès !', 'success')
       setForm({ nom_classe: '', niveau: '' })
       await loadClasses(ecoleId)
     } catch (err: any) {

@@ -175,27 +175,53 @@ export class CalculateurMoyennes {
 
         const isBonus = (coeff.matiere as any)?.est_bonus || false
         
-        // Normalisation
+        // --- MULTI-COEFFICIENT HANDLING ---
+        // For each note, we try to use its evaluation.coef if available.
+        // If the subject has mixed coefficients, we calculate the weighted average of notes instead of a simple average.
+        
+        const getEffectiveCoef = (n: any) => {
+          const ev = evalsMap.get(n.evaluation_id)
+          return (ev?.coef && ev.coef > 0) ? Number(ev.coef) : Number(coeff.coefficient)
+        }
+
         const normaliser = (n: any) => {
           const ev = evalsMap.get(n.evaluation_id)
           return (Number(n.note) / Number(ev.bareme || 20)) * 20
         }
-        
+
         const notesCC = matiereNotes.filter(n => evalsMap.get(n.evaluation_id)?.type !== 'composition')
         const noteComp = matiereNotes.find(n => evalsMap.get(n.evaluation_id)?.type === 'composition')
-        
-        const resMatiere = this.calculerMoyenneMatiereBase(
-          notesCC.map(n => normaliser(n)),
-          noteComp ? normaliser(noteComp) : null,
-          'BLOCKS',
-          isPrimaire
-        )
 
-        const finalMoyenneMatiere = resMatiere.moyenne
-        const finalMoyCC = resMatiere.moyenne_controles
-        const finalComp = noteComp ? (normaliser(noteComp) / (isPrimaire ? 2 : 1)) : undefined
+        // Weighted Average of CC Notes
+        let sumCCPoints = 0
+        let sumCCCoefs  = 0
+        notesCC.forEach(n => {
+          const c = getEffectiveCoef(n)
+          sumCCPoints += (normaliser(n) * c)
+          sumCCCoefs  += c
+        })
+        const moyCC20 = sumCCCoefs > 0 ? (sumCCPoints / sumCCCoefs) : 0
+
+        // Composition Note
+        const comp20 = noteComp ? normaliser(noteComp) : null
         
-        const totalPointsMatiere = Math.round(finalMoyenneMatiere * Number(coeff.coefficient) * 100) / 100
+        // Final Subject Average (School Rule: (MoyCC + Comp) / 2)
+        let finalMoyenne20 = 0
+        if (comp20 === null) {
+          finalMoyenne20 = moyCC20
+        } else {
+          finalMoyenne20 = (moyCC20 + comp20) / 2
+        }
+
+        const scaleFactor = isPrimaire ? 2 : 1
+        const finalMoyenneMatiere = Math.round((finalMoyenne20 / scaleFactor) * 100) / 100
+        const finalMoyCC = Math.round((moyCC20 / scaleFactor) * 100) / 100
+        const finalComp = noteComp ? (normaliser(noteComp) / scaleFactor) : undefined
+        
+        // Subject Weight (Use the main coefficient or evaluate the primary one used)
+        // If all notes for this subject used a specific coef, that's the one we should use on the bulletin.
+        const mainSubjectCoef = (matiereNotes.length > 0) ? getEffectiveCoef(matiereNotes[0]) : Number(coeff.coefficient)
+        const totalPointsMatiere = Math.round(finalMoyenneMatiere * mainSubjectCoef * 100) / 100
 
         const devoirsSorted = [...notesCC].sort((a: any, b: any) => {
            const evA = evalsMap.get(a.evaluation_id)
@@ -206,7 +232,7 @@ export class CalculateurMoyennes {
         const matiereResult: MoyenneMatiere = {
           matiere_id: coeff.matiere_id,
           matiere_nom: coeff.matiere!.nom,
-          coefficient: Number(coeff.coefficient),
+          coefficient: mainSubjectCoef,
           moyenne: finalMoyenneMatiere,
           total_points: totalPointsMatiere,
           bareme: baremeMatiere,
@@ -215,9 +241,9 @@ export class CalculateurMoyennes {
           is_bonus: isBonus,
           moyenne_controles: finalMoyCC,
           note_examen: finalComp ? Math.round(finalComp * 100) / 100 : undefined,
-          devoir1: devoirsSorted[0] ? Math.round((normaliser(devoirsSorted[0]) / (isPrimaire ? 2 : 1)) * 100) / 100 : undefined,
-          devoir2: devoirsSorted[1] ? Math.round((normaliser(devoirsSorted[1]) / (isPrimaire ? 2 : 1)) * 100) / 100 : undefined,
-          devoir3: devoirsSorted[2] ? Math.round((normaliser(devoirsSorted[2]) / (isPrimaire ? 2 : 1)) * 100) / 100 : undefined,
+          devoir1: devoirsSorted[0] ? Math.round((normaliser(devoirsSorted[0]) / scaleFactor) * 100) / 100 : undefined,
+          devoir2: devoirsSorted[1] ? Math.round((normaliser(devoirsSorted[1]) / scaleFactor) * 100) / 100 : undefined,
+          devoir3: devoirsSorted[2] ? Math.round((normaliser(devoirsSorted[2]) / scaleFactor) * 100) / 100 : undefined,
         }
 
         if (isBonus) {

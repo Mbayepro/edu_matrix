@@ -120,120 +120,133 @@ export default function DashboardPage() {
   }, [ecoleId, profileLoading])
 
   async function loadAll(schoolId: string) {
-    if (!db) return
+    const isOnlineSafe = typeof navigator !== 'undefined' && navigator.onLine
+    setLoading(stats === null)
+    
     try {
-      setLoading(stats === null) // Only show main loading on first load
       const today = new Date().toISOString().split('T')[0]
-
-      // 1. Lire DEPUIS DEXIE (Instantané)
-      const [totalEleves, totalTeach, elevesImpayes, totalClasses, presencesAujourd] = await Promise.all([
-        db.eleves.where('ecole_id').equals(schoolId).count(),
-        db.profiles.where('ecole_id').equals(schoolId).and(p => p.role === 'teacher').count(),
-        db.eleves.where('ecole_id').equals(schoolId).and(e => e.statut_paiement === 'impayé').count(),
-        db.classes.where('ecole_id').equals(schoolId).count(),
-        db.presences.where('ecole_id').equals(schoolId).and(p => p.date === today && (p.statut === 'présent' || p.statut === 'retard')).count(),
-      ])
-
-      setStats({
-        totalEleves,
-        totalEnseignants: totalTeach,
-        elevesImpayes,
-        totalClasses,
-        presencesAujourd,
-      })
-
-      // Récents élèves (Dexie)
-      const recents = await db.eleves.where('ecole_id').equals(schoolId).limit(6).toArray()
-      // Note: for class name, we might need a join or just leave as is if we don't have joined names in Dexie yet
-      // For now, let's just use the ID as a placeholder or fetch classes mapping
-      const classesMap = new Map((await db.classes.where('ecole_id').equals(schoolId).toArray()).map(c => [c.id, c.nom_classe]))
       
-      setRecentEleves(recents.map(e => ({
-        ...e,
-        classe: { nom_classe: classesMap.get(e.classe_id) || 'N/A' }
-      })) as unknown as RecentEleve[])
+      // 1. FAST LOAD FROM DEXIE (Instant UI)
+      if (db) {
+        const [totalEleves, totalTeach, elevesImpayes, totalClasses, presencesAujourd] = await Promise.all([
+          db.eleves.where('ecole_id').equals(schoolId).count(),
+          db.profiles.where('ecole_id').equals(schoolId).and(p => p.role === 'teacher').count(),
+          db.eleves.where('ecole_id').equals(schoolId).and(e => e.statut_paiement === 'impayé').count(),
+          db.classes.where('ecole_id').equals(schoolId).count(),
+          db.presences.where('ecole_id').equals(schoolId).and(p => p.date === today && (p.statut === 'présent' || p.statut === 'retard')).count(),
+        ])
 
-      // Présences 7 derniers jours (Dexie)
-      const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
-      const startDate = sevenDaysAgo.toISOString().split('T')[0]
-      const presRaw = await db.presences
-        .where('ecole_id').equals(schoolId)
-        .and(p => p.date >= startDate)
-        .toArray()
-
-      const presMap: Record<string, { present: number; absent: number }> = {}
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(); d.setDate(d.getDate() - i)
-        presMap[d.toISOString().split('T')[0]] = { present: 0, absent: 0 }
+        setStats({
+          totalEleves,
+          totalEnseignants: totalTeach,
+          elevesImpayes,
+          totalClasses,
+          presencesAujourd,
+        })
       }
-      presRaw?.forEach((p: any) => {
-        if (!presMap[p.date]) return
-        if (p.statut === 'présent' || p.statut === 'retard') presMap[p.date].present++
-        else presMap[p.date].absent++
-      })
-      setPresenceChart(Object.entries(presMap).map(([ds, counts]) => ({
-        jour: new Date(ds).toLocaleDateString('fr-FR', { weekday: 'short' }),
-        ...counts
-      })))
 
-      // Moyennes par classe (Dexie using engine logic)
-      const classesList = await db.classes.where('ecole_id').equals(schoolId).limit(6).toArray()
-      const notesCache = await db.notes.where('ecole_id').equals(schoolId).toArray()
-      const evalsCache = await db.evaluations.where('ecole_id').equals(schoolId).toArray()
-      const evalsMap = new Map(evalsCache.map(v => [v.id, v]))
+      // 2. REAL-TIME UPDATE FROM SUPABASE (If Online)
+      if (isOnlineSafe) {
+        // Parallel fetching from server
+        const [elRes, profRes, clRes, presRes] = await Promise.all([
+          supabase.from('eleves').select('id, statut_paiement').eq('ecole_id', schoolId),
+          supabase.from('profiles').select('id').eq('ecole_id', schoolId).eq('role', 'teacher'),
+          supabase.from('classes').select('id').eq('ecole_id', schoolId),
+          supabase.from('presences').select('id').eq('ecole_id', schoolId).eq('date', today).in('statut', ['présent', 'retard']),
+        ])
 
-      const avgs = classesList.map(cl => {
-        const classNotes = notesCache.filter(n => {
-          const ev = evalsMap.get(n.evaluation_id)
-          return ev?.classe_id === cl.id
-        })
-        
-        if (!classNotes.length) return { classe: cl.nom_classe, moyenne: 0 }
-
-        // Group notes by student to get their individual averages first
-        const studentIds = Array.from(new Set(classNotes.map(n => n.eleve_id)))
-        const studentAverages = studentIds.map(sid => {
-          const sNotes = classNotes.filter(n => n.eleve_id === sid)
-          const notesCC = sNotes.filter(n => evalsMap.get(n.evaluation_id)?.type !== 'composition').map(n => {
-            const ev = evalsMap.get(n.evaluation_id)
-            return (n.note / (ev?.bareme || 20)) * 20
-          })
-          const noteCompRaw = sNotes.find(n => evalsMap.get(n.evaluation_id)?.type === 'composition')
-          let noteComp: number | null = null
-          if (noteCompRaw) {
-             const ev = evalsMap.get(noteCompRaw.evaluation_id)
-             noteComp = (noteCompRaw.note / (ev?.bareme || 20)) * 20
+        if (!elRes.error && !profRes.error && !clRes.error && !presRes.error) {
+          const s = {
+            totalEleves: elRes.data?.length || 0,
+            totalEnseignants: profRes.data?.length || 0,
+            elevesImpayes: elRes.data?.filter((e: any) => e.statut_paiement === 'impayé').length || 0,
+            totalClasses: clRes.data?.length || 0,
+            presencesAujourd: presRes.data?.length || 0,
           }
-
-          const res = CalculateurMoyennes.calculerMoyenneMatiereBase(
-            notesCC,
-            noteComp,
-            'BLOCKS',
-            (cl.niveau?.includes('CM') || cl.niveau?.includes('CE') || cl.niveau?.includes('CP') || cl.niveau?.includes('CI'))
-          )
-          return res.moyenne
-        })
-
-        const classAvg = studentAverages.reduce((a, b) => a + b, 0) / studentAverages.length
-        
-        return { 
-          classe: cl.nom_classe, 
-          moyenne: Math.round(classAvg * 100) / 100
+          setStats(s)
+          
+          // Trigger a background sync pull to keep Dexie fresh for the charts
+          void syncFromSupabase(schoolId)
         }
-      })
-      setNotesChart(avgs.filter(a => a.moyenne > 0))
-      setNotesChart(avgs.filter(a => a.moyenne > 0))
+      }
 
-      // 2. BACKGROUND REFRESH (PULL) SI ONLINE
-      if (isOnline) {
-        syncFromSupabase(schoolId).then(() => {
-          // If needed, re-trigger a quiet re-load of the local state here
-          // but avoiding an infinite loop
+      // 3. Load Charts (Dexie remains the source for complex chart calculations)
+      if (db) {
+        // Récents élèves (Dexie)
+        const recents = await db.eleves.where('ecole_id').equals(schoolId).limit(6).toArray()
+        const classesMap = new Map((await db.classes.where('ecole_id').equals(schoolId).toArray()).map(c => [c.id, c.nom_classe]))
+        
+        setRecentEleves(recents.map(e => ({
+          ...e,
+          classe: { nom_classe: classesMap.get(e.classe_id) || 'N/A' }
+        })) as unknown as RecentEleve[])
+
+        // Présences 7 derniers jours (Dexie)
+        const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
+        const startDate = sevenDaysAgo.toISOString().split('T')[0]
+        const presRaw = await db.presences.where('ecole_id').equals(schoolId).and(p => p.date >= startDate).toArray()
+
+        const presMap: Record<string, { present: number; absent: number }> = {}
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(); d.setDate(d.getDate() - i)
+          presMap[d.toISOString().split('T')[0]] = { present: 0, absent: 0 }
+        }
+        presRaw?.forEach((p: any) => {
+          if (!presMap[p.date]) return
+          if (p.statut === 'présent' || p.statut === 'retard') presMap[p.date].present++
+          else presMap[p.date].absent++
         })
+        setPresenceChart(Object.entries(presMap).map(([ds, counts]) => ({
+          jour: new Date(ds).toLocaleDateString('fr-FR', { weekday: 'short' }),
+          ...counts
+        })))
+
+        // Moyennes par classe (Dexie using engine logic)
+        const classesList = await db.classes.where('ecole_id').equals(schoolId).limit(6).toArray()
+        const notesCache = await db.notes.where('ecole_id').equals(schoolId).toArray()
+        const evalsCache = await db.evaluations.where('ecole_id').equals(schoolId).toArray()
+        const evalsMap = new Map(evalsCache.map(v => [v.id, v]))
+
+        const avgs = classesList.map(cl => {
+          const classNotes = notesCache.filter(n => {
+            const ev = evalsMap.get(n.evaluation_id)
+            return ev?.classe_id === cl.id
+          })
+          if (!classNotes.length) return { classe: cl.nom_classe, moyenne: 0 }
+
+          const studentIds = Array.from(new Set(classNotes.map(n => n.eleve_id)))
+          const studentAverages = studentIds.map(sid => {
+            const sNotes = classNotes.filter(n => n.eleve_id === sid)
+            const notesCC = sNotes.filter(n => evalsMap.get(n.evaluation_id)?.type !== 'composition').map(n => {
+              const ev = evalsMap.get(n.evaluation_id)
+              return (n.note / (ev?.bareme || 20)) * 20
+            })
+            const noteCompRaw = sNotes.find(n => evalsMap.get(n.evaluation_id)?.type === 'composition')
+            let noteComp: number | null = null
+            if (noteCompRaw) {
+               const ev = evalsMap.get(noteCompRaw.evaluation_id)
+               noteComp = (noteCompRaw.note / (ev?.bareme || 20)) * 20
+            }
+
+            const res = CalculateurMoyennes.calculerMoyenneMatiereBase(
+              notesCC,
+              noteComp,
+              'BLOCKS',
+              (cl.niveau?.includes('CM') || cl.niveau?.includes('CE') || cl.niveau?.includes('CP') || cl.niveau?.includes('CI'))
+            )
+            return res.moyenne
+          })
+
+          return { 
+            classe: cl.nom_classe, 
+            moyenne: Math.round((studentAverages.reduce((a, b) => a + b, 0) / studentAverages.length) * 100) / 100
+          }
+        })
+        setNotesChart(avgs.filter(a => a.moyenne > 0))
       }
 
     } catch (err) {
-      console.warn('[Dashboard] Dexie load error:', err)
+      console.warn('[Dashboard] Data load error:', err)
     } finally {
       setLoading(false)
     }

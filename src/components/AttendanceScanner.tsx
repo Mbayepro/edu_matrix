@@ -5,10 +5,12 @@ import {
   QrCode, CheckCircle2, AlertCircle, Clock,
   Loader2, UserCheck, RefreshCw, Camera
 } from 'lucide-react'
-import { useProfile } from '@/hooks/useProfile'
-import { db } from '@/lib/db'
-import { addToSyncQueue } from '@/lib/syncService'
 import { useNetwork } from '@/hooks/useNetwork'
+import { db } from '@/lib/db'
+import { syncFromSupabase, addToSyncQueue } from '@/lib/syncService'
+import { supabase } from '@/lib/supabase'
+import type { LocalClasse, LocalEleve } from '@/lib/db'
+import { useProfile } from '@/hooks/useProfile'
 import CameraQRCodeScanner from './CameraQRCodeScanner'
 
 interface ScanResult {
@@ -23,30 +25,61 @@ interface ScanResult {
 // Process a scanned student ID (Offline-compatible)
 // ─────────────────────────────────────────
 async function processAttendance(studentId: string, classeId: string, ecoleId: string): Promise<ScanResult> {
-  if (!db) return { status: 'error', message: 'Base de données non initialisée.' }
+  const isOnline = typeof navigator !== 'undefined' && navigator.onLine
   
   try {
-    // 1. Fetch student from Dexie
-    let eleve = await db.eleves.get(studentId)
-    
-    // Fallback: search by matricule if not found by UUID
-    if (!eleve) {
-      eleve = await db.eleves.where('matricule').equals(studentId).first()
+    let eleve = null
+
+    // 1. Fetch Student: Try Supabase first if online
+    if (isOnline) {
+      const { data, error } = await (supabase as any)
+        .from('eleves')
+        .select('*')
+        .or(`id.eq.${studentId},matricule.eq.${studentId}`)
+        .eq('ecole_id', ecoleId)
+        .maybeSingle()
+      
+      if (!error && data) {
+        eleve = data
+        // Silent background update to Dexie to keep it fresh
+        if (db) void db.eleves.put(data)
+      }
+    }
+
+    // 2. Fallback to Dexie if offline or not found on server
+    if (!eleve && db) {
+      eleve = await db.eleves.get(studentId)
+      if (!eleve) {
+        eleve = await db.eleves.where('matricule').equals(studentId).first()
+      }
     }
 
     if (!eleve) {
-      return { status: 'not_found', message: 'Élève introuvable dans le cache local.' }
+      return { status: 'not_found', message: 'Élève introuvable (Vérifiez la connexion ou le matricule).' }
     }
 
     const realStudentId = eleve.id
     const today = new Date().toISOString().split('T')[0]
     const now   = new Date().toTimeString().split(' ')[0]
 
-    // 2. Check if already registered today in Dexie
-    const existing = await db.presences
-      .where('eleve_id').equals(realStudentId)
-      .and(p => p.date === today)
-      .first()
+    // 3. Check for existing presence
+    let existing = null
+    if (isOnline) {
+      const { data } = await (supabase as any)
+        .from('presences')
+        .select('*')
+        .eq('eleve_id', realStudentId)
+        .eq('date', today)
+        .maybeSingle()
+      existing = data
+    }
+
+    if (!existing && db) {
+      existing = await db.presences
+        .where('eleve_id').equals(realStudentId)
+        .and((p: any) => p.date === today)
+        .first()
+    }
 
     if (existing) {
       return {
@@ -58,7 +91,7 @@ async function processAttendance(studentId: string, classeId: string, ecoleId: s
       }
     }
 
-    // 3. Determine status (retard if after 8:30)
+    // 4. Calculate status
     const d = new Date()
     const hour = d.getHours()
     const min  = d.getMinutes()
@@ -74,11 +107,27 @@ async function processAttendance(studentId: string, classeId: string, ecoleId: s
       statut,
     }
 
-    // 4. Save to Dexie
-    await db.presences.put(presenceData as any)
-
-    // 5. Add to Sync Queue
-    await addToSyncQueue('presences', 'INSERT', presenceData as any, ecoleId)
+    // 5. Save Presence: Try Supabase first if online
+    if (isOnline) {
+      const { error } = await (supabase as any)
+        .from('presences')
+        .insert(presenceData)
+      
+      if (error) {
+        // If server fails (e.g. temporary lag), fallback to sync queue
+        if (db) {
+          await db.presences.put(presenceData as any)
+          await addToSyncQueue('presences', 'INSERT', presenceData as any, ecoleId)
+        }
+      } else if (db) {
+        // Success: update Dexie cache
+        await db.presences.put(presenceData as any)
+      }
+    } else if (db) {
+      // Offline mode
+      await db.presences.put(presenceData as any)
+      await addToSyncQueue('presences', 'INSERT', presenceData as any, ecoleId)
+    }
 
     return {
       status: 'success',
@@ -91,7 +140,7 @@ async function processAttendance(studentId: string, classeId: string, ecoleId: s
     }
   } catch (error) {
     console.error('Error in processAttendance:', error)
-    return { status: 'error', message: 'Erreur lors de l\'enregistrement hors-ligne.' }
+    return { status: 'error', message: 'Erreur technique lors de l\'enregistrement.' }
   }
 }
 

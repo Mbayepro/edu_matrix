@@ -149,39 +149,59 @@ export default function PaiementsPage() {
     e.preventDefault()
     if (!selectedEleve || !selectedFraisId || !montant || !ecoleId || !db) return
     setSaving(true)
+
+    const m = Number(montant.replace(',', '.'))
+    const newPaiement: Paiement = {
+      id: crypto.randomUUID(),
+      ecole_id: ecoleId,
+      eleve_id: selectedEleve.id,
+      frais_id: selectedFraisId,
+      montant: m,
+      mode: mode || null,
+      reference: reference || null,
+      date_paiement: new Date().toISOString(),
+      created_at: new Date().toISOString()
+    }
+
     try {
-      const m = Number(montant.replace(',', '.'))
-      if (!Number.isFinite(m) || m <= 0) {
-        showToast('Montant invalide', 'error')
-        return
+      if (isOnline) {
+        // 1. Try DIRECT Supabase
+        const { error } = await (supabase as any).from('paiements').insert({
+          id: newPaiement.id,
+          ecole_id: newPaiement.ecole_id,
+          eleve_id: newPaiement.eleve_id,
+          frais_id: newPaiement.frais_id,
+          montant: newPaiement.montant,
+          mode: newPaiement.mode,
+          reference: newPaiement.reference,
+          date_paiement: newPaiement.date_paiement
+        })
+        
+        if (error) throw error
+
+        // 2. Update local Dexie for cache
+        await db.paiements.add(newPaiement)
+        // Update student balance locally too
+        const ef = await db.eleves_frais.where({ eleve_id: selectedEleve.id, frais_id: selectedFraisId }).first()
+        if (ef) {
+           const updatedAcompte = (ef as any).montant_paye ? (ef as any).montant_paye + m : m
+           await db.eleves_frais.update(ef.id, { montant_paye: updatedAcompte } as any)
+        }
+        showToast('Paiement enregistré (En ligne) !', 'success')
+      } else {
+        // 3. Offline Fallback
+        await db.paiements.add(newPaiement)
+        await addToSyncQueue('paiements', 'INSERT', newPaiement as any, ecoleId)
+        
+        // Local balance update
+        const ef = await db.eleves_frais.where({ eleve_id: selectedEleve.id, frais_id: selectedFraisId }).first()
+        if (ef) {
+           const updatedAcompte = (ef as any).montant_paye ? (ef as any).montant_paye + m : m
+           await db.eleves_frais.update(ef.id, { montant_paye: updatedAcompte } as any)
+        }
+        showToast('Paiement enregistré (Hors-ligne) !', 'success')
       }
 
-      const paymentId = crypto.randomUUID()
-      const newPaiement: Paiement = {
-        id: paymentId,
-        ecole_id: ecoleId,
-        eleve_id: selectedEleve.id,
-        frais_id: selectedFraisId,
-        montant: m,
-        mode: mode || null,
-        reference: reference || null,
-        date_paiement: new Date().toISOString(),
-        created_at: new Date().toISOString()
-      }
-
-      // 1. Enregistrement Paiement (Dexie + Sync Queue)
-      await db.paiements.add(newPaiement)
-      await addToSyncQueue('paiements', 'INSERT', newPaiement as any, ecoleId)
-
-      // 2. Mise à jour Balance Eleve (Offline-First Calculation)
-      const eleveFraisRow = elevesFrais.find(ef => ef.eleve_id === selectedEleve.id && ef.frais_id === selectedFraisId)
-      if (eleveFraisRow) {
-        const newRestant = Math.max(0, eleveFraisRow.montant_a_payer - m)
-        await db.eleves_frais.update(eleveFraisRow.id, { montant_a_payer: newRestant })
-        await addToSyncQueue('eleves_frais', 'UPDATE', { id: eleveFraisRow.id, montant_a_payer: newRestant }, ecoleId)
-      }
-
-      showToast('Paiement enregistré avec succès.', 'success')
       setMontant('')
       setMode('')
       setReference('')
@@ -191,10 +211,9 @@ export default function PaiementsPage() {
         loadElevesFraisLocal(ecoleId),
         loadPaiementsLocal(ecoleId)
       ])
-
     } catch (err: any) {
       console.error(err)
-      showToast('Erreur lors de l\'enregistrement.', 'error')
+      showToast('Erreur : ' + err.message, 'error')
     } finally {
       setSaving(false)
     }
