@@ -151,6 +151,7 @@ export interface Note {
 
 export interface Presence {
   id: string
+  ecole_id: string
   eleve_id: string
   classe_id: string
   date: string

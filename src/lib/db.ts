@@ -72,13 +72,13 @@ export class EduMatrixDB extends Dexie {
   constructor() {
     super('EduMatrixDB')
 
-    this.version(2).stores({
+    this.version(3).stores({
       eleves:      'id, ecole_id, classe_id',
       classes:     'id, ecole_id',
       matieres:    'id, ecole_id',
       notes:       'id, eleve_id, evaluation_id, ecole_id',
       evaluations: 'id, ecole_id, classe_id, matiere_id',
-      presences:   'id, eleve_id, date, classe_id',
+      presences:   'id, eleve_id, date, classe_id, ecole_id',
       niveaux:     'id, ecole_id',
       series:      'id, ecole_id',
       profiles:    'id, ecole_id, role',
