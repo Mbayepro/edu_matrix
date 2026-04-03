@@ -104,6 +104,7 @@ export default function DashboardPage() {
 
   const [stats,         setStats]         = useState<DashboardStats | null>(null)
   const [recentEleves,  setRecentEleves]  = useState<RecentEleve[]>([])
+  const [recentEmargements, setRecentEmargements] = useState<any[]>([])
   const [presenceChart, setPresenceChart] = useState<{ jour: string; present: number; absent: number }[]>([])
   const [notesChart,    setNotesChart]    = useState<{ classe: string; moyenne: number }[]>([])
   const [loading,       setLoading]       = useState(true)
@@ -200,6 +201,27 @@ export default function DashboardPage() {
           ...e,
           classe: { nom_classe: classesMap.get(e.classe_id) || 'N/A' }
         })) as unknown as RecentEleve[])
+
+        // Récents émargements (Dexie)
+        const emargRaw = await db.emargements
+          .where('ecole_id').equals(schoolId)
+          .reverse()
+          .limit(5)
+          .toArray()
+        
+        const [allProfs, allMats] = await Promise.all([
+          db.profiles.where('ecole_id').equals(schoolId).toArray(),
+          db.matieres.where('ecole_id').equals(schoolId).toArray()
+        ])
+        const profMap = new Map(allProfs.map(p => [p.id, `${p.prenom} ${p.nom}`]))
+        const matMap = new Map(allMats.map(m => [m.id, m.nom]))
+
+        setRecentEmargements(emargRaw.map(e => ({
+          ...e,
+          prof_nom: profMap.get(e.prof_id) || 'Inconnu',
+          classe_nom: classesMap.get(e.classe_id) || 'N/A',
+          matiere_nom: matMap.get(e.matiere_id) || 'N/A'
+        })))
 
         // Présences 7 derniers jours (Dexie)
         const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
@@ -424,6 +446,35 @@ export default function DashboardPage() {
                   <div className="text-right">
                     <p className="text-[10px] font-mono font-bold text-slate-400">{e.matricule}</p>
                     <div className="w-8 h-1 bg-emerald-100 rounded-full mt-1 ml-auto group-hover:w-12 transition-all" />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-5 border-b border-slate-50">
+            <h2 className="font-bold text-slate-900 text-sm">Derniers cours démarrés</h2>
+            <Link href="/dashboard/emargements" className="px-3 py-1.5 rounded-xl bg-slate-50 text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:bg-indigo-50 transition-colors">
+              Cahier de Textes
+            </Link>
+          </div>
+          {recentEmargements.length === 0 ? (
+            <div className="p-12 text-center text-slate-400 text-sm italic">Aucun cours enregistré aujourd'hui.</div>
+          ) : (
+            <ul className="divide-y divide-slate-50">
+              {recentEmargements.map((em) => (
+                <li key={em.id} className="px-6 py-4 hover:bg-slate-50/50 transition-colors group">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">{em.matiere_nom}</span>
+                    <span className="text-[9px] font-bold text-slate-400">{new Date(em.date_heure).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                  <p className="text-sm font-bold text-slate-900 truncate">{em.sujet_cours}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-[10px] text-slate-500 font-medium">Par {em.prof_nom}</p>
+                    <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                    <p className="text-[10px] text-slate-500 font-bold uppercase">{em.classe_nom}</p>
                   </div>
                 </li>
               ))}

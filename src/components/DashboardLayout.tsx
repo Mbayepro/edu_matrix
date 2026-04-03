@@ -31,6 +31,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Tableau de bord',     href: '/dashboard',                       icon: LayoutGrid,    roles: ['director'] },
   { label: 'Mon tableau de bord', href: '/dashboard/teacher',               icon: LayoutGrid,    roles: ['teacher'] },
   { label: 'Cahier de Textes',    href: '/dashboard/teacher/emargement',    icon: ClipboardList, roles: ['teacher'] },
+  { label: 'Cahier de Textes',    href: '/dashboard/emargements',            icon: ClipboardList, roles: ['director'] },
   { label: 'Validation',          href: '/dashboard/admin/validation',      icon: BookOpen,      roles: ['superadmin'] },
   { label: 'Toutes les écoles',   href: '/dashboard/admin/ecoles',          icon: LayoutGrid,    roles: ['superadmin'] },
   { label: 'Classes',             href: '/dashboard/classes',               icon: BookOpen,      roles: ['director', 'superadmin'] },

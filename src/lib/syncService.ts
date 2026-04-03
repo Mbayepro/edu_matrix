@@ -39,7 +39,7 @@ export async function syncFromSupabase(ecoleId: string): Promise<void> {
     { name: 'frais_scolaires', query: supabase.from('frais_scolaires').select('*').eq('ecole_id', ecoleId) },
     { name: 'eleves_frais', query: supabase.from('eleves_frais').select('*').eq('ecole_id', ecoleId) },
     { name: 'paiements', query: supabase.from('paiements').select('*').eq('ecole_id', ecoleId) },
-    { name: 'emargements', query: supabase.from('emargements').select('*') } // Might fail if table missing
+    { name: 'emargements', query: supabase.from('emargements').select('*').eq('ecole_id', ecoleId) } // Filtré par école pour admin/profs
   ]
 
   for (const t of tables) {
