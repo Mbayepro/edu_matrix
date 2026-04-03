@@ -60,6 +60,9 @@ export default function PaiementsPage() {
   const [saving, setSaving] = useState(false)
   const [shareOpenId, setShareOpenId] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [activeTab, setActiveTab] = useState<'tous' | 'impayes'>('tous')
+  const [editingPhoneId, setEditingPhoneId] = useState<string | null>(null)
+  const [tempPhone, setTempPhone] = useState('')
 
   const { isOnline } = useNetwork()
 
@@ -262,7 +265,61 @@ export default function PaiementsPage() {
     setShareOpenId(null)
   }
 
-  const filteredEleves = eleves
+  const getEleveBalance = (eleveId: string) => {
+    const du = elevesFrais.filter(ef => ef.eleve_id === eleveId).reduce((sum, ef) => sum + ef.montant_a_payer, 0)
+    const paye = paiements.filter(p => p.eleve_id === eleveId).reduce((sum, p) => sum + p.montant, 0)
+    return { du, paye, reste: du - paye }
+  }
+
+  const handleUpdatePhone = async (eleveId: string) => {
+    if (!tempPhone.trim() || !db) return
+    let phone = tempPhone.trim()
+    // Auto-add +221 for Senegal if 9 digits
+    if (phone.length === 9 && !phone.startsWith('+')) {
+      phone = '+221' + phone
+    }
+    
+    try {
+      await db.eleves.update(eleveId, { telephone_parent: phone })
+      await addToSyncQueue('eleves', 'UPDATE', { id: eleveId, telephone_parent: phone }, ecoleId!)
+      setEleves(prev => prev.map(e => e.id === eleveId ? { ...e, telephone_parent: phone } : e))
+      setEditingPhoneId(null)
+      showToast('Téléphone mis à jour !', 'success')
+    } catch (err) {
+      showToast('Erreur lors de la mise à jour.', 'error')
+    }
+  }
+
+  const handleWhatsAppReminder = async (eleve: EleveWithClasse, reste: number) => {
+    if (!eleve.telephone_parent || !db || !ecole) return
+    
+    const message = `Bonjour, l'école ${ecole.nom} vous informe que le solde de ${eleve.prenom} ${eleve.nom} présente un retard de ${reste.toLocaleString('fr-FR')} F. Merci de régulariser au plus vite.`
+    const encoded = encodeURIComponent(message)
+    const url = `https://wa.me/${eleve.telephone_parent.replace(/\s+/g, '').replace('+', '')}?text=${encoded}`
+    
+    window.open(url, '_blank')
+    
+    // Update last reminder date locally
+    const today = new Date().toLocaleDateString('fr-FR')
+    try {
+      const efs = elevesFrais.filter(ef => ef.eleve_id === eleve.id)
+      for (const ef of efs) {
+        await db.eleves_frais.update(ef.id, { derniere_relance_le: today } as any)
+      }
+      // Reload local data to reflect date
+      if (ecoleId) await loadElevesFraisLocal(ecoleId)
+    } catch (err) {
+      console.warn('Error updating last reminder date:', err)
+    }
+  }
+
+  const filteredEleves = eleves.filter(e => {
+    if (activeTab === 'impayes') {
+      const { reste } = getEleveBalance(e.id)
+      return reste > 0
+    }
+    return true
+  })
 
   // Calculate KPIs
   const totalEleves = eleves.length
@@ -451,8 +508,26 @@ export default function PaiementsPage() {
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Left Column: Student Selection */}
         <div className="flex-1 space-y-4">
-        {/* Left Column: Student Selection */}
-        <div className="flex-1 space-y-4">
+          <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-2xl w-fit">
+            <button
+              onClick={() => setActiveTab('tous')}
+              className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                activeTab === 'tous' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Tous les dossiers
+            </button>
+            <button
+              onClick={() => setActiveTab('impayes')}
+              className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+                activeTab === 'impayes' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-500 hover:text-red-600'
+              }`}
+            >
+              <div className={`w-1.5 h-1.5 rounded-full ${activeTab === 'impayes' ? 'bg-red-500 animate-pulse' : 'bg-slate-300'}`} />
+              Retardataires ({eleves.filter(e => getEleveBalance(e.id).reste > 0).length})
+            </button>
+          </div>
+
           <div className="relative group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
             <input
@@ -523,6 +598,51 @@ export default function PaiementsPage() {
                       }`}>
                         {e.statut_paiement}
                       </span>
+                      {activeTab === 'impayes' && (
+                        <div className="flex items-center gap-2">
+                           {e.telephone_parent ? (
+                             <button
+                               onClick={(evt) => {
+                                 evt.stopPropagation()
+                                 const { reste } = getEleveBalance(e.id)
+                                 handleWhatsAppReminder(e, reste)
+                               }}
+                               className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
+                               title="Relancer sur WhatsApp"
+                             >
+                               <MessageCircle className="w-5 h-5" />
+                             </button>
+                           ) : (
+                             <div className="flex items-center gap-1" onClick={(evt) => evt.stopPropagation()}>
+                               {editingPhoneId === e.id ? (
+                                 <div className="flex items-center gap-1 animate-in slide-in-from-right-2">
+                                   <input
+                                     autoFocus
+                                     type="text"
+                                     value={tempPhone}
+                                     onChange={(ev) => setTempPhone(ev.target.value)}
+                                     placeholder="+221..."
+                                     className="w-24 px-2 py-1.5 bg-slate-100 border-none rounded-lg text-[10px] font-bold outline-none"
+                                     onKeyDown={(ev) => ev.key === 'Enter' && handleUpdatePhone(e.id)}
+                                   />
+                                   <button onClick={() => handleUpdatePhone(e.id)} className="p-1.5 bg-emerald-500 text-white rounded-lg"><CheckCircle2 className="w-3 h-3"/></button>
+                                 </div>
+                               ) : (
+                                 <button
+                                   onClick={() => { setEditingPhoneId(e.id); setTempPhone('') }}
+                                   className="text-[9px] font-black uppercase text-slate-400 hover:text-emerald-600 flex items-center gap-1"
+                                 >
+                                   <CreditCard className="w-3 h-3" /> Ajouter Tel.
+                                 </button>
+                               )}
+                             </div>
+                           )}
+                        </div>
+                      )}
+                      
+                      {activeTab === 'impayes' && elevesFrais.find(ef => ef.eleve_id === e.id)?.derniere_relance_le && (
+                        <p className="text-[8px] font-bold text-slate-400 uppercase italic">Relancé le {elevesFrais.find(ef => ef.eleve_id === e.id)?.derniere_relance_le}</p>
+                      )}
                     </div>
                   </li>
                 ))}
@@ -530,10 +650,7 @@ export default function PaiementsPage() {
             )}
           </div>
         </div>
-        </div>
 
-        {/* Right Column: Payment Form & History */}
-        <div className="w-full lg:w-[320px] space-y-4">
         {/* Right Column: Payment Form & History */}
         <div className="w-full lg:w-[380px] space-y-6">
           <div className="bg-white rounded-[2.5rem] border border-slate-200/60 shadow-sm p-8 space-y-8 relative overflow-hidden group">
@@ -684,7 +801,6 @@ export default function PaiementsPage() {
               )}
             </div>
           </div>
-        </div>
         </div>
       </div>
     </div>

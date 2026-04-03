@@ -45,6 +45,7 @@ export interface Eleve {
   date_naissance: string | null
   photo_url: string | null
   statut_paiement: StatutPaiement
+  telephone_parent: string | null
   created_at: string
   // Joined fields
   classe?: Classe
@@ -189,6 +190,7 @@ export interface EleveFrais {
   montant_du: number
   montant_remise: number
   montant_a_payer: number
+  derniere_relance_le?: string | null
 }
 
 export interface Paiement {

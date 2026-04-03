@@ -88,6 +88,11 @@ export class EduMatrixDB extends Dexie {
       paiements:   'id, eleve_id, ecole_id',
       sync_queue:  '++id, table, action, createdAt, attempts',
     })
+
+    this.version(4).stores({
+      eleves:      'id, ecole_id, classe_id, telephone_parent',
+      eleves_frais: 'id, eleve_id, ecole_id, derniere_relance_le',
+    })
   }
 
   // ─── Helpers Métier ────────────────────────────────────────────────────────
