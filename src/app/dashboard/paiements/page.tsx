@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { supabase, Eleve, FraisScolaire, EleveFrais, Paiement } from '@/lib/supabase'
 import {
   Loader2,
@@ -21,6 +21,10 @@ import {
   Mail,
   Copy,
   X,
+  PlusCircle,
+  Check,
+  RotateCcw,
+  LayoutGrid
 } from 'lucide-react'
 import { useProfile } from '@/hooks/useProfile'
 import { useNetwork } from '@/hooks/useNetwork'
@@ -63,6 +67,10 @@ export default function PaiementsPage() {
   const [activeTab, setActiveTab] = useState<'tous' | 'impayes'>('tous')
   const [editingPhoneId, setEditingPhoneId] = useState<string | null>(null)
   const [tempPhone, setTempPhone] = useState('')
+  const [isAssigning, setIsAssigning] = useState(false)
+  const [assignFeeId, setAssignFeeId] = useState('')
+  const [assignClasseId, setAssignClasseId] = useState('all')
+  const [classes, setClasses] = useState<LocalClasse[]>([])
 
   const { isOnline } = useNetwork()
 
@@ -141,6 +149,10 @@ export default function PaiementsPage() {
     if (!db) return
     const data = await db.paiements.where('ecole_id').equals(schoolId).toArray()
     setPaiements(data.sort((a: LocalPaiement, b: LocalPaiement) => new Date(b.date_paiement).getTime() - new Date(a.date_paiement).getTime()))
+    
+    // Also load classes for the assignment tool
+    const cls = await db.classes.where('ecole_id').equals(schoolId).toArray()
+    setClasses(cls)
   }
 
   // Re-filter when search changes
@@ -265,10 +277,31 @@ export default function PaiementsPage() {
     setShareOpenId(null)
   }
 
+  const balancesMap = useMemo(() => {
+    const map = new Map<string, { du: number; paye: number; reste: number }>()
+
+    // Initialisation
+    eleves.forEach(e => map.set(e.id, { du: 0, paye: 0, reste: 0 }))
+
+    // Cumul des frais dus
+    elevesFrais.forEach(ef => {
+      const current = map.get(ef.eleve_id) || { du: 0, paye: 0, reste: 0 }
+      const newDu = current.du + (Number(ef.montant_a_payer) || 0)
+      map.set(ef.eleve_id, { ...current, du: newDu, reste: newDu - current.paye })
+    })
+
+    // Cumul des paiements effectués
+    paiements.forEach(p => {
+      const current = map.get(p.eleve_id) || { du: 0, paye: 0, reste: 0 }
+      const newPaye = current.paye + (Number(p.montant) || 0)
+      map.set(p.eleve_id, { ...current, paye: newPaye, reste: current.du - newPaye })
+    })
+
+    return map
+  }, [eleves, elevesFrais, paiements])
+
   const getEleveBalance = (eleveId: string) => {
-    const du = elevesFrais.filter(ef => ef.eleve_id === eleveId).reduce((sum, ef) => sum + ef.montant_a_payer, 0)
-    const paye = paiements.filter(p => p.eleve_id === eleveId).reduce((sum, p) => sum + p.montant, 0)
-    return { du, paye, reste: du - paye }
+    return balancesMap.get(eleveId) || { du: 0, paye: 0, reste: 0 }
   }
 
   const handleUpdatePhone = async (eleveId: string) => {
@@ -287,6 +320,60 @@ export default function PaiementsPage() {
       showToast('Téléphone mis à jour !', 'success')
     } catch (err) {
       showToast('Erreur lors de la mise à jour.', 'error')
+    }
+  }
+
+  const handlePerformAssignment = async () => {
+    if (!db || !ecoleId || !assignFeeId) return
+    setSaving(true)
+    
+    const targetFee = frais.find(f => f.id === assignFeeId)
+    if (!targetFee) return
+
+    try {
+      // 1. Filter students based on targeted class or all
+      const targets = assignClasseId === 'all' 
+        ? eleves 
+        : eleves.filter(e => e.classe_id === assignClasseId)
+
+      if (targets.length === 0) {
+        showToast('Aucun élève trouvé pour cette cible.', 'error')
+        return
+      }
+
+      let count = 0
+      for (const eleve of targets) {
+        // 2. Avoid duplicates : check if EleveFrais already exists locally
+        const exists = elevesFrais.find(ef => ef.eleve_id === eleve.id && ef.frais_id === assignFeeId)
+        if (!exists) {
+          const newEF: EleveFrais = {
+            id: crypto.randomUUID(),
+            ecole_id: ecoleId,
+            eleve_id: eleve.id,
+            frais_id: assignFeeId,
+            montant_du: targetFee.montant,
+            montant_remise: 0,
+            montant_a_payer: targetFee.montant
+          }
+          
+          // Store locally
+          await db.eleves_frais.add(newEF)
+          // Queue for Supabase
+          await addToSyncQueue('eleves_frais', 'INSERT', newEF as any, ecoleId)
+          count++
+        }
+      }
+
+      showToast(`${count} affectation(s) réussie(s) !`, 'success')
+      setIsAssigning(false)
+      
+      // Reload UI states
+      await loadElevesFraisLocal(ecoleId)
+    } catch (err) {
+      console.error(err)
+      showToast('Erreur lors de l\'affectation.', 'error')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -316,7 +403,8 @@ export default function PaiementsPage() {
   const filteredEleves = eleves.filter(e => {
     if (activeTab === 'impayes') {
       const { reste } = getEleveBalance(e.id)
-      return reste > 0
+      // Secours : si le calcul du solde (reste) est 0 mais que le statut dit "impayé", on le montre
+      return reste > 0 || e.statut_paiement === 'impayé' || e.statut_paiement === 'partiel'
     }
     return true
   })
@@ -358,6 +446,16 @@ export default function PaiementsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {profile?.role === 'director' && (
+            <button
+              onClick={() => setIsAssigning(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-slate-900 border border-slate-800 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-emerald-600 hover:border-emerald-500 transition-all shadow-xl shadow-slate-900/10 active:scale-95"
+            >
+              <PlusCircle className="w-4 h-4" />
+              Attribuer des frais
+            </button>
+          )}
+
           <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-emerald-50 rounded-xl border border-emerald-100">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700">Flux en direct</span>
@@ -524,7 +622,10 @@ export default function PaiementsPage() {
               }`}
             >
               <div className={`w-1.5 h-1.5 rounded-full ${activeTab === 'impayes' ? 'bg-red-500 animate-pulse' : 'bg-slate-300'}`} />
-              Retardataires ({eleves.filter(e => getEleveBalance(e.id).reste > 0).length})
+              Retardataires ({eleves.filter(e => {
+                const { reste } = getEleveBalance(e.id);
+                return reste > 0 || e.statut_paiement === 'impayé' || e.statut_paiement === 'partiel';
+              }).length})
             </button>
           </div>
 
@@ -584,9 +685,16 @@ export default function PaiementsPage() {
                       <p className={`text-base font-black truncate transition-colors uppercase tracking-tight ${selectedEleve?.id === e.id ? 'text-emerald-700' : 'text-slate-900'}`}>
                         {e.prenom} {e.nom}
                       </p>
-                      <p className="text-[10px] text-slate-400 font-bold tracking-[0.1em] uppercase mt-0.5">
-                        {(e.classe as any)?.nom_classe ?? 'NON ASSIGNÉ'} · <span className="text-slate-500 font-black">{e.matricule}</span>
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-[10px] text-slate-400 font-bold tracking-[0.1em] uppercase mt-0.5">
+                          {(e.classe as any)?.nom_classe ?? 'NON ASSIGNÉ'} · <span className="text-slate-500 font-black">{e.matricule}</span>
+                        </p>
+                        {getEleveBalance(e.id).reste > 0 && (
+                          <span className="text-[10px] font-black text-red-600 bg-red-50 px-1.5 py-0.5 rounded-md">
+                            Reste: {getEleveBalance(e.id).reste.toLocaleString('fr-FR')} F
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex flex-col items-end gap-1.5">
                       <span className={`text-[9px] font-black uppercase tracking-[0.15em] px-3 py-1.5 rounded-lg border shadow-sm ${
@@ -803,6 +911,114 @@ export default function PaiementsPage() {
           </div>
         </div>
       </div>
+
+      {/* Modal d'affectation collective */}
+      {isAssigning && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-300">
+            <div className="p-10 space-y-8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Affectation collective</h2>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-3">Attribuer un frais à plusieurs élèves</p>
+                </div>
+                <button onClick={() => setIsAssigning(false)} className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Type de Frais</label>
+                  <select
+                    value={assignFeeId}
+                    onChange={(e) => setAssignFeeId(e.target.value)}
+                    className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="">Choisir un frais…</option>
+                    {frais.map((f) => (
+                      <option key={f.id} value={f.id}>{f.libelle} ({f.montant.toLocaleString('fr-FR')} F)</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Cible</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setAssignClasseId('all')}
+                      className={`p-4 rounded-2xl border-2 transition-all flex flex-col gap-2 ${
+                        assignClasseId === 'all' 
+                          ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-lg shadow-emerald-900/5' 
+                          : 'bg-slate-50 border-transparent text-slate-500 hover:bg-slate-100'
+                      }`}
+                    >
+                      <LayoutGrid className="w-5 h-5" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-left">Toute l'école</span>
+                    </button>
+                    <div className="relative group">
+                      <select
+                        value={assignClasseId === 'all' ? '' : assignClasseId}
+                        onChange={(e) => setAssignClasseId(e.target.value)}
+                        className={`w-full h-full p-4 rounded-2xl border-2 transition-all appearance-none cursor-pointer text-[10px] font-black uppercase tracking-widest ${
+                          assignClasseId !== 'all'
+                            ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-lg shadow-emerald-900/5'
+                            : 'bg-slate-50 border-transparent text-slate-500 hover:bg-slate-100'
+                        }`}
+                      >
+                        <option value="">Par classe…</option>
+                        {classes.map(c => (
+                          <option key={c.id} value={c.id}>{c.nom_classe}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {assignFeeId && (
+                  <div className="bg-amber-50 p-6 rounded-3xl border border-amber-100 flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-amber-500 shadow-sm shrink-0">
+                      <Users className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-amber-900">Estimation</p>
+                      <p className="text-[10px] font-medium text-amber-700 mt-1 uppercase tracking-tight">
+                        L'attribution sera appliquée à{' '}
+                        <span className="font-black">
+                          {assignClasseId === 'all' 
+                            ? eleves.length 
+                            : eleves.filter(e => e.classe_id === assignClasseId).length
+                          } élèves
+                        </span>.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setIsAssigning(false)}
+                  className="flex-1 py-5 rounded-2xl bg-slate-100 text-slate-600 text-[11px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handlePerformAssignment}
+                  disabled={saving || !assignFeeId}
+                  className="flex-2 py-5 px-10 rounded-2xl bg-emerald-600 text-white text-[11px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-900/20 disabled:opacity-50 flex items-center justify-center gap-3"
+                >
+                  {saving ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Traitement…</>
+                  ) : (
+                    <><Check className="w-4 h-4" /> Valider l'affectation</>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
