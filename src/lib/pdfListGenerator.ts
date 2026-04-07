@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf'
-import 'jspdf-autotable'
+import autoTable from 'jspdf-autotable'
 import type { Eleve, Ecole, Classe } from '@/lib/supabase'
 
 // Fallback image dimensions might be needed if they can't be computed
@@ -81,7 +81,7 @@ export async function generateClassePDF(ecole: Ecole, classe: Classe, eleves: El
 
   let finalY = 0
 
-  ;(doc as any).autoTable({
+  autoTable(doc, {
     startY: 90,
     head: [['N°', 'Matricule', 'Prénom', 'Nom', 'Date Naissance']],
     body: tableData,
@@ -89,7 +89,7 @@ export async function generateClassePDF(ecole: Ecole, classe: Classe, eleves: El
     styles: { fontSize: 10, cellPadding: 2 },
     headStyles: { fillColor: [16, 185, 129], textColor: 255 }, // emerald-500
     didDrawPage: (data: any) => {
-      finalY = data.cursor.y
+      finalY = data.cursor?.y || 0
     }
   })
 

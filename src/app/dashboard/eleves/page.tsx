@@ -355,19 +355,21 @@ export default function ElevesPage() {
               <button
                 onClick={handleExportPDF}
                 disabled={generatingPDF}
-                className="w-11 h-11 flex items-center justify-center rounded-xl bg-slate-900 text-white hover:bg-emerald-600 transition-all shadow-lg shadow-slate-900/10 disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-emerald-600 transition-all shadow-lg shadow-slate-900/10 disabled:opacity-50"
                 title="Exporter liste PDF"
               >
                 {generatingPDF ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+                <span className="hidden sm:inline">Liste PDF</span>
               </button>
               <a
                 href={`/dashboard/eleves/print-cartes?classeId=${filterClasse}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-11 h-11 flex items-center justify-center rounded-xl bg-amber-400 text-slate-900 hover:bg-amber-500 transition-all shadow-lg shadow-amber-400/10"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-400 text-slate-900 text-sm font-bold hover:bg-amber-500 transition-all shadow-lg shadow-amber-400/10"
                 title="Imprimer les cartes QR"
               >
                 <Printer className="w-4 h-4" />
+                <span className="hidden sm:inline">Imprimer les cartes de la classe</span>
               </a>
             </div>
           )}

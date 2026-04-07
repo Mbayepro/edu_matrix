@@ -88,128 +88,58 @@ function PhysicalCard({ eleve, ecole, classeNom, isPrint = false }: {
   classeNom: string
   isPrint?: boolean
 }) {
-  const prenom = eleve.prenom || '—'
-  const nom = eleve.nom || '—'
-  const matricule = eleve.matricule || 'N/A'
-  
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${eleve.id || 'no-id'}`
+  const qrData = JSON.stringify({ id: eleve.id, matricule: eleve.matricule })
+  // Utilisation de l'API qrserver pour assurer la consistance absolue avec la version d'impression
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}`
 
   return (
     <div
       id={isPrint ? "student-card-final" : "student-card-preview"}
-      className={`relative w-[380px] h-[540px] rounded-2xl overflow-hidden shadow-2xl bg-white text-slate-900 select-none flex flex-col border border-slate-200 ${isPrint ? 'print-card' : ''}`}
-      style={{ fontFamily: "var(--font-outfit), system-ui, sans-serif" }}
+      className={`border-[1.5px] border-slate-200 rounded-xl p-4 bg-white relative overflow-hidden shadow-sm flex gap-4 shrink-0 mx-auto transition-transform ${
+        !isPrint && 'hover:scale-[1.02] sm:scale-125 my-8'
+      } ${isPrint ? 'print-card print:shadow-none print:border-slate-800' : ''}`}
+      style={{ width: '85.6mm', height: '54mm', fontFamily: "var(--font-outfit), system-ui, sans-serif" }}
     >
-      {/* Header: Institutional Bar */}
-      <div className="bg-emerald-700 pt-6 pb-4 px-6 text-center shadow-md">
-        <div className="flex justify-center mb-2">
-           <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-inner">
-             <BookOpen className="w-7 h-7 text-emerald-700" />
-           </div>
+      {/* Left: Photo + details */}
+      <div className="flex-1 flex flex-col justify-between z-10 w-full min-w-0">
+        <div>
+          <h3 className="font-extrabold text-[12px] tracking-tight leading-tight uppercase text-emerald-800 truncate">{ecole?.nom ?? 'Établissement Scolaire'}</h3>
+          <p className="text-[9px] font-semibold text-slate-500 uppercase mt-0.5 tracking-wider">{classeNom} • {new Date().getFullYear()}</p>
         </div>
-        <h1 className="text-sm font-black text-white uppercase tracking-widest leading-tight">
-          {ecole?.nom ?? 'Établissement Scolaire'}
-        </h1>
-        <p className="text-[10px] text-emerald-100 font-bold uppercase tracking-[0.2em] mt-1">
-          CARTE D'IDENTITÉ SCOLAIRE
-        </p>
-      </div>
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col items-center py-6 px-8 relative">
-        {/* Background Watermark/Pattern */}
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none flex items-center justify-center">
-           <BookOpen className="w-64 h-64 text-emerald-900" />
-        </div>
-
-        {/* Top Section: Photo & QR Code Side-by-Side */}
-        <div className="flex items-center justify-around w-full mb-8 z-10 gap-6">
-          {/* Passport Photo */}
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-32 h-40 bg-slate-50 border-2 border-slate-200 rounded-lg overflow-hidden shadow-md">
-              {eleve.photo_url ? (
-                <img
-                  src={eleve.photo_url}
-                  alt={`${prenom} ${nom}`}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <User className="w-16 h-16 text-slate-300" />
-                </div>
-              )}
-            </div>
-            <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest">PHOTO RÉGLEMENTAIRE</p>
+        
+        <div className="flex gap-3 items-center mt-auto pb-1">
+          <div className="w-[50px] h-[50px] bg-slate-100 rounded-md overflow-hidden shrink-0 border border-slate-200 shadow-sm">
+            {eleve.photo_url ? (
+              <img src={eleve.photo_url} className="w-full h-full object-cover" alt={`${eleve.prenom} ${eleve.nom}`} />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold bg-slate-100 text-lg">
+                {eleve.prenom[0]?.toUpperCase()}
+              </div>
+            )}
           </div>
-
-          {/* QR Code Prominent */}
-          <div className="flex flex-col items-center gap-2">
-            <div className="bg-white p-2.5 rounded-xl border-2 border-emerald-600 shadow-lg shadow-emerald-100 relative group">
-              <div className="absolute -inset-1 bg-emerald-500/10 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity" />
-              {isPrint ? (
-                <img src={qrUrl} alt="QR Code" className="w-[110px] h-[110px]" />
-              ) : (
-                <QRCodeCanvas
-                  value={eleve.id || 'no-id'}
-                  size={110}
-                  level="M"
-                  bgColor="#ffffff"
-                  fgColor="#047857"
-                />
-              )}
-            </div>
-            <p className="text-[8px] text-emerald-600 font-black uppercase tracking-widest animate-pulse">SCANNER POUR PRÉSENCE</p>
-          </div>
-        </div>
-
-        {/* Identity Details - Clean & Academic */}
-        <div className="w-full flex-1 flex flex-col z-10">
-          <div className="text-center pb-2 border-b-2 border-slate-100">
-             <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-0.5">Identité de l'Étudiant(e)</p>
-             <h2 className="text-xl font-black text-slate-800 uppercase leading-none tracking-tight">{prenom}</h2>
-             <h2 className="text-3xl font-black text-slate-950 uppercase mt-1 tracking-tighter">{nom}</h2>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 mt-auto">
-             <div className="bg-slate-50 p-2 rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <p className="text-[8px] text-slate-500 font-bold uppercase mb-0.5 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                  Matricule
-                </p>
-                <p className="text-[13px] font-black text-amber-600 font-mono tracking-tighter leading-tight break-all">{matricule}</p>
-             </div>
-             <div className="bg-slate-50 p-2 rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <p className="text-[8px] text-slate-500 font-bold uppercase mb-0.5 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Classe
-                </p>
-                <p className="text-[13px] font-black text-slate-800 leading-tight truncate">{classeNom}</p>
-             </div>
+          <div className="min-w-0 pr-1">
+            <h2 className="font-black text-[13px] leading-tight text-slate-900 uppercase truncate">{eleve.nom || '—'}</h2>
+            <h3 className="font-bold text-[11px] text-slate-700 leading-tight truncate mt-0.5">{eleve.prenom || '—'}</h3>
+            <p className="text-[9px] font-medium text-slate-500 mt-1 uppercase tracking-wider">Mat: {eleve.matricule || 'XXX'}</p>
           </div>
         </div>
       </div>
-
-      {/* Footer: Admin Only */}
-      <div className="bg-slate-50 border-t border-slate-200 p-6 flex flex-col justify-end">
-        <div className="flex justify-between items-end">
-           <div className="max-w-[180px]">
-              <p className="text-[10px] font-black text-emerald-800 uppercase tracking-widest mb-1.5">Document Officiel</p>
-              <p className="text-[8px] text-slate-500 leading-tight font-medium italic">
-                Cette carte atteste de la qualité d'étudiant pour l'année en cours.
-              </p>
-           </div>
-           
-           <div className="flex flex-col items-center">
-              <p className="text-[10px] font-black text-slate-600 mb-0.5 uppercase">VALIDE JUSQU'EN</p>
-              <p className="text-sm font-black text-emerald-700 uppercase tracking-tighter">JUIN {new Date().getFullYear()+1}</p>
-           </div>
-
-           <div className="text-center opacity-40">
-              <p className="text-[8px] text-slate-400 font-bold italic mb-1 uppercase">Direction</p>
-              <div className="w-14 h-4 border-b border-slate-400 border-dotted" />
-           </div>
-        </div>
+      
+      {/* Right: Logos & QR Code */}
+      <div className="w-[55px] shrink-0 flex flex-col justify-between items-end z-10">
+        {ecole?.logo_url ? (
+          <img src={ecole.logo_url} className="w-[35px] h-[35px] object-contain mb-1 drop-shadow-sm" alt="Logo" />
+        ) : (
+          <div className="w-[35px] h-[35px] bg-emerald-50 rounded border border-emerald-100 mb-1 flex items-center justify-center">
+            <BookOpen className="w-4 h-4 text-emerald-600" />
+          </div>
+        )}
+        <img src={qrUrl} alt="QR" className="w-[50px] h-[50px] rounded border border-slate-200 p-0.5 bg-white shadow-sm" />
       </div>
+
+      {/* Background decorative elements */}
+      <div className="absolute top-0 right-0 w-[54mm] h-[54mm] bg-gradient-to-bl from-emerald-50 to-transparent rounded-full opacity-60 z-0 pointer-events-none translate-x-1/2 -translate-y-1/2" />
+      <div className="absolute left-0 bottom-0 w-[8mm] h-[85.6mm] bg-emerald-600 opacity-80 z-0 pointer-events-none -rotate-12 translate-y-10 -translate-x-4" />
     </div>
   )
 }
