@@ -75,7 +75,7 @@ function PrintCartesContent() {
         </button>
       </div>
 
-      <div className="max-w-4xl mx-auto flex flex-wrap gap-4 print:gap-1 justify-center print:justify-start print:w-full print:m-0">
+      <div className="max-w-4xl mx-auto flex flex-wrap gap-4 print:grid print:grid-cols-2 print:gap-x-8 print:gap-y-8 justify-center print:justify-center print:w-full print:m-0">
         {eleves.map((eleve, idx) => {
           const qrData = JSON.stringify({ id: eleve.id, matricule: eleve.matricule })
           // Use qrserver api explicitly asking for high res
@@ -85,7 +85,7 @@ function PrintCartesContent() {
             <div 
               key={eleve.id} 
               className={`border-[1.5px] border-slate-200 rounded-xl p-4 bg-white relative overflow-hidden shadow-sm flex gap-4 shrink-0 
-                print:shadow-none print:border-slate-800 print:break-inside-avoid print:m-2 card
+                 print:shadow-none print:border-slate-800 print:break-inside-avoid card
               `}
               // Standard CR80 card dimensions
               style={{ width: '85.6mm', height: '54mm' }}

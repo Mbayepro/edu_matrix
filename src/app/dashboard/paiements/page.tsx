@@ -411,8 +411,8 @@ export default function PaiementsPage() {
 
   // Calculate KPIs
   const totalEleves = eleves.length
-  const totalDu = elevesFrais.reduce((sum, ef) => sum + ef.montant_a_payer, 0)
-  const totalEncaisse = paiements.reduce((sum, p) => sum + p.montant, 0)
+  const totalDu = elevesFrais.reduce((sum, ef) => sum + (Number(ef.montant_a_payer) || 0), 0)
+  const totalEncaisse = paiements.reduce((sum, p) => sum + (Number(p.montant) || 0), 0)
   const totalRestant = totalDu - totalEncaisse
   const tauxRecouvrement = totalDu > 0 ? (totalEncaisse / totalDu) * 100 : 0
 

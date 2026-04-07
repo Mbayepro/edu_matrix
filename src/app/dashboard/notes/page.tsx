@@ -285,7 +285,7 @@ export default function NotesPage() {
           annee_scolaire: anneeScolaire,
           type: newEval.type,
           date: newEval.date,
-          coef: newEval.coef,
+          coef: selectedMatiereData?.coefficient || 1,
           bareme: newEval.bareme,
         })
         .select()
@@ -846,18 +846,12 @@ export default function NotesPage() {
 
                 <div className="md:col-span-2">
                   <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Poids (Coefficient)</label>
-                  <div className="flex items-center gap-4">
-                    <input
-                      type="range"
-                      min="1"
-                      max="10"
-                      step="1"
-                      value={newEval.coef}
-                      onChange={(e) => setNewEval(prev => ({ ...prev, coef: Number(e.target.value) }))}
-                      className="flex-1 h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                    />
-                    <span className="w-12 h-12 flex items-center justify-center bg-emerald-50 rounded-xl text-emerald-700 font-bold border border-emerald-100">
-                      {newEval.coef}
+                  <div className="flex items-center gap-4 px-4 py-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="flex-1 text-sm font-bold text-slate-500">
+                      Coefficient de la matière (Lecture seule)
+                    </div>
+                    <span className="w-10 h-10 flex items-center justify-center bg-emerald-100 rounded-lg text-emerald-700 font-black" title="Lecture seule">
+                      {selectedMatiereData?.coefficient || 1}
                     </span>
                   </div>
                 </div>
