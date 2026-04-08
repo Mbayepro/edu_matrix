@@ -81,8 +81,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [pathname])
 
   async function handleSignOut() {
-    await supabase.auth.signOut()
-    window.location.href = '/login'
+    try {
+      await supabase.auth.signOut()
+    } catch (e) {
+      console.error("Erreur lors de la déconnexion Supabase:", e)
+    } finally {
+      // Vider le localStorage
+      localStorage.clear()
+      
+      // Vider IndexedDB
+      if (typeof window !== 'undefined' && window.indexedDB) {
+        try {
+          await window.indexedDB.deleteDatabase('EduMatrixDB')
+        } catch (e) {
+          console.error("Erreur lors de la suppression de la base Dexie:", e)
+        }
+      }
+      
+      window.location.href = '/login'
+    }
   }
 
   const visibleNav = NAV_ITEMS.filter((item) => {

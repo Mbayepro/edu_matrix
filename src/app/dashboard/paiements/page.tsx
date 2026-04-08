@@ -304,7 +304,8 @@ export default function PaiementsPage() {
     // Cumul des frais dus
     elevesFrais.forEach(ef => {
       const current = map.get(ef.eleve_id) || { du: 0, paye: 0, reste: 0 }
-      const newDu = current.du + (Number(ef.montant_a_payer) || 0)
+      const aPayer = Number(ef.montant_a_payer) || (Number(ef.montant_du) - (Number(ef.montant_remise) || 0)) || 0
+      const newDu = current.du + aPayer
       map.set(ef.eleve_id, { ...current, du: newDu, reste: newDu - current.paye })
     })
 
@@ -429,7 +430,13 @@ export default function PaiementsPage() {
 
   // Calculate KPIs
   const totalEleves = eleves.length
-  const totalDu = elevesFrais.reduce((sum, ef) => sum + (Number(ef.montant_a_payer) || 0), 0)
+  // Attention: `montant_a_payer` peut être indéfini ou null dans Dexie selon le type. 
+  // On fallback sur `montant_du - montant_remise` si `montant_a_payer` n'est pas défini, 
+  // ou juste `montant_du` si rien d'autre n'est dispo.
+  const totalDu = elevesFrais.reduce((sum, ef) => {
+    const aPayer = Number(ef.montant_a_payer) || (Number(ef.montant_du) - (Number(ef.montant_remise) || 0)) || 0
+    return sum + aPayer
+  }, 0)
   const totalEncaisse = paiements.reduce((sum, p) => sum + (Number(p.montant) || 0), 0)
   const totalRestant = totalDu - totalEncaisse
   const tauxRecouvrement = totalDu > 0 ? (totalEncaisse / totalDu) * 100 : 0
