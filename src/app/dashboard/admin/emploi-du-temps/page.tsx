@@ -3,7 +3,7 @@
 // src/app/dashboard/admin/emploi-du-temps/page.tsx
 // Module Visuel des Emplois du Temps
 
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Profile, Classe, Matiere, EmploiDuTemps } from '@/lib/supabase'
 import { Loader2, Plus, Trash2, Calendar, Clock, LayoutGrid, Users, Bell, AlertTriangle } from 'lucide-react'
