@@ -430,15 +430,15 @@ export default function PaiementsPage() {
 
   // Calculate KPIs
   const totalEleves = eleves.length
-  // Attention: `montant_a_payer` peut être indéfini ou null dans Dexie selon le type. 
-  // On fallback sur `montant_du - montant_remise` si `montant_a_payer` n'est pas défini, 
-  // ou juste `montant_du` si rien d'autre n'est dispo.
-  const totalDu = elevesFrais.reduce((sum, ef) => {
-    const aPayer = Number(ef.montant_a_payer) || (Number(ef.montant_du) - (Number(ef.montant_remise) || 0)) || 0
-    return sum + aPayer
-  }, 0)
-  const totalEncaisse = paiements.reduce((sum, p) => sum + (Number(p.montant) || 0), 0)
-  const totalRestant = totalDu - totalEncaisse
+  
+  // Correction: "Total attendu" = somme de l'argent qu'on attend de récupérer
+  // Si on veut le "Reste total à recouvrer" (ce qui manque) :
+  const totalRestant = Array.from(balancesMap.values()).reduce((sum, bal) => sum + Math.max(0, bal.reste), 0)
+  
+  // Si on veut le "Chiffre d'affaire total prévu" (ce que l'école devrait gagner au total) :
+  const totalDu = Array.from(balancesMap.values()).reduce((sum, bal) => sum + bal.du, 0)
+  
+  const totalEncaisse = Array.from(balancesMap.values()).reduce((sum, bal) => sum + bal.paye, 0)
   const tauxRecouvrement = totalDu > 0 ? (totalEncaisse / totalDu) * 100 : 0
 
   const elevesParStatut = {
@@ -511,9 +511,9 @@ export default function PaiementsPage() {
               <TrendingDown className="w-7 h-7" />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Total attendu</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Reste à recouvrer</p>
               <div className="text-2xl font-black text-slate-900 leading-none">
-                {totalDu.toLocaleString('fr-FR')} <span className="text-[10px] font-black ml-1 uppercase text-slate-400">F</span>
+                {totalRestant.toLocaleString('fr-FR')} <span className="text-[10px] font-black ml-1 uppercase text-slate-400">F</span>
               </div>
             </div>
           </div>

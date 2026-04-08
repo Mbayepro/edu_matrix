@@ -127,7 +127,29 @@ async function executeAction(action: SyncAction): Promise<void> {
       break
     }
     case 'UPDATE': {
-      const { id, ...fields } = payload as { id: string; [key: string]: unknown }
+      const { id, ...fields } = payload as { id: string; updated_at?: string; [key: string]: unknown }
+      
+      // Si on a un updated_at dans le payload, on veut s'assurer de ne pas écraser une version plus récente sur le serveur.
+      if (fields.updated_at) {
+        // Option 1 : Check and update en 2 étapes (Fallback simple)
+        const { data: serverData } = await (supabase as any)
+          .from(table)
+          .select('updated_at')
+          .eq('id', id)
+          .single()
+          
+        if (serverData && serverData.updated_at) {
+          const serverTime = new Date(serverData.updated_at).getTime()
+          const localTime = new Date(fields.updated_at).getTime()
+          
+          if (serverTime > localTime) {
+            console.warn(`[EduMatrix Sync] Conflit détecté sur ${table}/${id}. Le serveur a une version plus récente. Action ignorée.`)
+            // On pourrait idéalement re-télécharger la ligne ici pour mettre à jour Dexie
+            return
+          }
+        }
+      }
+      
       const { error } = await (supabase as any).from(table).update(fields).eq('id', id)
       if (error) throw new Error(error.message)
       break
