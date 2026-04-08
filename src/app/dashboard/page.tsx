@@ -227,7 +227,7 @@ export default function DashboardPage() {
         // Présences 7 derniers jours (Dexie)
         const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
         const startDate = sevenDaysAgo.toISOString().split('T')[0]
-        const presRaw = await db.presences.where('ecole_id').equals(schoolId).and(p => p.date >= startDate).toArray()
+        const presRaw = await db.presences.where('[ecole_id+date]').between([schoolId, startDate], [schoolId, today + '\uffff']).toArray()
 
         // Extract today's absences and retards
         const allEleves = await db.eleves.where('ecole_id').equals(schoolId).toArray()

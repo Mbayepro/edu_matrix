@@ -22,6 +22,9 @@ export async function syncFromSupabase(ecoleId: string): Promise<void> {
 
   console.info('[EduMatrix Sync] ⬇️  Pull Supabase → IndexedDB...')
   const db = getDb()
+  
+  // Limiter les données volumineuses à l'année scolaire courante pour éviter la surcharge mémoire
+  const currentYear = new Date().getFullYear().toString() + '-' + (new Date().getFullYear() + 1).toString()
 
   const tables = [
     { name: 'ecoles', query: supabase.from('ecoles').select('*').eq('id', ecoleId) },
@@ -30,16 +33,16 @@ export async function syncFromSupabase(ecoleId: string): Promise<void> {
     { name: 'classes', query: supabase.from('classes').select('*').eq('ecole_id', ecoleId) },
     { name: 'matieres', query: supabase.from('matieres').select('*').eq('ecole_id', ecoleId) },
     { name: 'coefficients_matieres', query: supabase.from('coefficients_matieres').select('*').eq('ecole_id', ecoleId) },
-    { name: 'evaluations', query: supabase.from('evaluations').select('*').eq('ecole_id', ecoleId) },
-    { name: 'eleves', query: supabase.from('eleves').select('*').eq('ecole_id', ecoleId) },
-    { name: 'notes', query: supabase.from('notes').select('*').eq('ecole_id', ecoleId) },
+    { name: 'evaluations', query: supabase.from('evaluations').select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) },
+    { name: 'eleves', query: supabase.from('eleves').select('*').eq('ecole_id', ecoleId) }, // Les élèves restent tous chargés pour le moment
+    { name: 'notes', query: supabase.from('notes').select('*').eq('ecole_id', ecoleId) }, // TODO: Ajouter colonne annee_scolaire dans notes
     // Use slightly different query for presences (no ecole_id column)
-    { name: 'presences', query: supabase.from('presences').select('*') },
+    { name: 'presences', query: supabase.from('presences').select('*').gte('date', new Date(new Date().getFullYear(), 8, 1).toISOString()) }, // Depuis septembre de cette année
     { name: 'profiles', query: supabase.from('profiles').select('*').eq('ecole_id', ecoleId) },
     { name: 'frais_scolaires', query: supabase.from('frais_scolaires').select('*').eq('ecole_id', ecoleId) },
     { name: 'eleves_frais', query: supabase.from('eleves_frais').select('*').eq('ecole_id', ecoleId) },
-    { name: 'paiements', query: supabase.from('paiements').select('*').eq('ecole_id', ecoleId) },
-    { name: 'emargements', query: supabase.from('emargements').select('*').eq('ecole_id', ecoleId) } // Filtré par école pour admin/profs
+    { name: 'paiements', query: supabase.from('paiements').select('*').eq('ecole_id', ecoleId).gte('date_paiement', new Date(new Date().getFullYear(), 8, 1).toISOString()) },
+    { name: 'emargements', query: supabase.from('emargements').select('*').eq('ecole_id', ecoleId).gte('date', new Date(new Date().getFullYear(), 8, 1).toISOString()) }
   ]
 
   for (const t of tables) {
@@ -61,6 +64,9 @@ export async function syncFromSupabase(ecoleId: string): Promise<void> {
   }
   
   console.info('[EduMatrix Sync] ✅ Pull terminé.')
+  
+  // Lancer le nettoyage en arrière-plan après la sync
+  setTimeout(cleanupLocalCache, 5000)
 }
 
 // ─── PUSH : sync_queue → Supabase ────────────────────────────────────────────
@@ -224,5 +230,34 @@ export async function getPendingActionsCount(): Promise<number> {
     return await db.sync_queue.count()
   } catch {
     return 0
+  }
+}
+
+/**
+ * Nettoie le cache Dexie pour libérer de l'espace (Garbage Collection).
+ * Supprime les données vieilles de plus de X jours.
+ * N'affecte PAS Supabase.
+ */
+export async function cleanupLocalCache(): Promise<void> {
+  if (typeof window === 'undefined') return
+  const db = getDb()
+  try {
+    // Garder les présences des 3 derniers mois uniquement
+    const threeMonthsAgo = new Date()
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
+    const oldDate = threeMonthsAgo.toISOString().split('T')[0]
+    
+    const countPresences = await db.presences.where('date').below(oldDate).delete()
+    
+    // Garder les paiements de l'année scolaire en cours (depuis septembre dernier)
+    const currentYear = new Date().getFullYear()
+    const startOfSchoolYear = new Date(currentYear, 8, 1).toISOString() // 1er Septembre
+    const countPaiements = await db.paiements.where('date_paiement').below(startOfSchoolYear).delete()
+    
+    if (countPresences > 0 || countPaiements > 0) {
+      console.info(`[EduMatrix GC] Cache nettoyé: ${countPresences} présences, ${countPaiements} paiements supprimés.`)
+    }
+  } catch (err) {
+    console.warn('[EduMatrix GC] Erreur lors du nettoyage:', err)
   }
 }

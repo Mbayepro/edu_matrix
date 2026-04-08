@@ -10,6 +10,7 @@ import {
   Upload, User, Loader2, X, Eye, QrCode,
   Users, UploadCloud, FileText, Printer, Edit
 } from 'lucide-react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import ExcelImportModal from '@/components/ExcelImportModal'
@@ -26,7 +27,7 @@ import { syncFromSupabase } from '@/lib/syncService'
 
 const StudentCard = dynamic(() => import('@/components/StudentCard'), { ssr: false })
 
-const PAGE_SIZE = 15
+const PAGE_SIZE = 50
 
 type StatutPaiement = 'tous' | 'payé' | 'impayé' | 'partiel'
 
@@ -56,6 +57,14 @@ export default function ElevesPage() {
   const [showImportModal, setShowImportModal] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const uploadingFor = useRef<string | null>(null)
+  const tableContainerRef = useRef<HTMLDivElement>(null)
+
+  const rowVirtualizer = useVirtualizer({
+    count: eleves.length,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => 76, // Hauteur approximative d'une ligne
+    overscan: 5,
+  })
 
   const { isOnline } = useNetwork();
 
@@ -153,6 +162,8 @@ export default function ElevesPage() {
       const allFiltered = await collection.toArray()
       const sorted = allFiltered.sort((a, b) => a.nom.localeCompare(b.nom))
       const count = sorted.length
+      // Avec la virtualisation, on peut se permettre de charger plus de lignes ou tout charger
+      // Mais gardons la pagination pour ne pas saturer la mémoire RAM globale
       const pageData = sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
       // Récupérer les infos de classe pour chaque élève
@@ -395,10 +406,10 @@ export default function ElevesPage() {
         ) : (
           <>
             {/* Desktop table */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/30">
+            <div className="hidden md:block overflow-x-auto max-h-[600px] overflow-y-auto" ref={tableContainerRef}>
+              <table className="w-full text-sm relative">
+                <thead className="sticky top-0 z-10 bg-slate-50/90 backdrop-blur-sm">
+                  <tr className="border-b border-slate-100">
                     <th className="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Informations Élève</th>
                     <th className="text-left px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Matricule</th>
                     <th className="text-left px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Classe</th>
@@ -406,9 +417,18 @@ export default function ElevesPage() {
                     <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Options</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {eleves.map((e) => (
-                    <tr key={e.id} className="group hover:bg-slate-50/80 transition-all duration-300">
+                <tbody className="divide-y divide-slate-50" style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}>
+                  {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                    const e = eleves[virtualRow.index]
+                    return (
+                    <tr 
+                      key={e.id} 
+                      className="group hover:bg-slate-50/80 transition-all duration-300 absolute w-full"
+                      style={{
+                        height: `${virtualRow.size}px`,
+                        transform: `translateY(${virtualRow.start}px)`
+                      }}
+                    >
                       <td className="px-8 py-5">
                         <div className="flex items-center gap-5">
                           <button
@@ -488,7 +508,7 @@ export default function ElevesPage() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  )})}
                 </tbody>
               </table>
             </div>

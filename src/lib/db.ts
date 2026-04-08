@@ -89,9 +89,12 @@ export class EduMatrixDB extends Dexie {
       sync_queue:  '++id, table, action, createdAt, attempts',
     })
 
-    this.version(4).stores({
-      eleves:      'id, ecole_id, classe_id, telephone_parent',
-      eleves_frais: 'id, eleve_id, ecole_id, derniere_relance_le',
+    this.version(5).stores({
+      // Index composés pour accélérer les requêtes du Dashboard (ex: ecole_id + statut_paiement)
+      eleves:      'id, ecole_id, classe_id, telephone_parent, [ecole_id+statut_paiement]',
+      presences:   'id, eleve_id, date, classe_id, ecole_id, [ecole_id+date]',
+    }).upgrade(trans => {
+      // Les index composés sont générés automatiquement par Dexie pour les nouvelles entrées
     })
   }
 
