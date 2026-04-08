@@ -138,8 +138,25 @@ async function executeAction(action: SyncAction): Promise<void> {
 // ─── Helpers : ajouter à la file d'attente ───────────────────────────────────
 
 /**
- * Enfile une mutation en attente (à utiliser quand offline OU pour garantie offline).
- * Si online, on essaie d'abord de flush immédiatement.
+ * Exécute une requête Supabase avec un timeout.
+ * Si le timeout est atteint, rejette l'erreur pour passer au fallback offline.
+ */
+async function withTimeout<T>(promise: Promise<T>, ms: number = 3000): Promise<T> {
+  let timeoutId: NodeJS.Timeout
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error('Timeout Supabase')), ms)
+  })
+  
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    clearTimeout(timeoutId)
+  })
+}
+
+/**
+ * Enfile une mutation en attente.
+ * STRATÉGIE ONLINE-FIRST : Si on est en ligne, on tente d'abord d'écrire directement sur Supabase avec un timeout (3s).
+ * - Si succès : on met à jour IndexedDB localement pour le cache et on ne met PAS en file d'attente.
+ * - Si échec/timeout/offline : on met en file d'attente (sync_queue) pour un flush ultérieur et on met à jour IndexedDB.
  */
 export async function addToSyncQueue(
   table: string,
@@ -148,6 +165,35 @@ export async function addToSyncQueue(
   ecoleId?: string,
 ): Promise<void> {
   const db = getDb()
+
+  // 1. ONLINE-FIRST ATTEMPT
+  if (typeof window !== 'undefined' && navigator.onLine) {
+    try {
+      // Tentative directe avec Timeout
+      await withTimeout(executeAction({ table, action, payload } as SyncAction), 4000)
+      
+      // Si on arrive ici, l'écriture Supabase a réussi. 
+      // On applique la modification au cache local (Dexie) directement sans passer par la queue.
+      const tableObj = (db as any)[table]
+      if (tableObj) {
+        if (action === 'INSERT' || action === 'UPDATE') {
+          await tableObj.put(payload)
+        } else if (action === 'DELETE' && payload.id) {
+          await tableObj.delete(payload.id)
+        }
+      }
+      
+      // Essayer de flush le reste de la queue au passage
+      void flushSyncQueue()
+      
+      return // Succès direct, on s'arrête là
+    } catch (err) {
+      console.warn(`[EduMatrix Sync] ⚠️ Échec direct (${err instanceof Error ? err.message : String(err)}). Passage en mode Offline-Queue.`)
+      // On continue vers l'ajout en file d'attente
+    }
+  }
+
+  // 2. OFFLINE FALLBACK (ou échec direct)
   await db.sync_queue.add({
     table,
     action,
@@ -156,10 +202,15 @@ export async function addToSyncQueue(
     createdAt: Date.now(),
     attempts: 0,
   })
-
-  // Immediate Flush attempt if online
-  if (typeof window !== 'undefined' && navigator.onLine) {
-    void flushSyncQueue()
+  
+  // Appliquer la modification au cache local (Dexie) pour que l'UI soit à jour immédiatement
+  const tableObj = (db as any)[table]
+  if (tableObj) {
+    if (action === 'INSERT' || action === 'UPDATE') {
+      await tableObj.put(payload)
+    } else if (action === 'DELETE' && payload.id) {
+      await tableObj.delete(payload.id)
+    }
   }
 }
 

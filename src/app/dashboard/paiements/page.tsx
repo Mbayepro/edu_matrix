@@ -141,7 +141,25 @@ export default function PaiementsPage() {
 
   async function loadElevesFraisLocal(schoolId: string) {
     if (!db) return
-    const data = await db.eleves_frais.where('ecole_id').equals(schoolId).toArray()
+    let data = await db.eleves_frais.where('ecole_id').equals(schoolId).toArray()
+
+    // Sécurité : si la base locale est vide, tenter une lecture directe sur Supabase
+    if (data.length === 0 && typeof navigator !== 'undefined' && navigator.onLine) {
+      try {
+        const { data: remoteData, error } = await supabase
+          .from('eleves_frais')
+          .select('*')
+          .eq('ecole_id', schoolId)
+          
+        if (!error && remoteData && remoteData.length > 0) {
+          await db.eleves_frais.bulkPut(remoteData as any)
+          data = remoteData as any
+        }
+      } catch (err) {
+        console.warn('Erreur fallback Supabase eleves_frais:', err)
+      }
+    }
+
     setElevesFrais(data)
   }
 

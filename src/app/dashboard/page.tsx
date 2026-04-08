@@ -8,7 +8,7 @@ import { useProfile } from '@/hooks/useProfile'
 import type { Profile, Ecole } from '@/lib/supabase'
 import {
   Users, BookOpen, AlertCircle, LayoutGrid,
-  TrendingUp, UserCheck, Activity, ChevronRight,
+  TrendingUp, UserCheck, Activity, ChevronRight, MessageCircle
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -105,6 +105,7 @@ export default function DashboardPage() {
   const [stats,         setStats]         = useState<DashboardStats | null>(null)
   const [recentEleves,  setRecentEleves]  = useState<RecentEleve[]>([])
   const [recentEmargements, setRecentEmargements] = useState<any[]>([])
+  const [absencesJour, setAbsencesJour] = useState<any[]>([])
   const [presenceChart, setPresenceChart] = useState<{ jour: string; present: number; absent: number }[]>([])
   const [notesChart,    setNotesChart]    = useState<{ classe: string; moyenne: number }[]>([])
   const [loading,       setLoading]       = useState(true)
@@ -227,6 +228,23 @@ export default function DashboardPage() {
         const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
         const startDate = sevenDaysAgo.toISOString().split('T')[0]
         const presRaw = await db.presences.where('ecole_id').equals(schoolId).and(p => p.date >= startDate).toArray()
+
+        // Extract today's absences and retards
+        const allEleves = await db.eleves.where('ecole_id').equals(schoolId).toArray()
+        const eleveMap = new Map(allEleves.map(e => [e.id, e]))
+        
+        const todaysAbsences = presRaw
+          .filter(p => p.date === today && (p.statut === 'absent' || p.statut === 'retard'))
+          .map(p => {
+            const e = eleveMap.get(p.eleve_id)
+            return {
+              ...p,
+              eleve_nom: e ? `${e.prenom} ${e.nom}` : 'Inconnu',
+              telephone: e?.telephone_parent || '',
+              classe_nom: classesMap.get(p.classe_id) || 'N/A'
+            }
+          })
+        setAbsencesJour(todaysAbsences)
 
         const presMap: Record<string, { present: number; absent: number }> = {}
         for (let i = 6; i >= 0; i--) {
@@ -453,7 +471,51 @@ export default function DashboardPage() {
           )}
         </div>
 
+        {/* Absences & Retards du jour */}
         <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-5 border-b border-slate-50">
+            <h2 className="font-bold text-slate-900 text-sm">Absences & Retards du jour</h2>
+            <Link href="/dashboard/presences" className="px-3 py-1.5 rounded-xl bg-slate-50 text-[10px] font-black uppercase tracking-widest text-amber-600 hover:bg-amber-50 transition-colors">
+              Gérer
+            </Link>
+          </div>
+          {absencesJour.length === 0 ? (
+            <div className="p-12 text-center text-slate-400 text-sm italic">Aucune absence ni retard aujourd'hui. Super !</div>
+          ) : (
+            <ul className="divide-y divide-slate-50 max-h-[300px] overflow-y-auto custom-scrollbar">
+              {absencesJour.map((a) => (
+                <li key={a.id} className="flex items-center gap-3 px-6 py-4 hover:bg-slate-50/50 transition-colors group">
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shrink-0 transition-transform group-hover:scale-110 ${a.statut === 'absent' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'}`}>
+                    {a.eleve_nom[0]?.toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-slate-900 truncate group-hover:text-amber-600 transition-colors">{a.eleve_nom}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">{a.classe_nom}</p>
+                      <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md ${a.statut === 'absent' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'}`}>
+                        {a.statut}
+                      </span>
+                    </div>
+                  </div>
+                  {a.telephone && (
+                    <button
+                      onClick={() => {
+                        const msg = encodeURIComponent(`Bonjour, l'école ${ecole?.nom} vous informe que votre enfant ${a.eleve_nom} a été marqué ${a.statut} aujourd'hui. Merci de nous contacter pour plus d'informations.`);
+                        window.open(`https://wa.me/${a.telephone.replace(/\s+/g, '').replace('+', '')}?text=${msg}`, '_blank');
+                      }}
+                      className="w-7 h-7 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-sm shrink-0 active:scale-95"
+                      title="Prévenir sur WhatsApp"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="lg:col-span-2 bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-6 py-5 border-b border-slate-50">
             <h2 className="font-bold text-slate-900 text-sm">Derniers cours démarrés</h2>
             <Link href="/dashboard/emargements" className="px-3 py-1.5 rounded-xl bg-slate-50 text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:bg-indigo-50 transition-colors">
