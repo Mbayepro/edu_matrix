@@ -22,6 +22,7 @@ export interface BulletinData {
     nom: string;
     prenom: string;
     matricule: string;
+    pin_parent?: string | null;
   };
   classe: {
     id: string;

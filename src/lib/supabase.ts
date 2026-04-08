@@ -46,6 +46,7 @@ export interface Eleve {
   photo_url: string | null
   statut_paiement: StatutPaiement
   telephone_parent: string | null
+  pin_parent?: string | null
   created_at: string
   // Joined fields
   classe?: Classe

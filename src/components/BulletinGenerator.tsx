@@ -12,9 +12,10 @@ interface GenerateurProps {
   eleveId?: string; // Optionnel : si null, on imprime tous les élèves de la classe!
   classeId: string;
   trimestre: number;
+  pinCode?: string; // Optionnel : pour l'accès parent public
 }
 
-export default function BulletinGenerator({ eleveId, classeId, trimestre }: GenerateurProps) {
+export default function BulletinGenerator({ eleveId, classeId, trimestre, pinCode }: GenerateurProps) {
   const [dataArray, setDataArray] = useState<BulletinData[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,20 +25,35 @@ export default function BulletinGenerator({ eleveId, classeId, trimestre }: Gene
       try {
         setLoading(true);
 
-        let query = supabase
-          .from('v_bulletins_complets')
-          .select('*')
-          .eq('classe_id', classeId)
-          .eq('trimestre', trimestre);
+        let rows;
+
+        if (pinCode) {
+          // Utilisation de l'accès public sécurisé
+          const { data, error } = await supabase.rpc('get_bulletin_by_pin', { 
+            p_pin: pinCode, 
+            p_trimestre: trimestre 
+          });
           
-        if (eleveId) {
-          query = query.eq('eleve_id', eleveId);
+          if (error) throw error;
+          rows = data;
+        } else {
+          let query = supabase
+            .from('v_bulletins_complets')
+            .select('*')
+            .eq('classe_id', classeId)
+            .eq('trimestre', trimestre);
+            
+          if (eleveId) {
+            query = query.eq('eleve_id', eleveId);
+          }
+
+          const { data, error } = await query;
+          if (error) throw error;
+          rows = data;
         }
 
-        const { data: rows, error } = await query;
-
-        if (error || !rows || rows.length === 0) {
-          console.error('Erreur SQL ou aucun résultat:', error);
+        if (!rows || rows.length === 0) {
+          console.error('Erreur SQL ou aucun résultat');
           setLoading(false);
           return;
         }
@@ -53,7 +69,8 @@ export default function BulletinGenerator({ eleveId, classeId, trimestre }: Gene
               id: bulletinRow.eleve_id || '',
               nom: bulletinRow.nom || '',
               prenom: bulletinRow.prenom || '',
-              matricule: bulletinRow.matricule || ''
+              matricule: bulletinRow.matricule || '',
+              pin_parent: (bulletinRow as any).pin_parent || null
             },
             classe: {
               id: bulletinRow.classe_id || '',

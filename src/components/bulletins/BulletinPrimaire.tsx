@@ -98,6 +98,9 @@ export default function BulletinPrimaire({ data }: { data: BulletinData }) {
         <div className="text-right border-l px-4 border-slate-300">
           <p className="mb-1"><span className="font-bold text-xs">Classe :</span> <span className="font-bold text-md">{data.classe.nom_classe}</span></p>
           <p><span className="font-bold text-xs">Matricule :</span> {data.eleve.matricule}</p>
+          {('pin_parent' in data.eleve && data.eleve.pin_parent) && (
+            <p className="mt-1"><span className="font-bold text-xs">PIN Parent :</span> <span className="font-mono font-bold bg-slate-200 px-1 rounded">{data.eleve.pin_parent as string}</span></p>
+          )}
         </div>
       </div>
 

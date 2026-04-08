@@ -1,18 +1,17 @@
 'use client'
 
 // src/app/dashboard/admin/emploi-du-temps/page.tsx
-// Directeur : Gérer l'emploi du temps hebdomadaire de chaque enseignant
+// Module Visuel des Emplois du Temps
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Profile, Classe, Matiere, EmploiDuTemps } from '@/lib/supabase'
-import { Loader2, Plus, Trash2, Calendar, Clock } from 'lucide-react'
+import { Loader2, Plus, Trash2, Calendar, Clock, LayoutGrid, Users, Bell, AlertTriangle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/contexts/ToastContext'
 
 const JOURS = ['', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'] as const
 
-// Palette de couleurs par index de matière (cycling)
 const COLORS = [
   'bg-blue-100 text-blue-800 border-blue-200',
   'bg-purple-100 text-purple-800 border-purple-200',
@@ -29,9 +28,8 @@ interface Slot extends EmploiDuTemps {
   enseignant?: Profile
 }
 
-const HEURES = ['07:00', '07:30', '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
-  '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
-  '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00']
+const HEURES = ['07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00']
+const ALL_HEURES = ['07:00', '07:30', '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00']
 
 export default function EmploiDuTempsPage() {
   const router = useRouter()
@@ -39,11 +37,16 @@ export default function EmploiDuTempsPage() {
   const [teachers, setTeachers] = useState<Profile[]>([])
   const [classes, setClasses] = useState<Classe[]>([])
   const [matieres, setMatieres] = useState<Matiere[]>([])
-  const [slots, setSlots] = useState<Slot[]>([])
+  const [allSlots, setAllSlots] = useState<Slot[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [selectedTeacher, setSelectedTeacher] = useState<string>('')
+  const [selectedClasse, setSelectedClasse] = useState<string>('')
   const { showToast } = useToast()
+  
+  const [activeTab, setActiveTab] = useState<'live' | 'teacher' | 'classe'>('live')
+  const [currentTime, setCurrentTime] = useState(new Date())
+
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({
     jour: 1 as number,
@@ -54,8 +57,15 @@ export default function EmploiDuTempsPage() {
     salle: '',
   })
 
-  useEffect(() => { init() }, [])
-  useEffect(() => { if (ecoleId && selectedTeacher) loadSlots() }, [selectedTeacher, ecoleId])
+  useEffect(() => { 
+    init()
+    const interval = setInterval(() => setCurrentTime(new Date()), 60000)
+    return () => clearInterval(interval)
+  }, [])
+  
+  useEffect(() => { 
+    if (ecoleId) loadAllSlots() 
+  }, [ecoleId])
 
   async function init() {
     try {
@@ -74,38 +84,49 @@ export default function EmploiDuTempsPage() {
       setTeachers((tch ?? []) as Profile[])
       setClasses(cls ?? [])
       setMatieres((mat ?? []) as Matiere[])
-      if (tch?.length) {
-        setSelectedTeacher(tch[0].id)
-        setForm(f => ({ ...f, classe_id: cls?.[0]?.id ?? '', matiere_id: (mat as any[])?.[0]?.id ?? '' }))
-      }
+      if (tch?.length) setSelectedTeacher(tch[0].id)
+      if (cls?.length) setSelectedClasse(cls[0].id)
+      
     } finally { setLoading(false) }
   }
 
-  async function loadSlots() {
-    if (!ecoleId || !selectedTeacher) return
+  async function loadAllSlots() {
+    if (!ecoleId) return
     const { data } = await supabase
       .from('emploi_du_temps')
-      .select(`*, classe:classes!classe_id(id, nom_classe, niveau), matiere:matieres!matiere_id(id, nom)`)
+      .select(`*, classe:classes!classe_id(id, nom_classe, niveau), matiere:matieres!matiere_id(id, nom), enseignant:profiles!enseignant_id(id, nom, prenom)`)
       .eq('ecole_id', ecoleId)
-      .eq('enseignant_id', selectedTeacher)
       .order('jour').order('heure_debut')
-    setSlots((data ?? []) as Slot[])
+    setAllSlots((data ?? []) as Slot[])
   }
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
     if (!ecoleId || !selectedTeacher) return
 
-    // Vérification de chevauchement côté client
+    // Vérification de chevauchement (Professeur)
     const newStart = form.heure_debut
     const newEnd = form.heure_fin
-    const overlap = slots.find(s =>
+    const overlapProf = allSlots.find(s =>
+      s.enseignant_id === selectedTeacher &&
       s.jour === form.jour &&
       s.heure_debut < newEnd &&
       s.heure_fin > newStart
     )
-    if (overlap) {
-      showToast(`Conflit horaire avec ${overlap.matiere?.nom ?? 'un cours'} (${overlap.heure_debut.slice(0,5)}–${overlap.heure_fin.slice(0,5)})`, 'error')
+    if (overlapProf) {
+      showToast(`Conflit horaire pour le professeur avec ${overlapProf.matiere?.nom ?? 'un cours'} (${overlapProf.heure_debut.slice(0,5)}–${overlapProf.heure_fin.slice(0,5)})`, 'error')
+      return
+    }
+    
+    // Vérification de chevauchement (Classe)
+    const overlapClasse = allSlots.find(s =>
+      s.classe_id === form.classe_id &&
+      s.jour === form.jour &&
+      s.heure_debut < newEnd &&
+      s.heure_fin > newStart
+    )
+    if (overlapClasse) {
+      showToast(`La classe a déjà un cours de ${overlapClasse.matiere?.nom ?? 'quelque chose'} à cette heure.`, 'error')
       return
     }
 
@@ -124,25 +145,23 @@ export default function EmploiDuTempsPage() {
       if (error) { showToast('Erreur : ' + error.message, 'error'); return }
       showToast('Créneau ajouté avec succès !', 'success')
       setShowForm(false)
-      await loadSlots()
+      await loadAllSlots()
     } finally { setSaving(false) }
   }
 
   async function handleDelete(id: string) {
     await supabase.from('emploi_du_temps').delete().eq('id', id)
     showToast('Créneau supprimé.', 'success')
-    await loadSlots()
+    await loadAllSlots()
   }
 
   const matiereColorMap: Record<string, string> = {}
   matieres.forEach((m, i) => { matiereColorMap[m.id] = COLORS[i % COLORS.length] })
 
-  const selectedTeacherProfile = teachers.find(t => t.id === selectedTeacher)
-
-  const slotsForDay = (jour: number) =>
-    slots.filter(s => s.jour === jour).sort((a, b) => a.heure_debut.localeCompare(b.heure_debut))
-
-  const inputCls = 'w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white'
+  // Current Live Info
+  const currentDay = currentTime.getDay() === 0 ? 7 : currentTime.getDay() // 1=Lundi
+  const currentHourString = currentTime.toTimeString().slice(0, 5)
+  const liveSlots = allSlots.filter(s => s.jour === currentDay && s.heure_debut.slice(0,5) <= currentHourString && s.heure_fin.slice(0,5) >= currentHourString)
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[50vh]">
@@ -150,152 +169,229 @@ export default function EmploiDuTempsPage() {
     </div>
   )
 
+  const renderVisualGrid = (slots: Slot[]) => {
+    return (
+      <div className="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-100">
+        <div className="min-w-[800px] p-4">
+          <div className="grid grid-cols-7 gap-2">
+            <div className="text-right pr-4 pt-8 text-xs font-bold text-slate-400">Heures</div>
+            {[1,2,3,4,5,6].map(jour => (
+              <div key={jour} className="text-center font-bold text-slate-700 bg-slate-50 py-2 rounded-xl text-sm">
+                {JOURS[jour]}
+              </div>
+            ))}
+            
+            {HEURES.map((h, i) => (
+              <React.Fragment key={h}>
+                <div className="text-right pr-4 text-xs font-bold text-slate-400 relative h-16 border-t border-slate-100 -mt-px">
+                  <span className="-mt-2 block absolute right-4 bg-white px-1">{h}</span>
+                </div>
+                {[1,2,3,4,5,6].map(jour => {
+                  const daySlots = slots.filter(s => s.jour === jour)
+                  const slotHere = daySlots.find(s => s.heure_debut.startsWith(h.split(':')[0]))
+                  return (
+                    <div key={`${jour}-${h}`} className="border-t border-l border-slate-100 h-16 relative group">
+                      {slotHere && (
+                        <div className={`absolute top-1 left-1 right-1 bottom-1 rounded-xl p-2 text-xs shadow-sm overflow-hidden flex flex-col justify-between ${slotHere.matiere_id ? matiereColorMap[slotHere.matiere_id] : 'bg-slate-100'}`}>
+                          <div className="font-bold truncate">{slotHere.matiere?.nom || 'Cours'}</div>
+                          <div className="flex justify-between items-end">
+                            <span className="font-mono text-[10px] opacity-75">{slotHere.heure_debut.slice(0,5)}</span>
+                            <span className="truncate max-w-[60px] opacity-90">{activeTab === 'teacher' ? slotHere.classe?.nom_classe : slotHere.enseignant?.prenom}</span>
+                          </div>
+                          <button onClick={() => handleDelete(slotHere.id)} className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 p-1 hover:bg-white/50 rounded transition-all">
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="max-w-6xl mx-auto space-y-5">
+    <div className="max-w-7xl mx-auto space-y-6 pb-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="bg-indigo-100 p-2.5 rounded-xl">
-            <Calendar className="w-5 h-5 text-indigo-600" />
+          <div className="bg-indigo-100 p-3 rounded-2xl shadow-inner">
+            <LayoutGrid className="w-6 h-6 text-indigo-600" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-800">Emploi du temps</h1>
-            <p className="text-sm text-slate-500">Planifiez les créneaux hebdomadaires de chaque enseignant.</p>
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Emplois du Temps</h1>
+            <p className="text-sm text-slate-500 font-medium">Planification visuelle et suivi en direct des cours.</p>
           </div>
         </div>
         <button
           onClick={() => setShowForm(v => !v)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition-colors"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-emerald-600/20"
         >
           <Plus className="w-4 h-4" />
-          Ajouter un créneau
+          Nouveau Cours
         </button>
-      </div>
-
-      {/* Teacher selector */}
-      <div className="flex items-center gap-3 bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
-        <label className="text-sm font-medium text-slate-600 shrink-0">Enseignant :</label>
-        <select
-          value={selectedTeacher}
-          onChange={e => setSelectedTeacher(e.target.value)}
-          className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-        >
-          {teachers.map(t => (
-            <option key={t.id} value={t.id}>{t.prenom} {t.nom}</option>
-          ))}
-        </select>
-        {selectedTeacherProfile && (
-          <span className="text-xs bg-blue-50 text-blue-700 px-3 py-1 rounded-full font-medium">
-            {slots.length} créneau{slots.length > 1 ? 'x' : ''}
-          </span>
-        )}
       </div>
 
       {/* Add form */}
       {showForm && (
-        <form onSubmit={handleAdd} className="bg-white rounded-2xl border border-emerald-200 shadow-sm p-5 space-y-4">
-          <h2 className="font-semibold text-slate-700 text-sm flex items-center gap-2">
-            <Clock className="w-4 h-4 text-emerald-600" />
-            Nouveau créneau — {selectedTeacherProfile?.prenom} {selectedTeacherProfile?.nom}
+        <form onSubmit={handleAdd} className="bg-white rounded-3xl border border-emerald-200 shadow-xl shadow-emerald-900/5 p-6 space-y-5 animate-in slide-in-from-top-4">
+          <h2 className="font-black text-slate-800 text-lg flex items-center gap-2">
+            <Clock className="w-5 h-5 text-emerald-600" />
+            Placer un cours
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5">Jour *</label>
-              <select value={form.jour} onChange={e => setForm(f => ({ ...f, jour: +e.target.value }))} className={inputCls} required>
-                {[1,2,3,4,5,6].map(j => <option key={j} value={j}>{JOURS[j]}</option>)}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            <div className="xl:col-span-2">
+              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Enseignant *</label>
+              <select value={selectedTeacher} onChange={e => setSelectedTeacher(e.target.value)} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 bg-slate-50 focus:bg-white transition-colors font-medium" required>
+                {teachers.map(t => <option key={t.id} value={t.id}>{t.prenom} {t.nom}</option>)}
               </select>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5">Heure début *</label>
-              <select value={form.heure_debut} onChange={e => setForm(f => ({ ...f, heure_debut: e.target.value }))} className={inputCls} required>
-                {HEURES.map(h => <option key={h} value={h}>{h}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5">Heure fin *</label>
-              <select value={form.heure_fin} onChange={e => setForm(f => ({ ...f, heure_fin: e.target.value }))} className={inputCls} required>
-                {HEURES.filter(h => h > form.heure_debut).map(h => <option key={h} value={h}>{h}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5">Classe *</label>
-              <select value={form.classe_id} onChange={e => setForm(f => ({ ...f, classe_id: e.target.value }))} className={inputCls} required>
-                <option value="">Choisir…</option>
+            <div className="xl:col-span-2">
+              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Classe *</label>
+              <select value={form.classe_id} onChange={e => setForm(f => ({ ...f, classe_id: e.target.value }))} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 bg-slate-50 focus:bg-white transition-colors font-medium" required>
+                <option value="">Choisir la classe…</option>
                 {classes.map(c => <option key={c.id} value={c.id}>{c.nom_classe}</option>)}
               </select>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5">Matière</label>
-              <select value={form.matiere_id} onChange={e => setForm(f => ({ ...f, matiere_id: e.target.value }))} className={inputCls}>
-                <option value="">—</option>
+            <div className="xl:col-span-2">
+              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Matière</label>
+              <select value={form.matiere_id} onChange={e => setForm(f => ({ ...f, matiere_id: e.target.value }))} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 bg-slate-50 focus:bg-white transition-colors font-medium">
+                <option value="">(Optionnel)</option>
                 {matieres.map(m => <option key={m.id} value={m.id}>{m.nom}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1.5">Salle</label>
-              <input
-                type="text"
-                value={form.salle}
-                onChange={e => setForm(f => ({ ...f, salle: e.target.value }))}
-                placeholder="Salle 12, Labo…"
-                className={inputCls}
-              />
+              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Jour *</label>
+              <select value={form.jour} onChange={e => setForm(f => ({ ...f, jour: +e.target.value }))} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 bg-slate-50 focus:bg-white transition-colors font-medium" required>
+                {[1,2,3,4,5,6].map(j => <option key={j} value={j}>{JOURS[j]}</option>)}
+              </select>
             </div>
-          </div>
-          <div className="flex gap-3">
-            <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-slate-500 hover:text-slate-700">Annuler</button>
-            <button
-              type="submit"
-              disabled={saving || !form.classe_id}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl disabled:opacity-50 transition-colors"
-            >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              Ajouter
-            </button>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Début *</label>
+              <select value={form.heure_debut} onChange={e => setForm(f => ({ ...f, heure_debut: e.target.value }))} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 bg-slate-50 focus:bg-white transition-colors font-medium font-mono" required>
+                {ALL_HEURES.map(h => <option key={h} value={h}>{h}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Fin *</label>
+              <select value={form.heure_fin} onChange={e => setForm(f => ({ ...f, heure_fin: e.target.value }))} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 bg-slate-50 focus:bg-white transition-colors font-medium font-mono" required>
+                {ALL_HEURES.filter(h => h > form.heure_debut).map(h => <option key={h} value={h}>{h}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Salle</label>
+              <input type="text" value={form.salle} onChange={e => setForm(f => ({ ...f, salle: e.target.value }))} placeholder="Ex: S12" className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 bg-slate-50 focus:bg-white transition-colors font-medium" />
+            </div>
+            <div className="xl:col-span-2 flex items-end gap-3">
+              <button type="button" onClick={() => setShowForm(false)} className="px-5 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors w-full sm:w-auto">Annuler</button>
+              <button type="submit" disabled={saving || !form.classe_id} className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-black text-white text-sm font-bold rounded-xl disabled:opacity-50 transition-colors shadow-lg">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Valider
+              </button>
+            </div>
           </div>
         </form>
       )}
 
-      {/* Weekly grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {[1,2,3,4,5,6].map(jour => {
-          const daySlots = slotsForDay(jour)
-          return (
-            <div key={jour} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-              <div className={`px-4 py-2.5 flex items-center justify-between ${daySlots.length ? 'bg-indigo-50' : 'bg-slate-50'}`}>
-                <span className="font-bold text-slate-700 text-sm">{JOURS[jour]}</span>
-                <span className="text-xs text-slate-400">{daySlots.length} cours</span>
-              </div>
-              <div className="p-3 space-y-2 min-h-[80px]">
-                {daySlots.length === 0 ? (
-                  <p className="text-center text-slate-300 text-xs py-4">Aucun cours</p>
-                ) : daySlots.map(s => {
-                  const color = s.matiere_id ? matiereColorMap[s.matiere_id] ?? COLORS[0] : 'bg-slate-100 text-slate-700 border-slate-200'
-                  return (
-                    <div key={s.id} className={`flex items-start gap-2 rounded-xl border px-3 py-2 ${color}`}>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-xs truncate">{s.matiere?.nom ?? 'Cours'}</p>
-                        <p className="text-[10px] opacity-70">{s.classe?.nom_classe}</p>
-                        <p className="text-[10px] opacity-80 font-mono mt-0.5">
-                          {s.heure_debut.slice(0,5)} → {s.heure_fin.slice(0,5)}
-                          {s.salle ? ` · ${s.salle}` : ''}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleDelete(s.id)}
-                        className="shrink-0 opacity-50 hover:opacity-100 transition-opacity"
-                        title="Supprimer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )
-                })}
+      {/* Tabs */}
+      <div className="flex border-b-2 border-slate-200 overflow-x-auto hide-scrollbar">
+        <button onClick={() => setActiveTab('live')} className={`px-6 py-3 font-black text-sm whitespace-nowrap transition-colors flex items-center gap-2 ${activeTab === 'live' ? 'text-rose-600 border-b-2 border-rose-600 -mb-0.5' : 'text-slate-400 hover:text-slate-600'}`}>
+          <div className={`w-2 h-2 rounded-full ${activeTab === 'live' ? 'bg-rose-500 animate-pulse' : 'bg-slate-300'}`} />
+          En Direct (Alertes)
+        </button>
+        <button onClick={() => setActiveTab('teacher')} className={`px-6 py-3 font-black text-sm whitespace-nowrap transition-colors flex items-center gap-2 ${activeTab === 'teacher' ? 'text-indigo-600 border-b-2 border-indigo-600 -mb-0.5' : 'text-slate-400 hover:text-slate-600'}`}>
+          <Users className="w-4 h-4" />
+          Vue Professeurs
+        </button>
+        <button onClick={() => setActiveTab('classe')} className={`px-6 py-3 font-black text-sm whitespace-nowrap transition-colors flex items-center gap-2 ${activeTab === 'classe' ? 'text-indigo-600 border-b-2 border-indigo-600 -mb-0.5' : 'text-slate-400 hover:text-slate-600'}`}>
+          <LayoutGrid className="w-4 h-4" />
+          Vue Classes
+        </button>
+      </div>
+
+      {/* Tab: En Direct */}
+      {activeTab === 'live' && (
+        <div className="space-y-6 animate-in fade-in">
+          <div className="bg-rose-50 border border-rose-100 rounded-3xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-black text-rose-900 flex items-center gap-2 mb-1">
+                <Bell className="w-5 h-5" /> Situation actuelle
+              </h2>
+              <p className="text-rose-700/80 font-medium text-sm">
+                Aujourd'hui, {JOURS[currentDay]} à <span className="font-mono font-bold bg-rose-200/50 px-1 rounded">{currentHourString}</span>
+              </p>
+            </div>
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-rose-100 flex gap-6">
+              <div className="text-center">
+                <p className="text-3xl font-black text-slate-800">{liveSlots.length}</p>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Cours en cours</p>
               </div>
             </div>
-          )
-        })}
-      </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {liveSlots.length === 0 ? (
+              <div className="col-span-full py-12 text-center text-slate-400 font-medium">
+                Aucun cours n'est planifié à cette heure.
+              </div>
+            ) : liveSlots.map(slot => (
+              <div key={slot.id} className="bg-white border-2 border-slate-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500" />
+                <div className="flex justify-between items-start mb-3 pl-2">
+                  <div>
+                    <h3 className="font-black text-slate-800">{slot.enseignant?.prenom} {slot.enseignant?.nom}</h3>
+                    <p className="text-xs font-bold text-emerald-600 bg-emerald-50 inline-block px-2 py-0.5 rounded mt-1">Professeur censé être présent</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-black uppercase text-slate-400">Classe</p>
+                    <p className="font-black text-slate-700">{slot.classe?.nom_classe}</p>
+                  </div>
+                </div>
+                <div className="bg-slate-50 rounded-xl p-3 flex justify-between items-center pl-4 border border-slate-100">
+                  <div>
+                    <p className="font-bold text-sm text-slate-800">{slot.matiere?.nom || 'Cours'}</p>
+                    <p className="text-xs font-mono text-slate-500 mt-0.5">{slot.heure_debut.slice(0,5)} - {slot.heure_fin.slice(0,5)} {slot.salle ? `• Salle ${slot.salle}` : ''}</p>
+                  </div>
+                  <button className="flex items-center gap-1.5 text-xs font-bold text-rose-600 bg-rose-100 hover:bg-rose-200 px-3 py-1.5 rounded-lg transition-colors">
+                    <AlertTriangle className="w-3 h-3" /> Signaler Retard
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Vue Professeurs */}
+      {activeTab === 'teacher' && (
+        <div className="space-y-4 animate-in fade-in">
+          <div className="flex items-center gap-3 bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+            <label className="text-sm font-bold text-slate-600 uppercase tracking-widest shrink-0">Filtrer :</label>
+            <select value={selectedTeacher} onChange={e => setSelectedTeacher(e.target.value)} className="flex-1 border-none focus:ring-0 text-sm font-bold text-slate-800 bg-transparent cursor-pointer outline-none">
+              {teachers.map(t => <option key={t.id} value={t.id}>{t.prenom} {t.nom}</option>)}
+            </select>
+          </div>
+          {renderVisualGrid(allSlots.filter(s => s.enseignant_id === selectedTeacher))}
+        </div>
+      )}
+
+      {/* Tab: Vue Classes */}
+      {activeTab === 'classe' && (
+        <div className="space-y-4 animate-in fade-in">
+          <div className="flex items-center gap-3 bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+            <label className="text-sm font-bold text-slate-600 uppercase tracking-widest shrink-0">Classe :</label>
+            <select value={selectedClasse} onChange={e => setSelectedClasse(e.target.value)} className="flex-1 border-none focus:ring-0 text-sm font-bold text-slate-800 bg-transparent cursor-pointer outline-none">
+              {classes.map(c => <option key={c.id} value={c.id}>{c.nom_classe}</option>)}
+            </select>
+          </div>
+          {renderVisualGrid(allSlots.filter(s => s.classe_id === selectedClasse))}
+        </div>
+      )}
+
     </div>
   )
 }

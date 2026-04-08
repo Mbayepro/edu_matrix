@@ -269,6 +269,7 @@ export default function BulletinsPage() {
                 <p><strong>Prénom & Nom :</strong> ${bulletin.eleve.prenom} ${bulletin.eleve.nom}</p>
                 <p><strong>Matricule :</strong> ${bulletin.eleve.matricule || 'Sans'}</p>
                 <p><strong>Naissance :</strong> ${bulletin.eleve.date_naissance ? new Date(bulletin.eleve.date_naissance).toLocaleDateString('fr-FR') : '—'}</p>
+                ${bulletin.eleve.pin_parent ? `<p><strong>PIN Parent :</strong> <span style="font-family: monospace; font-weight: bold; background: #eee; padding: 2px 4px;">${bulletin.eleve.pin_parent}</span></p>` : ''}
             </div>
         </div>
 
