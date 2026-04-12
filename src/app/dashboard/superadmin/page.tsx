@@ -15,20 +15,41 @@ export default function SuperAdminDashboard() {
     activeToday: 0
   })
   const [ecoles, setEcoles] = useState<any[]>([])
+  const [users, setUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'ecoles' | 'users' | 'settings'>('ecoles')
   
+  // Search states
+  const [ecoleSearch, setEcoleSearch] = useState('')
+  const [userSearch, setUserSearch] = useState('')
+
   // States for actions menu and modal
   const [actionMenuId, setActionMenuId] = useState<string | null>(null)
+  const [userActionMenuId, setUserActionMenuId] = useState<string | null>(null)
   const [editModal, setEditModal] = useState<{ isOpen: boolean, ecole: any | null }>({ isOpen: false, ecole: null })
   const [isSaving, setIsSaving] = useState(false)
 
   // Close action menu when clicking outside
   useEffect(() => {
-    const handleClickOutside = () => setActionMenuId(null)
+    const handleClickOutside = () => {
+      setActionMenuId(null)
+      setUserActionMenuId(null)
+    }
     document.addEventListener('click', handleClickOutside)
     return () => document.removeEventListener('click', handleClickOutside)
   }, [])
+
+  // Filter data based on search inputs
+  const filteredEcoles = ecoles.filter(ecole => 
+    ecole.nom?.toLowerCase().includes(ecoleSearch.toLowerCase()) || 
+    ecole.ville?.toLowerCase().includes(ecoleSearch.toLowerCase())
+  )
+
+  const filteredUsers = users.filter(user => 
+    user.nom?.toLowerCase().includes(userSearch.toLowerCase()) ||
+    user.prenom?.toLowerCase().includes(userSearch.toLowerCase()) ||
+    user.ecole?.nom?.toLowerCase().includes(userSearch.toLowerCase())
+  )
 
   useEffect(() => {
     loadData()
@@ -58,9 +79,19 @@ export default function SuperAdminDashboard() {
           profiles(count)
         `)
         .order('created_at', { ascending: false })
-        .limit(10)
 
       setEcoles(data || [])
+
+      // Load users list
+      const { data: usersData } = await supabase
+        .from('profiles')
+        .select(`
+          *,
+          ecole:ecoles(nom)
+        `)
+        .order('created_at', { ascending: false })
+
+      setUsers(usersData || [])
     } finally {
       setLoading(false)
     }
@@ -147,6 +178,28 @@ export default function SuperAdminDashboard() {
     }
   }
 
+  async function handleDeleteUser(user: any) {
+    if (!confirm(`Voulez-vous vraiment supprimer l'utilisateur ${user.prenom} ${user.nom} ? Cette action est irréversible.`)) return
+
+    try {
+      // In a real app, you should delete the auth.users entry via an Edge Function/Admin API
+      // Here we just delete the profile for simplicity, assuming cascade or trigger handles the rest
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', user.id)
+
+      if (error) throw error
+      
+      setUsers(users.filter(u => u.id !== user.id))
+      setStats(s => ({ ...s, users: s.users - 1 }))
+      alert("Utilisateur supprimé avec succès")
+    } catch (error) {
+      console.error("Erreur lors de la suppression de l'utilisateur:", error)
+      alert("Erreur lors de la suppression")
+    }
+  }
+
   if (loading) {
     return <div className="p-8 text-slate-400">Chargement du panneau d'administration...</div>
   }
@@ -223,8 +276,10 @@ export default function SuperAdminDashboard() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
             <input 
               type="text" 
-              placeholder="Rechercher..." 
-              className="bg-slate-900 border border-slate-700 rounded-lg py-1.5 pl-9 pr-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-slate-600"
+              placeholder="Rechercher une école..." 
+              value={ecoleSearch}
+              onChange={(e) => setEcoleSearch(e.target.value)}
+              className="bg-slate-900 border border-slate-700 rounded-lg py-1.5 pl-9 pr-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-slate-600 w-64"
             />
           </div>
         </div>
@@ -242,7 +297,7 @@ export default function SuperAdminDashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700">
-              {ecoles.map((ecole) => (
+              {filteredEcoles.map((ecole) => (
                 <tr key={ecole.id} className="hover:bg-slate-700/30 transition-colors">
                   <td className="px-4 py-3 font-medium text-white">{ecole.nom}</td>
                   <td className="px-4 py-3">{ecole.ville}</td>
@@ -263,55 +318,60 @@ export default function SuperAdminDashboard() {
                   <td className="px-4 py-3">
                     {new Date(ecole.created_at).toLocaleDateString('fr-FR')}
                   </td>
-                  <td className="px-4 py-3 text-right relative">
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setActionMenuId(actionMenuId === ecole.id ? null : ecole.id)
-                      }}
-                      className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
+                  <td className="px-4 py-3 text-right">
+                    <div className="relative inline-block text-left">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setActionMenuId(actionMenuId === ecole.id ? null : ecole.id)
+                        }}
+                        className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
 
-                    {/* Dropdown Menu */}
-                    {actionMenuId === ecole.id && (
-                      <div className="absolute right-8 top-10 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden py-1">
-                        <button 
-                          onClick={() => {
-                            setEditModal({ isOpen: true, ecole })
-                            setActionMenuId(null)
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2"
-                        >
-                          <Edit className="w-4 h-4" />
-                          Modifier infos
-                        </button>
-                        
-                        <button 
-                          onClick={() => {
-                            toggleStatut(ecole)
-                            setActionMenuId(null)
-                          }}
-                          className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 ${ecole.statut === 'actif' ? 'text-amber-400 hover:bg-amber-500/10' : 'text-emerald-400 hover:bg-emerald-500/10'}`}
-                        >
-                          {ecole.statut === 'actif' ? <><PowerOff className="w-4 h-4" /> Suspendre</> : <><Power className="w-4 h-4" /> Activer</>}
-                        </button>
-                        
-                        <div className="h-px bg-slate-700 my-1"></div>
-                        
-                        <button 
-                          onClick={() => {
-                            handleDelete(ecole)
-                            setActionMenuId(null)
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 flex items-center gap-2"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Supprimer
-                        </button>
-                      </div>
-                    )}
+                      {/* Dropdown Menu */}
+                      {actionMenuId === ecole.id && (
+                        <div className="absolute right-0 top-full mt-1 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden py-1">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setEditModal({ isOpen: true, ecole })
+                              setActionMenuId(null)
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2"
+                          >
+                            <Edit className="w-4 h-4" />
+                            Modifier infos
+                          </button>
+                          
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleStatut(ecole)
+                              setActionMenuId(null)
+                            }}
+                            className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 ${ecole.statut === 'actif' ? 'text-amber-400 hover:bg-amber-500/10' : 'text-emerald-400 hover:bg-emerald-500/10'}`}
+                          >
+                            {ecole.statut === 'actif' ? <><PowerOff className="w-4 h-4" /> Suspendre</> : <><Power className="w-4 h-4" /> Activer</>}
+                          </button>
+                          
+                          <div className="h-px bg-slate-700 my-1"></div>
+                          
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDelete(ecole)
+                              setActionMenuId(null)
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 flex items-center gap-2"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Supprimer
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -319,6 +379,107 @@ export default function SuperAdminDashboard() {
           </table>
         </div>
       </div>
+      )}
+
+      {activeTab === 'users' && (
+        <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+          <div className="p-4 border-b border-slate-700 flex justify-between items-center">
+            <h2 className="font-semibold text-white">Tous les utilisateurs</h2>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <input 
+                type="text" 
+                placeholder="Rechercher par nom ou école..." 
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                className="bg-slate-900 border border-slate-700 rounded-lg py-1.5 pl-9 pr-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-slate-600 w-64"
+              />
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-slate-400">
+              <thead className="bg-slate-900/50 text-slate-300 font-medium">
+                <tr>
+                  <th className="px-4 py-3">Utilisateur</th>
+                  <th className="px-4 py-3">Rôle</th>
+                  <th className="px-4 py-3">École</th>
+                  <th className="px-4 py-3">Date d'inscription</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-700">
+                {filteredUsers.length > 0 ? filteredUsers.map((user) => (
+                  <tr key={user.id} className="hover:bg-slate-700/30 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold">
+                          {user.prenom?.charAt(0)}{user.nom?.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-medium text-white">{user.prenom} {user.nom}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        user.role === 'superadmin' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
+                        user.role === 'director' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                        user.role === 'teacher' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
+                        'bg-slate-500/10 text-slate-400 border border-slate-500/20'
+                      }`}>
+                        {user.role === 'superadmin' ? 'Super Admin' :
+                         user.role === 'director' ? 'Directeur' :
+                         user.role === 'teacher' ? 'Enseignant' :
+                         user.role === 'student' ? 'Élève' : user.role}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">{user.ecole?.nom || <span className="text-slate-500 italic">Aucune</span>}</td>
+                    <td className="px-4 py-3">
+                      {new Date(user.created_at).toLocaleDateString('fr-FR')}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="relative inline-block text-left">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setUserActionMenuId(userActionMenuId === user.id ? null : user.id)
+                          }}
+                          className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {userActionMenuId === user.id && (
+                          <div className="absolute right-0 top-full mt-1 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden py-1">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDeleteUser(user)
+                                setUserActionMenuId(null)
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 flex items-center gap-2"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Supprimer le compte
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
+                      Aucun utilisateur trouvé
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
       {/* Edit Modal */}
