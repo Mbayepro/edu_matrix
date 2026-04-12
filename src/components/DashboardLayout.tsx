@@ -154,10 +154,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="space-y-4 pt-4">
               <button 
                 onClick={async () => {
-                  const { reload } = (profile as any); // Cast for any reload provided by useProfile
-                  if (typeof (children as any)?.props?.reload === 'function') {
-                     // If we have access to context reload
-                  }
                   window.location.reload(); // Hard refresh to force a full update from Supabase/Auth
                 }}
                 className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-emerald-600/20 active:scale-95"
@@ -176,6 +172,57 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="flex items-center justify-center gap-2 pt-4">
               <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
               <p className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em]">Vérification en temps réel</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  // Prevent ANY user from accessing a suspended school (except superadmin)
+  if (profile?.role !== 'superadmin' && ecole?.statut === 'suspendu') {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col">
+        <header className="px-6 py-4 border-b border-slate-800 bg-slate-900 sticky top-0 z-10 flex items-center justify-between">
+           <div className="flex items-center gap-3">
+             <div className="bg-red-500 p-2 rounded-xl shrink-0">
+               <LogOut className="w-5 h-5 text-white" />
+             </div>
+             <p className="font-bold text-lg text-white">EduMatrix</p>
+           </div>
+           
+           <div className="flex items-center gap-4 text-sm font-medium text-slate-300">
+             <span>{profile.prenom} {profile.nom}</span>
+           </div>
+        </header>
+
+        <main className="flex-1 flex items-center justify-center p-6 bg-slate-950 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-red-500/5 rounded-full blur-[100px] -mr-64 -mt-64" />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-rose-500/5 rounded-full blur-[100px] -ml-48 -mb-48" />
+          
+          <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-[2.5rem] p-10 shadow-2xl relative z-10 text-center space-y-8 animate-in fade-in zoom-in duration-500">
+            <div className="w-20 h-20 bg-red-500/10 border border-red-500/20 rounded-3xl flex items-center justify-center mx-auto mb-2">
+              <LogOut className="w-10 h-10 text-red-500" />
+            </div>
+            
+            <div className="space-y-3">
+              <h1 className="text-3xl font-black text-white tracking-tight">Accès Suspendu</h1>
+              <p className="text-slate-400 text-sm font-medium leading-relaxed">
+                L'accès à la plateforme pour l'établissement <strong>{ecole.nom}</strong> a été temporairement suspendu par l'administration.
+              </p>
+            </div>
+
+            <div className="p-5 bg-red-500/5 rounded-2xl border border-red-500/10 text-[11px] text-red-200/70 font-bold uppercase tracking-widest leading-loose">
+              Veuillez contacter votre direction ou le support technique pour plus d'informations.
+            </div>
+
+            <div className="space-y-4 pt-4">
+              <button 
+                onClick={handleSignOut}
+                className="w-full py-4 bg-red-600 hover:bg-red-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-red-600/20 active:scale-95"
+              >
+                Se déconnecter
+              </button>
             </div>
           </div>
         </main>
