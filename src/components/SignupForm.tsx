@@ -6,13 +6,14 @@ import {
   Lock, Mail, User, School, MapPin, Phone,
   Loader2, CheckCircle2, Clock, GraduationCap,
 } from 'lucide-react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useEffect } from 'react'
 
 type Step = 'form' | 'success'
 
 export default function SignupForm() {
+  const router = useRouter()
   const [step, setStep] = useState<Step>('form')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -69,7 +70,11 @@ export default function SignupForm() {
       if (!authData.user) throw new Error("Erreur lors de la création du compte.")
 
       // Show the success / pending screen
-      setStep('success')
+      if (isInvitation) {
+        setStep('success')
+      } else {
+        router.push('/inscription-reussie')
+      }
 
     } catch (err: any) {
       console.error(err)

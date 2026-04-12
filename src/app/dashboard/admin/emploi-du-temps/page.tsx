@@ -3,7 +3,7 @@
 // src/app/dashboard/admin/emploi-du-temps/page.tsx
 // Module Visuel des Emplois du Temps
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Profile, Classe, Matiere, EmploiDuTemps } from '@/lib/supabase'
 import { Loader2, Plus, Trash2, Calendar, Clock, LayoutGrid, Users, Bell, AlertTriangle } from 'lucide-react'
@@ -130,6 +130,20 @@ export default function EmploiDuTempsPage() {
       return
     }
 
+    // Vérification de chevauchement (Salle)
+    if (form.salle) {
+      const overlapSalle = allSlots.find(s =>
+        s.salle?.toLowerCase() === form.salle.toLowerCase() &&
+        s.jour === form.jour &&
+        s.heure_debut < newEnd &&
+        s.heure_fin > newStart
+      )
+      if (overlapSalle) {
+        showToast(`La salle ${form.salle} est déjà occupée par la classe ${overlapSalle.classe?.nom_classe || ''} à cette heure.`, 'error')
+        return
+      }
+    }
+
     setSaving(true)
     try {
       const { error } = await supabase.from('emploi_du_temps').insert({
@@ -145,6 +159,14 @@ export default function EmploiDuTempsPage() {
       if (error) { showToast('Erreur : ' + error.message, 'error'); return }
       showToast('Créneau ajouté avec succès !', 'success')
       setShowForm(false)
+      setForm({
+        jour: 1,
+        classe_id: '',
+        matiere_id: '',
+        heure_debut: '08:00',
+        heure_fin: '10:00',
+        salle: '',
+      })
       await loadAllSlots()
     } finally { setSaving(false) }
   }
@@ -155,8 +177,11 @@ export default function EmploiDuTempsPage() {
     await loadAllSlots()
   }
 
-  const matiereColorMap: Record<string, string> = {}
-  matieres.forEach((m, i) => { matiereColorMap[m.id] = COLORS[i % COLORS.length] })
+  const matiereColorMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    matieres.forEach((m, i) => { map[m.id] = COLORS[i % COLORS.length] })
+    return map
+  }, [matieres])
 
   // Current Live Info
   const currentDay = currentTime.getDay() === 0 ? 7 : currentTime.getDay() // 1=Lundi
@@ -170,44 +195,78 @@ export default function EmploiDuTempsPage() {
   )
 
   const renderVisualGrid = (slots: Slot[]) => {
+    // Les heures vont de 07:00 à 18:00
+    const startHour = 7;
+    const endHour = 18;
+    const rowHeight = 64; // h-16 = 64px
+
     return (
       <div className="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-100">
         <div className="min-w-[800px] p-4">
-          <div className="grid grid-cols-7 gap-2">
-            <div className="text-right pr-4 pt-8 text-xs font-bold text-slate-400">Heures</div>
+          {/* Header des jours */}
+          <div className="grid grid-cols-7 gap-2 mb-2">
+            <div className="text-right pr-4 pt-2 text-xs font-bold text-slate-400">Heures</div>
             {[1,2,3,4,5,6].map(jour => (
               <div key={jour} className="text-center font-bold text-slate-700 bg-slate-50 py-2 rounded-xl text-sm">
                 {JOURS[jour]}
               </div>
             ))}
-            
-            {HEURES.map((h, i) => (
-              <React.Fragment key={h}>
-                <div className="text-right pr-4 text-xs font-bold text-slate-400 relative h-16 border-t border-slate-100 -mt-px">
-                  <span className="-mt-2 block absolute right-4 bg-white px-1">{h}</span>
+          </div>
+
+          {/* Corps du calendrier */}
+          <div className="grid grid-cols-7 gap-2 relative" style={{ height: `${(endHour - startHour + 1) * rowHeight}px` }}>
+            {/* Colonne des heures */}
+            <div className="col-span-1 relative">
+              {HEURES.map((h, i) => (
+                <div key={h} className="absolute w-full text-right pr-4 text-xs font-bold text-slate-400" style={{ top: `${i * rowHeight}px` }}>
+                  <span className="-mt-2 block bg-white px-1 right-0 absolute">{h}</span>
                 </div>
-                {[1,2,3,4,5,6].map(jour => {
-                  const daySlots = slots.filter(s => s.jour === jour)
-                  const slotHere = daySlots.find(s => s.heure_debut.startsWith(h.split(':')[0]))
-                  return (
-                    <div key={`${jour}-${h}`} className="border-t border-l border-slate-100 h-16 relative group">
-                      {slotHere && (
-                        <div className={`absolute top-1 left-1 right-1 bottom-1 rounded-xl p-2 text-xs shadow-sm overflow-hidden flex flex-col justify-between ${slotHere.matiere_id ? matiereColorMap[slotHere.matiere_id] : 'bg-slate-100'}`}>
-                          <div className="font-bold truncate">{slotHere.matiere?.nom || 'Cours'}</div>
+              ))}
+            </div>
+
+            {/* Grille de fond et Cours */}
+            <div className="col-span-6 grid grid-cols-6 gap-2 relative">
+              {/* Lignes horizontales de fond */}
+              <div className="absolute inset-0 pointer-events-none">
+                {HEURES.map((h, i) => (
+                  <div key={`line-${h}`} className="w-full border-t border-slate-100" style={{ top: `${i * rowHeight}px`, height: `${rowHeight}px`, position: 'absolute' }} />
+                ))}
+              </div>
+
+              {[1,2,3,4,5,6].map(jour => {
+                const daySlots = slots.filter(s => s.jour === jour)
+                return (
+                  <div key={`col-${jour}`} className="col-span-1 relative border-l border-slate-100 h-full">
+                    {daySlots.map(slot => {
+                      const [sh, sm] = slot.heure_debut.split(':').map(Number);
+                      const [eh, em] = slot.heure_fin.split(':').map(Number);
+                      const startOffset = (sh - startHour) + (sm / 60);
+                      const duration = (eh - sh) + ((em - sm) / 60);
+                      
+                      return (
+                        <div 
+                          key={slot.id} 
+                          className={`absolute left-1 right-1 rounded-xl p-2 text-xs shadow-sm overflow-hidden flex flex-col justify-between group ${slot.matiere_id ? matiereColorMap[slot.matiere_id] : 'bg-slate-100'}`}
+                          style={{ 
+                            top: `${startOffset * rowHeight}px`, 
+                            height: `${duration * rowHeight - 4}px` 
+                          }}
+                        >
+                          <div className="font-bold truncate">{slot.matiere?.nom || 'Cours'}</div>
                           <div className="flex justify-between items-end">
-                            <span className="font-mono text-[10px] opacity-75">{slotHere.heure_debut.slice(0,5)}</span>
-                            <span className="truncate max-w-[60px] opacity-90">{activeTab === 'teacher' ? slotHere.classe?.nom_classe : slotHere.enseignant?.prenom}</span>
+                            <span className="font-mono text-[10px] opacity-75">{slot.heure_debut.slice(0,5)} - {slot.heure_fin.slice(0,5)}</span>
+                            <span className="truncate max-w-[60px] opacity-90">{activeTab === 'teacher' ? slot.classe?.nom_classe : slot.enseignant?.prenom}</span>
                           </div>
-                          <button onClick={() => handleDelete(slotHere.id)} className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 p-1 hover:bg-white/50 rounded transition-all">
+                          <button onClick={() => handleDelete(slot.id)} className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 p-1 hover:bg-white/50 rounded transition-all">
                             <Trash2 className="w-3 h-3" />
                           </button>
                         </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </React.Fragment>
-            ))}
+                      )
+                    })}
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
       </div>
@@ -245,46 +304,46 @@ export default function EmploiDuTempsPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             <div className="xl:col-span-2">
-              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Enseignant *</label>
-              <select value={selectedTeacher} onChange={e => setSelectedTeacher(e.target.value)} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 bg-slate-50 focus:bg-white transition-colors font-medium" required>
+              <label htmlFor="enseignant_id" className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Enseignant *</label>
+              <select id="enseignant_id" value={selectedTeacher} onChange={e => setSelectedTeacher(e.target.value)} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 bg-slate-50 focus:bg-white transition-colors font-medium" required>
                 {teachers.map(t => <option key={t.id} value={t.id}>{t.prenom} {t.nom}</option>)}
               </select>
             </div>
             <div className="xl:col-span-2">
-              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Classe *</label>
-              <select value={form.classe_id} onChange={e => setForm(f => ({ ...f, classe_id: e.target.value }))} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 bg-slate-50 focus:bg-white transition-colors font-medium" required>
+              <label htmlFor="classe_id" className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Classe *</label>
+              <select id="classe_id" value={form.classe_id} onChange={e => setForm(f => ({ ...f, classe_id: e.target.value }))} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 bg-slate-50 focus:bg-white transition-colors font-medium" required>
                 <option value="">Choisir la classe…</option>
                 {classes.map(c => <option key={c.id} value={c.id}>{c.nom_classe}</option>)}
               </select>
             </div>
             <div className="xl:col-span-2">
-              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Matière</label>
-              <select value={form.matiere_id} onChange={e => setForm(f => ({ ...f, matiere_id: e.target.value }))} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 bg-slate-50 focus:bg-white transition-colors font-medium">
+              <label htmlFor="matiere_id" className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Matière</label>
+              <select id="matiere_id" value={form.matiere_id} onChange={e => setForm(f => ({ ...f, matiere_id: e.target.value }))} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 bg-slate-50 focus:bg-white transition-colors font-medium">
                 <option value="">(Optionnel)</option>
                 {matieres.map(m => <option key={m.id} value={m.id}>{m.nom}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Jour *</label>
-              <select value={form.jour} onChange={e => setForm(f => ({ ...f, jour: +e.target.value }))} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 bg-slate-50 focus:bg-white transition-colors font-medium" required>
+              <label htmlFor="jour" className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Jour *</label>
+              <select id="jour" value={form.jour} onChange={e => setForm(f => ({ ...f, jour: +e.target.value }))} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 bg-slate-50 focus:bg-white transition-colors font-medium" required>
                 {[1,2,3,4,5,6].map(j => <option key={j} value={j}>{JOURS[j]}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Début *</label>
-              <select value={form.heure_debut} onChange={e => setForm(f => ({ ...f, heure_debut: e.target.value }))} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 bg-slate-50 focus:bg-white transition-colors font-medium font-mono" required>
+              <label htmlFor="heure_debut" className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Début *</label>
+              <select id="heure_debut" value={form.heure_debut} onChange={e => setForm(f => ({ ...f, heure_debut: e.target.value }))} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 bg-slate-50 focus:bg-white transition-colors font-medium font-mono" required>
                 {ALL_HEURES.map(h => <option key={h} value={h}>{h}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Fin *</label>
-              <select value={form.heure_fin} onChange={e => setForm(f => ({ ...f, heure_fin: e.target.value }))} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 bg-slate-50 focus:bg-white transition-colors font-medium font-mono" required>
+              <label htmlFor="heure_fin" className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Fin *</label>
+              <select id="heure_fin" value={form.heure_fin} onChange={e => setForm(f => ({ ...f, heure_fin: e.target.value }))} className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 bg-slate-50 focus:bg-white transition-colors font-medium font-mono" required>
                 {ALL_HEURES.filter(h => h > form.heure_debut).map(h => <option key={h} value={h}>{h}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Salle</label>
-              <input type="text" value={form.salle} onChange={e => setForm(f => ({ ...f, salle: e.target.value }))} placeholder="Ex: S12" className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 bg-slate-50 focus:bg-white transition-colors font-medium" />
+              <label htmlFor="salle" className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Salle</label>
+              <input id="salle" type="text" value={form.salle} onChange={e => setForm(f => ({ ...f, salle: e.target.value }))} placeholder="Ex: S12" className="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500 bg-slate-50 focus:bg-white transition-colors font-medium" />
             </div>
             <div className="xl:col-span-2 flex items-end gap-3">
               <button type="button" onClick={() => setShowForm(false)} className="px-5 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors w-full sm:w-auto">Annuler</button>
