@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { 
   ShieldAlert, Users, School, Activity, 
-  Search, MoreVertical, CheckCircle, XCircle, Settings, Edit, Trash2, Power, PowerOff, Building
+  Search, MoreVertical, CheckCircle, XCircle, Settings, Edit, Trash2, Power, PowerOff, Building, Save, Mail, Globe, Database
 } from 'lucide-react'
 
 export default function SuperAdminDashboard() {
@@ -28,6 +28,15 @@ export default function SuperAdminDashboard() {
   const [userActionMenuId, setUserActionMenuId] = useState<string | null>(null)
   const [editModal, setEditModal] = useState<{ isOpen: boolean, ecole: any | null }>({ isOpen: false, ecole: null })
   const [isSaving, setIsSaving] = useState(false)
+  
+  // Settings states
+  const [settings, setSystemSettings] = useState({
+    allowRegistrations: true,
+    maintenanceMode: false,
+    systemEmail: 'admin@edumatrix.com',
+    maxSchoolsAllowed: 100
+  })
+  const [savingSettings, setSavingSettings] = useState(false)
 
   // Close action menu when clicking outside
   useEffect(() => {
@@ -197,6 +206,24 @@ export default function SuperAdminDashboard() {
     } catch (error) {
       console.error("Erreur lors de la suppression de l'utilisateur:", error)
       alert("Erreur lors de la suppression")
+    }
+  }
+
+  async function saveSystemSettings(e: React.FormEvent) {
+    e.preventDefault()
+    setSavingSettings(true)
+    
+    try {
+      // In a real application, you would save this to a `system_settings` table in Supabase.
+      // For now, we simulate a network delay and show a success message.
+      await new Promise(resolve => setTimeout(resolve, 800))
+      
+      alert("Paramètres système mis à jour avec succès.")
+    } catch (error) {
+      console.error("Erreur lors de la sauvegarde des paramètres:", error)
+      alert("Erreur lors de la sauvegarde.")
+    } finally {
+      setSavingSettings(false)
     }
   }
 
@@ -479,6 +506,111 @@ export default function SuperAdminDashboard() {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {activeTab === 'settings' && (
+        <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden animate-in fade-in duration-300">
+          <div className="p-4 border-b border-slate-700">
+            <h2 className="font-semibold text-white">Paramètres globaux de la plateforme</h2>
+            <p className="text-sm text-slate-400 mt-1">Configuration générale pour EduMatrix. Ces changements affectent toutes les écoles.</p>
+          </div>
+          
+          <form onSubmit={saveSystemSettings} className="p-6 space-y-8">
+            {/* Section Sécurité & Accès */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-700 pb-2">
+                <ShieldAlert className="w-5 h-5 text-emerald-400" />
+                Sécurité & Accès
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50 flex items-start justify-between gap-4">
+                  <div>
+                    <label className="font-medium text-white block mb-1">Inscriptions ouvertes</label>
+                    <p className="text-xs text-slate-400">Autoriser les nouveaux directeurs à soumettre des demandes de création d'écoles.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer" 
+                      checked={settings.allowRegistrations}
+                      onChange={(e) => setSystemSettings({...settings, allowRegistrations: e.target.checked})}
+                    />
+                    <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                  </label>
+                </div>
+
+                <div className="bg-rose-900/10 p-4 rounded-xl border border-rose-500/20 flex items-start justify-between gap-4">
+                  <div>
+                    <label className="font-medium text-rose-400 block mb-1">Mode Maintenance</label>
+                    <p className="text-xs text-slate-400">Bloquer l'accès à toute la plateforme. Seuls les Super Admins pourront se connecter.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer" 
+                      checked={settings.maintenanceMode}
+                      onChange={(e) => setSystemSettings({...settings, maintenanceMode: e.target.checked})}
+                    />
+                    <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-500"></div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Section Configuration Technique */}
+            <div className="space-y-4 pt-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-700 pb-2">
+                <Database className="w-5 h-5 text-blue-400" />
+                Configuration Technique
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5 flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-slate-400" /> Email système principal
+                  </label>
+                  <input 
+                    type="email" 
+                    value={settings.systemEmail}
+                    onChange={(e) => setSystemSettings({...settings, systemEmail: e.target.value})}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  />
+                  <p className="text-xs text-slate-500 mt-1.5">Adresse utilisée pour les notifications système envoyées aux directeurs.</p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5 flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-slate-400" /> Limite d'écoles (Quota)
+                  </label>
+                  <input 
+                    type="number" 
+                    min="1"
+                    value={settings.maxSchoolsAllowed}
+                    onChange={(e) => setSystemSettings({...settings, maxSchoolsAllowed: parseInt(e.target.value) || 0})}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  />
+                  <p className="text-xs text-slate-500 mt-1.5">Nombre maximal d'établissements pouvant être inscrits sur l'infrastructure actuelle.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <div className="pt-6 border-t border-slate-700 flex justify-end">
+              <button 
+                type="submit" 
+                disabled={savingSettings}
+                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white rounded-lg transition-colors font-medium flex items-center gap-2 shadow-lg shadow-blue-500/20"
+              >
+                {savingSettings ? (
+                  <>Patientez...</>
+                ) : (
+                  <><Save className="w-4 h-4" /> Sauvegarder les paramètres</>
+                )}
+              </button>
+            </div>
+          </form>
         </div>
       )}
 

@@ -127,7 +127,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
            </div>
            
            <div className="flex items-center gap-4 text-sm font-medium text-slate-300">
-             <span>{profile.prenom} {profile.nom}</span>
+             <span>{profile?.prenom} {profile?.nom}</span>
            </div>
         </header>
 
@@ -192,7 +192,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
            </div>
            
            <div className="flex items-center gap-4 text-sm font-medium text-slate-300">
-             <span>{profile.prenom} {profile.nom}</span>
+             <span>{profile?.prenom} {profile?.nom}</span>
            </div>
         </header>
 
