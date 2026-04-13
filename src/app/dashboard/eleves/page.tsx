@@ -13,6 +13,7 @@ import {
 import { useVirtualizer } from '@tanstack/react-virtual'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
+import Image from 'next/image'
 import ExcelImportModal from '@/components/ExcelImportModal'
 import { generateClassePDF } from '@/lib/pdfListGenerator'
 import { SkeletonTable } from '@/components/Skeleton'
@@ -443,7 +444,7 @@ export default function ElevesPage() {
                               </div>
                             ) : e.photo_url ? (
                               <>
-                                <img src={e.photo_url} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover/photo:scale-110" />
+                                <Image src={e.photo_url} alt="" fill sizes="56px" className="object-cover transition-transform duration-500 group-hover/photo:scale-110" />
                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/photo:opacity-100 transition-opacity flex items-center justify-center">
                                   <Upload className="w-5 h-5 text-white" />
                                 </div>
@@ -529,7 +530,7 @@ export default function ElevesPage() {
                             <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
                           </div>
                         ) : e.photo_url ? (
-                          <img src={e.photo_url} alt="" className="w-full h-full object-cover" />
+                          <Image src={e.photo_url} alt="" fill sizes="48px" className="object-cover" />
                         ) : (
                           <div className="w-full h-full bg-slate-900 flex items-center justify-center text-white text-sm font-black">
                             {e.prenom[0]?.toUpperCase()}
