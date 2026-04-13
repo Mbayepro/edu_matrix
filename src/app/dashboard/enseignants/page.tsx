@@ -222,7 +222,7 @@ export default function EnseignantsPage() {
 
           {/* Assignments list */}
           <div className="bg-white rounded-[2.5rem] border border-slate-200/50 shadow-sm overflow-hidden min-h-[400px]">
-            <div className="px-10 py-6 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
+            <div className="px-6 md:px-10 py-6 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
               <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Cartographie des Interventions</h2>
               <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] animate-pulse" />
             </div>
@@ -234,60 +234,105 @@ export default function EnseignantsPage() {
                 <p className="text-sm font-black uppercase tracking-widest text-slate-400">Aucune affectation active</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-100 bg-slate-50/10">
-                      <th className="text-left px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Membre de l&apos;Équipe</th>
-                      <th className="text-left px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Classe Attribuée</th>
-                      <th className="text-left px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Discipline</th>
-                      {isDirector && <th className="px-10 py-5" />}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {assignments.map(a => (
-                      <tr key={a.id} className="group hover:bg-slate-50/80 transition-all duration-300">
-                        <td className="px-10 py-5">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white text-base font-black group-hover:bg-amber-500 group-hover:scale-105 transition-all duration-500 shadow-sm">
-                              {(a.enseignant as any)?.prenom[0]?.toUpperCase()}
-                            </div>
-                            <div>
-                              <p className="font-black text-slate-900 text-base leading-tight uppercase group-hover:text-amber-600 transition-colors">
-                                {(a.enseignant as any)?.prenom} {(a.enseignant as any)?.nom}
-                              </p>
-                              <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase mt-1">Personnel Éducatif</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-5">
-                          <span className="inline-flex items-center px-3.5 py-1.5 rounded-xl bg-slate-100/50 text-slate-800 text-[10px] font-black uppercase tracking-widest border border-slate-200/50 shadow-sm group-hover:bg-white group-hover:border-emerald-200 transition-all">
-                            {(a.classe as any)?.nom_classe}
-                          </span>
-                        </td>
-                        <td className="px-6 py-5">
-                          {(a.matiere as any)?.nom ? (
-                            <span className="text-sm font-black text-slate-600 uppercase tracking-tight">{(a.matiere as any)?.nom}</span>
-                          ) : (
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 italic bg-slate-50 px-2 py-0.5 rounded border border-slate-100">GÉNÉRALISTE</span>
-                          )}
-                        </td>
-                        {isDirector && (
-                          <td className="px-10 py-5 text-right">
-                            <button
-                              onClick={() => handleRemove(a.id)}
-                              className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100 shadow-sm translate-x-2 group-hover:translate-x-0"
-                              title="Retirer l'affectation"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
-                        )}
+              <>
+                {/* Desktop View: Table */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-slate-50/10">
+                        <th className="text-left px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Membre de l&apos;Équipe</th>
+                        <th className="text-left px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Classe Attribuée</th>
+                        <th className="text-left px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Discipline</th>
+                        {isDirector && <th className="px-10 py-5" />}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {assignments.map(a => (
+                        <tr key={a.id} className="group hover:bg-slate-50/80 transition-all duration-300">
+                          <td className="px-10 py-5">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white text-base font-black group-hover:bg-amber-500 group-hover:scale-105 transition-all duration-500 shadow-sm">
+                                {(a.enseignant as any)?.prenom[0]?.toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="font-black text-slate-900 text-base leading-tight uppercase group-hover:text-amber-600 transition-colors">
+                                  {(a.enseignant as any)?.prenom} {(a.enseignant as any)?.nom}
+                                </p>
+                                <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase mt-1">Personnel Éducatif</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-5">
+                            <span className="inline-flex items-center px-3.5 py-1.5 rounded-xl bg-slate-100/50 text-slate-800 text-[10px] font-black uppercase tracking-widest border border-slate-200/50 shadow-sm group-hover:bg-white group-hover:border-emerald-200 transition-all">
+                              {(a.classe as any)?.nom_classe}
+                            </span>
+                          </td>
+                          <td className="px-6 py-5">
+                            {(a.matiere as any)?.nom ? (
+                              <span className="text-sm font-black text-slate-600 uppercase tracking-tight">{(a.matiere as any)?.nom}</span>
+                            ) : (
+                              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 italic bg-slate-50 px-2 py-0.5 rounded border border-slate-100">GÉNÉRALISTE</span>
+                            )}
+                          </td>
+                          {isDirector && (
+                            <td className="px-10 py-5 text-right">
+                              <button
+                                onClick={() => handleRemove(a.id)}
+                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100 shadow-sm translate-x-2 group-hover:translate-x-0"
+                                title="Retirer l'affectation"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile View: Cards */}
+                <div className="md:hidden divide-y divide-slate-100">
+                  {assignments.map(a => (
+                    <div key={a.id} className="p-6 space-y-4 hover:bg-slate-50 transition-all duration-300">
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white text-base font-black shadow-sm shrink-0">
+                            {(a.enseignant as any)?.prenom[0]?.toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-black text-slate-900 text-base leading-tight uppercase">
+                              {(a.enseignant as any)?.prenom} {(a.enseignant as any)?.nom}
+                            </p>
+                            <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase mt-1">Personnel Éducatif</p>
+                          </div>
+                        </div>
+                        {isDirector && (
+                          <button
+                            onClick={() => handleRemove(a.id)}
+                            className="w-9 h-9 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-all shadow-sm shrink-0"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-3 pt-1">
+                        <span className="inline-flex items-center px-3.5 py-1.5 rounded-xl bg-slate-100/50 text-slate-800 text-[10px] font-black uppercase tracking-widest border border-slate-200/50 shadow-sm">
+                          {(a.classe as any)?.nom_classe}
+                        </span>
+                        <div className="flex-1">
+                          {(a.matiere as any)?.nom ? (
+                            <span className="text-xs font-black text-slate-600 uppercase tracking-tight">{(a.matiere as any)?.nom}</span>
+                          ) : (
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 italic">GÉNÉRALISTE</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </>

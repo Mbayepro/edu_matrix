@@ -297,21 +297,22 @@ export default function SuperAdminDashboard() {
 
       {activeTab === 'ecoles' && (
         <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-        <div className="p-4 border-b border-slate-700 flex justify-between items-center">
+        <div className="p-4 border-b border-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h2 className="font-semibold text-white">Dernières écoles inscrites</h2>
-          <div className="relative">
+          <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
             <input 
               type="text" 
               placeholder="Rechercher une école..." 
               value={ecoleSearch}
               onChange={(e) => setEcoleSearch(e.target.value)}
-              className="bg-slate-900 border border-slate-700 rounded-lg py-1.5 pl-9 pr-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-slate-600 w-64"
+              className="bg-slate-900 border border-slate-700 rounded-lg py-1.5 pl-9 pr-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-slate-600 w-full"
             />
           </div>
         </div>
         
-        <div className="overflow-x-auto">
+        {/* Desktop View: Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-400">
             <thead className="bg-slate-900/50 text-slate-300 font-medium">
               <tr>
@@ -329,13 +330,7 @@ export default function SuperAdminDashboard() {
                   <td className="px-4 py-3 font-medium text-white">{ecole.nom}</td>
                   <td className="px-4 py-3">{ecole.ville}</td>
                   <td className="px-4 py-3">
-                    {ecole.statut === 'actif' ? (
-                      <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-xs inline-flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Actif</span>
-                    ) : ecole.statut === 'suspendu' ? (
-                      <span className="bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded text-xs inline-flex items-center gap-1"><XCircle className="w-3 h-3" /> Suspendu</span>
-                    ) : (
-                      <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded text-xs inline-flex items-center gap-1">En attente</span>
-                    )}
+                    <StatutBadge statut={ecole.statut} />
                   </td>
                   <td className="px-4 py-3">
                     <span className="bg-slate-700 px-2 py-0.5 rounded text-xs text-slate-300">
@@ -349,6 +344,7 @@ export default function SuperAdminDashboard() {
                     <div className="relative inline-block text-left">
                       <button 
                         onClick={(e) => {
+                          e.preventDefault()
                           e.stopPropagation()
                           setActionMenuId(actionMenuId === ecole.id ? null : ecole.id)
                         }}
@@ -361,7 +357,9 @@ export default function SuperAdminDashboard() {
                       {actionMenuId === ecole.id && (
                         <div className="absolute right-0 top-full mt-1 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden py-1">
                           <button 
+                            type="button"
                             onClick={(e) => {
+                              e.preventDefault()
                               e.stopPropagation()
                               setEditModal({ isOpen: true, ecole })
                               setActionMenuId(null)
@@ -373,7 +371,9 @@ export default function SuperAdminDashboard() {
                           </button>
                           
                           <button 
+                            type="button"
                             onClick={(e) => {
+                              e.preventDefault()
                               e.stopPropagation()
                               toggleStatut(ecole)
                               setActionMenuId(null)
@@ -386,7 +386,9 @@ export default function SuperAdminDashboard() {
                           <div className="h-px bg-slate-700 my-1"></div>
                           
                           <button 
+                            type="button"
                             onClick={(e) => {
+                              e.preventDefault()
                               e.stopPropagation()
                               handleDelete(ecole)
                               setActionMenuId(null)
@@ -405,26 +407,113 @@ export default function SuperAdminDashboard() {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile View: Cards */}
+        <div className="md:hidden divide-y divide-slate-700">
+          {filteredEcoles.map((ecole) => (
+            <div key={ecole.id} className="p-4 space-y-4 hover:bg-slate-700/30 transition-colors">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-bold text-white">{ecole.nom}</h3>
+                  <p className="text-sm text-slate-400 flex items-center gap-1">
+                    <Building className="w-3 h-3" /> {ecole.ville || 'Ville non spécifiée'}
+                  </p>
+                </div>
+                <div className="relative inline-block text-left">
+                  <button 
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setActionMenuId(actionMenuId === ecole.id ? null : ecole.id)
+                    }}
+                    className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors border border-slate-700"
+                  >
+                    <MoreVertical className="w-5 h-5" />
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {actionMenuId === ecole.id && (
+                    <div className="absolute right-0 top-full mt-1 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden py-1">
+                      <button 
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          setEditModal({ isOpen: true, ecole })
+                          setActionMenuId(null)
+                        }}
+                        className="w-full px-4 py-3 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2"
+                      >
+                        <Edit className="w-4 h-4" />
+                        Modifier infos
+                      </button>
+                      
+                      <button 
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          toggleStatut(ecole)
+                          setActionMenuId(null)
+                        }}
+                        className={`w-full px-4 py-3 text-left text-sm flex items-center gap-2 ${ecole.statut === 'actif' ? 'text-amber-400 hover:bg-amber-500/10' : 'text-emerald-400 hover:bg-emerald-500/10'}`}
+                      >
+                        {ecole.statut === 'actif' ? <><PowerOff className="w-4 h-4" /> Suspendre</> : <><Power className="w-4 h-4" /> Activer</>}
+                      </button>
+                      
+                      <div className="h-px bg-slate-700 my-1"></div>
+                      
+                      <button 
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          handleDelete(ecole)
+                          setActionMenuId(null)
+                        }}
+                        className="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 flex items-center gap-2"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Supprimer
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex flex-wrap items-center gap-3">
+                <StatutBadge statut={ecole.statut} />
+                <span className="bg-slate-700 px-2 py-1 rounded text-xs text-slate-300 flex items-center gap-1">
+                  <Users className="w-3 h-3" /> {ecole.profiles[0]?.count || 0} utilisateurs
+                </span>
+                <span className="text-xs text-slate-500">
+                  Inscrit le {new Date(ecole.created_at).toLocaleDateString('fr-FR')}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
       )}
 
       {activeTab === 'users' && (
         <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-          <div className="p-4 border-b border-slate-700 flex justify-between items-center">
+          <div className="p-4 border-b border-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h2 className="font-semibold text-white">Tous les utilisateurs</h2>
-            <div className="relative">
+            <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <input 
                 type="text" 
                 placeholder="Rechercher par nom ou école..." 
                 value={userSearch}
                 onChange={(e) => setUserSearch(e.target.value)}
-                className="bg-slate-900 border border-slate-700 rounded-lg py-1.5 pl-9 pr-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-slate-600 w-64"
+                className="bg-slate-900 border border-slate-700 rounded-lg py-1.5 pl-9 pr-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-slate-600 w-full"
               />
             </div>
           </div>
           
-          <div className="overflow-x-auto">
+          {/* Desktop View: Table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-sm text-slate-400">
               <thead className="bg-slate-900/50 text-slate-300 font-medium">
                 <tr>
@@ -440,28 +529,18 @@ export default function SuperAdminDashboard() {
                   <tr key={user.id} className="hover:bg-slate-700/30 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold">
+                        <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold shrink-0">
                           {user.prenom?.charAt(0)}{user.nom?.charAt(0)}
                         </div>
-                        <div>
+                        <div className="truncate max-w-[150px]">
                           <p className="font-medium text-white">{user.prenom} {user.nom}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        user.role === 'superadmin' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
-                        user.role === 'director' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                        user.role === 'teacher' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
-                        'bg-slate-500/10 text-slate-400 border border-slate-500/20'
-                      }`}>
-                        {user.role === 'superadmin' ? 'Super Admin' :
-                         user.role === 'director' ? 'Directeur' :
-                         user.role === 'teacher' ? 'Enseignant' :
-                         user.role === 'student' ? 'Élève' : user.role}
-                      </span>
+                      <RoleBadge role={user.role} />
                     </td>
-                    <td className="px-4 py-3">{user.ecole?.nom || <span className="text-slate-500 italic">Aucune</span>}</td>
+                    <td className="px-4 py-3 truncate max-w-[120px]">{user.ecole?.nom || <span className="text-slate-500 italic">Aucune</span>}</td>
                     <td className="px-4 py-3">
                       {new Date(user.created_at).toLocaleDateString('fr-FR')}
                     </td>
@@ -469,6 +548,7 @@ export default function SuperAdminDashboard() {
                       <div className="relative inline-block text-left">
                         <button 
                           onClick={(e) => {
+                            e.preventDefault()
                             e.stopPropagation()
                             setUserActionMenuId(userActionMenuId === user.id ? null : user.id)
                           }}
@@ -481,7 +561,9 @@ export default function SuperAdminDashboard() {
                         {userActionMenuId === user.id && (
                           <div className="absolute right-0 top-full mt-1 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden py-1">
                             <button 
+                              type="button"
                               onClick={(e) => {
+                                e.preventDefault()
                                 e.stopPropagation()
                                 handleDeleteUser(user)
                                 setUserActionMenuId(null)
@@ -505,6 +587,67 @@ export default function SuperAdminDashboard() {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile View: Cards */}
+          <div className="md:hidden divide-y divide-slate-700">
+            {filteredUsers.length > 0 ? filteredUsers.map((user) => (
+              <div key={user.id} className="p-4 space-y-4 hover:bg-slate-700/30 transition-colors">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold shrink-0">
+                      {user.prenom?.charAt(0)}{user.nom?.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-bold text-white">{user.prenom} {user.nom}</p>
+                      <p className="text-xs text-slate-400">{user.ecole?.nom || 'Sans établissement'}</p>
+                    </div>
+                  </div>
+                  <div className="relative inline-block text-left">
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setUserActionMenuId(userActionMenuId === user.id ? null : user.id)
+                      }}
+                      className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors border border-slate-700"
+                    >
+                      <MoreVertical className="w-5 h-5" />
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {userActionMenuId === user.id && (
+                      <div className="absolute right-0 top-full mt-1 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden py-1">
+                        <button 
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            handleDeleteUser(user)
+                            setUserActionMenuId(null)
+                          }}
+                          className="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 flex items-center gap-2"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Supprimer le compte
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <RoleBadge role={user.role} />
+                  <span className="text-xs text-slate-500">
+                    Inscrit le {new Date(user.created_at).toLocaleDateString('fr-FR')}
+                  </span>
+                </div>
+              </div>
+            )) : (
+              <div className="p-8 text-center text-slate-500">
+                Aucun utilisateur trouvé
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -680,3 +823,49 @@ function StatCard({ icon, label, value }: { icon: any, label: string, value: num
     </div>
   )
 }
+
+function StatutBadge({ statut }: { statut: string }) {
+  switch (statut) {
+    case 'actif':
+      return (
+        <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-xs inline-flex items-center gap-1">
+          <CheckCircle className="w-3 h-3" /> Actif
+        </span>
+      )
+    case 'suspendu':
+      return (
+        <span className="bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded text-xs inline-flex items-center gap-1">
+          <XCircle className="w-3 h-3" /> Suspendu
+        </span>
+      )
+    default:
+      return (
+        <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded text-xs inline-flex items-center gap-1">
+          En attente
+        </span>
+      )
+  }
+}
+
+function RoleBadge({ role }: { role: string }) {
+  const styles: Record<string, string> = {
+    superadmin: 'bg-purple-500/10 text-purple-400 border border-purple-500/20',
+    director: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
+    teacher: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',
+    student: 'bg-slate-500/10 text-slate-400 border border-slate-500/20',
+  }
+
+  const labels: Record<string, string> = {
+    superadmin: 'Super Admin',
+    director: 'Directeur',
+    teacher: 'Enseignant',
+    student: 'Élève',
+  }
+
+  return (
+    <span className={`px-2 py-1 rounded text-xs font-medium ${styles[role] || styles.student}`}>
+      {labels[role] || role}
+    </span>
+  )
+}
+

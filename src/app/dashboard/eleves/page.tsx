@@ -314,8 +314,8 @@ export default function ElevesPage() {
       />
 
       {/* Modern Filter Bar */}
-      <div className="bg-white p-3 rounded-[2rem] border border-slate-200/60 shadow-sm flex flex-col lg:flex-row gap-4">
-        <div className="relative flex-1 group">
+      <div className="bg-white p-4 rounded-[2rem] border border-slate-200/60 shadow-sm flex flex-col gap-4">
+        <div className="relative group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
           <input
             type="text"
@@ -332,13 +332,13 @@ export default function ElevesPage() {
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-3 px-4 py-2 bg-slate-50/50 rounded-2xl border border-slate-100/50">
+        <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3">
+          <div className="flex items-center gap-3 px-4 py-2 bg-slate-50/50 rounded-2xl border border-slate-100/50 w-full sm:w-auto">
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Classe</span>
             <select
               value={filterClasse}
               onChange={(e) => { setFilterClasse(e.target.value); setPage(0) }}
-              className="bg-transparent border-none p-0 pr-8 text-sm font-black text-slate-900 focus:ring-0 cursor-pointer appearance-none"
+              className="bg-transparent border-none p-0 pr-8 text-sm font-black text-slate-900 focus:ring-0 cursor-pointer appearance-none flex-1 sm:flex-none"
             >
               <option value="">Toutes les classes</option>
               {classes.map((c) => (
@@ -347,12 +347,12 @@ export default function ElevesPage() {
             </select>
           </div>
 
-          <div className="flex items-center gap-3 px-4 py-2 bg-slate-50/50 rounded-2xl border border-slate-100/50">
+          <div className="flex items-center gap-3 px-4 py-2 bg-slate-50/50 rounded-2xl border border-slate-100/50 w-full sm:w-auto">
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Paiement</span>
             <select
               value={filterStatut}
               onChange={(e) => { setFilterStatut(e.target.value as StatutPaiement); setPage(0) }}
-              className="bg-transparent border-none p-0 pr-8 text-sm font-black text-slate-900 focus:ring-0 cursor-pointer appearance-none"
+              className="bg-transparent border-none p-0 pr-8 text-sm font-black text-slate-900 focus:ring-0 cursor-pointer appearance-none flex-1 sm:flex-none"
             >
               <option value="tous">Tous les statuts</option>
               <option value="payé">Payé</option>
@@ -362,25 +362,26 @@ export default function ElevesPage() {
           </div>
 
           {filterClasse && (
-            <div className="flex items-center gap-2 pl-4 ml-2 border-l border-slate-200">
+            <div className="flex items-center gap-2 w-full sm:w-auto sm:pl-4 sm:ml-2 sm:border-l sm:border-slate-200">
               <button
                 onClick={handleExportPDF}
                 disabled={generatingPDF}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-emerald-600 transition-all shadow-lg shadow-slate-900/10 disabled:opacity-50"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-emerald-600 transition-all shadow-lg shadow-slate-900/10 disabled:opacity-50"
                 title="Exporter liste PDF"
               >
                 {generatingPDF ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-                <span className="hidden sm:inline">Liste PDF</span>
+                <span>Liste PDF</span>
               </button>
               <a
                 href={`/dashboard/eleves/print-cartes?classeId=${filterClasse}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-400 text-slate-900 text-sm font-bold hover:bg-amber-500 transition-all shadow-lg shadow-amber-400/10"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-400 text-slate-900 text-sm font-bold hover:bg-amber-500 transition-all shadow-lg shadow-amber-400/10"
                 title="Imprimer les cartes QR"
               >
                 <Printer className="w-4 h-4" />
-                <span className="hidden sm:inline">Imprimer les cartes de la classe</span>
+                <span className="hidden sm:inline">Cartes QR</span>
+                <span className="sm:hidden">Cartes</span>
               </a>
             </div>
           )}
@@ -514,32 +515,64 @@ export default function ElevesPage() {
             </div>
 
             {/* Mobile cards */}
-            <div className="md:hidden divide-y divide-slate-50">
+            <div className="md:hidden divide-y divide-slate-100">
               {eleves.map((e) => (
-                <div key={e.id} className="flex items-center gap-3 px-4 py-3">
-                  <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-slate-200 shrink-0">
-                    {e.photo_url ? (
-                      <img src={e.photo_url} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-sm font-bold">
-                        {e.prenom[0]?.toUpperCase()}
+                <div key={e.id} className="p-4 space-y-4 hover:bg-slate-50 transition-all duration-300">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-4">
+                      <button
+                        onClick={() => triggerUpload(e.id)}
+                        className="relative w-12 h-12 rounded-xl overflow-hidden border border-slate-200 shadow-sm shrink-0"
+                      >
+                        {uploading === e.id ? (
+                          <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                            <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+                          </div>
+                        ) : e.photo_url ? (
+                          <img src={e.photo_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-slate-900 flex items-center justify-center text-white text-sm font-black">
+                            {e.prenom[0]?.toUpperCase()}
+                          </div>
+                        )}
+                      </button>
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-black text-slate-900 uppercase truncate">
+                          {e.prenom} {e.nom}
+                        </h3>
+                        <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">
+                          {e.matricule || 'Sans matricule'}
+                        </p>
                       </div>
-                    )}
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/dashboard/eleves/${e.id}/modifier`}
+                        className="p-2 rounded-lg bg-white border border-slate-200 text-slate-400"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Link>
+                      <button
+                        onClick={() => setViewing(e.id)}
+                        className="p-2 rounded-lg bg-white border border-slate-200 text-slate-400"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-800 truncate">{e.prenom} {e.nom}</p>
-                    <p className="text-xs text-slate-400">{(e.classe as any)?.nom_classe ?? '—'} · {e.matricule}</p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1 w-24">
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${statutBadge[e.statut_paiement]}`}>
+
+                  <div className="flex items-center justify-between gap-4 pt-1">
+                    <span className="inline-flex items-center px-3 py-1.5 rounded-xl bg-slate-100/50 text-slate-700 text-[10px] font-black uppercase tracking-widest border border-slate-200/50 shadow-sm">
+                      {(e.classe as any)?.nom_classe ?? '—'}
+                    </span>
+                    <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-[0.15em] border ${
+                      e.statut_paiement === 'payé' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                      e.statut_paiement === 'impayé' ? 'bg-red-50 text-red-600 border-red-100' :
+                      'bg-amber-50 text-amber-600 border-amber-100'
+                    }`}>
                       {e.statut_paiement}
                     </span>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Link href={`/dashboard/eleves/${e.id}/modifier`} className="text-slate-500 hover:text-slate-700">
-                        <Edit className="w-3.5 h-3.5" />
-                      </Link>
-                      <button onClick={() => setViewing(e.id)} className="text-emerald-600 text-xs">Voir carte</button>
-                    </div>
                   </div>
                 </div>
               ))}

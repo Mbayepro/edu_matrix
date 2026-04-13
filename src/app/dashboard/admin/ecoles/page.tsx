@@ -138,7 +138,8 @@ export default function AdminEcolesPage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Desktop View: Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
@@ -183,35 +184,7 @@ export default function AdminEcolesPage() {
                         {updating === ecole.id ? (
                           <Loader2 className="w-5 h-5 animate-spin text-emerald-600" />
                         ) : (
-                          <>
-                            {ecole.statut !== 'actif' && (
-                              <button
-                                onClick={() => updateStatut(ecole.id, 'actif')}
-                                className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors border border-transparent hover:border-emerald-200"
-                                title="Activer l'école"
-                              >
-                                <CheckCircle2 className="w-4 h-4" />
-                              </button>
-                            )}
-                            {ecole.statut !== 'suspendu' && (
-                              <button
-                                onClick={() => updateStatut(ecole.id, 'suspendu')}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-200"
-                                title="Suspendre l'école"
-                              >
-                                <XCircle className="w-4 h-4" />
-                              </button>
-                            )}
-                            {ecole.statut !== 'en_attente' && (
-                              <button
-                                onClick={() => updateStatut(ecole.id, 'en_attente')}
-                                className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors border border-transparent hover:border-amber-200"
-                                title="Mettre en attente"
-                              >
-                                <Clock className="w-4 h-4" />
-                              </button>
-                            )}
-                          </>
+                          <EcoleActions ecole={ecole} onUpdate={updateStatut} />
                         )}
                       </div>
                     </td>
@@ -221,7 +194,85 @@ export default function AdminEcolesPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile View: Cards */}
+        <div className="md:hidden divide-y divide-slate-200">
+          {filteredEcoles.length === 0 ? (
+            <div className="px-6 py-12 text-center text-slate-500">
+              <AlertCircle className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+              Aucune école trouvée.
+            </div>
+          ) : (
+            filteredEcoles.map((ecole) => (
+              <div key={ecole.id} className="p-4 space-y-4 hover:bg-slate-50 transition-colors">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="font-bold text-slate-800">{ecole.nom}</div>
+                    <div className="text-xs text-slate-500">{ecole.ville || 'Ville non spécifiée'}</div>
+                  </div>
+                  {getStatutBadge(ecole.statut)}
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <div className="text-slate-400 uppercase font-bold tracking-widest text-[10px] mb-1">Email</div>
+                    <div className="text-slate-700 truncate">{ecole.email || '—'}</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-400 uppercase font-bold tracking-widest text-[10px] mb-1">Téléphone</div>
+                    <div className="text-slate-700">{ecole.telephone || '—'}</div>
+                  </div>
+                  <div className="col-span-2 pt-2 border-t border-slate-100 flex justify-between items-center">
+                    <span className="text-slate-400">Inscrit le {new Date(ecole.created_at).toLocaleDateString('fr-FR')}</span>
+                    <div className="flex gap-2">
+                      {updating === ecole.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+                      ) : (
+                        <EcoleActions ecole={ecole} onUpdate={updateStatut} />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   )
 }
+
+function EcoleActions({ ecole, onUpdate }: { ecole: Ecole, onUpdate: any }) {
+  return (
+    <>
+      {ecole.statut !== 'actif' && (
+        <button
+          onClick={() => onUpdate(ecole.id, 'actif')}
+          className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors border border-slate-200 sm:border-transparent hover:border-emerald-200"
+          title="Activer l'école"
+        >
+          <CheckCircle2 className="w-4 h-4" />
+        </button>
+      )}
+      {ecole.statut !== 'suspendu' && (
+        <button
+          onClick={() => onUpdate(ecole.id, 'suspendu')}
+          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-slate-200 sm:border-transparent hover:border-red-200"
+          title="Suspendre l'école"
+        >
+          <XCircle className="w-4 h-4" />
+        </button>
+      )}
+      {ecole.statut !== 'en_attente' && (
+        <button
+          onClick={() => onUpdate(ecole.id, 'en_attente')}
+          className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors border border-slate-200 sm:border-transparent hover:border-amber-200"
+          title="Mettre en attente"
+        >
+          <Clock className="w-4 h-4" />
+        </button>
+      )}
+    </>
+  )
+}
+
