@@ -39,6 +39,7 @@ export default function SchoolSettingsPage() {
     tampon_url: '',
     signature_url: '',
     calculation_method: 'BLOCKS',
+    type_periode: 'trimestre' as 'trimestre' | 'semestre',
   })
 
   useEffect(() => {
@@ -69,6 +70,7 @@ export default function SchoolSettingsPage() {
           tampon_url: ec.tampon_url ?? '',
           signature_url: ec.signature_url ?? '',
           calculation_method: ec.calculation_method ?? 'BLOCKS',
+          type_periode: ec.type_periode ?? 'trimestre',
         })
       }
     } catch (err) {
@@ -94,6 +96,7 @@ export default function SchoolSettingsPage() {
           tampon_url: form.tampon_url || null,
           signature_url: form.signature_url || null,
           calculation_method: form.calculation_method,
+          type_periode: form.type_periode,
         })
         .eq('id', ecole.id)
 
@@ -273,12 +276,22 @@ export default function SchoolSettingsPage() {
               </div>
             </div>
 
-            <div className="flex items-center p-6 bg-slate-50 rounded-[1.5rem] border border-dashed border-slate-200">
-              <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                <span className="font-bold text-slate-700 block mb-1">Impact sur les bulletins :</span>
-                Le changement de méthode recalculera automatiquement toutes les moyennes des bulletins générés. 
-                Assurez-vous de valider ce choix avec votre équipe pédagogique.
-              </p>
+            <div className="space-y-3">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Type de Période</label>
+              <select
+                value={form.type_periode}
+                onChange={(e) => setForm((f) => ({ ...f, type_periode: e.target.value as 'trimestre' | 'semestre' }))}
+                className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-purple-500/10 focus:bg-white transition-all shadow-sm appearance-none cursor-pointer"
+              >
+                <option value="trimestre">Trimestres (3 périodes)</option>
+                <option value="semestre">Semestres (2 périodes)</option>
+              </select>
+              <div className="flex items-center p-6 bg-slate-50 rounded-[1.5rem] border border-dashed border-slate-200 mt-2">
+                <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                  <span className="font-bold text-slate-700 block mb-1">Impact sur les bulletins :</span>
+                  Le changement de période modifie l'affichage global de l'application (Saisie des notes, bulletins).
+                </p>
+              </div>
             </div>
           </div>
         </div>

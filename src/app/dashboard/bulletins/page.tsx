@@ -31,7 +31,8 @@ export default function BulletinsPage() {
   const [classes, setClasses] = useState<Classe[]>([])
   const [selectedClasse, setSelectedClasse] = useState<string>('')
   const [selectedTrimestre, setSelectedTrimestre] = useState<1 | 2 | 3>(1)
-  const [anneeScolaire, setAnneeScolaire] = useState('2025-2026')
+  const [anneeScolaire, setAnneeScolaire] = useState('2024-2025')
+  const [typePeriode, setTypePeriode] = useState<'trimestre' | 'semestre'>('trimestre')
   const [bulletins, setBulletins] = useState<BulletinData[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingBulletins, setLoadingBulletins] = useState(false)
@@ -100,6 +101,9 @@ export default function BulletinsPage() {
     if (!ecoleId) return
     const { data } = await supabase.from('ecoles').select('*').eq('id', ecoleId).single()
     setEcole(data)
+    if (data?.type_periode) {
+      setTypePeriode(data.type_periode)
+    }
   }
 
   async function loadClasses() {
@@ -254,7 +258,7 @@ export default function BulletinsPage() {
                 <h1 class="school-name">${ecole?.nom || 'Établissement Scolaire'}</h1>
                 <div class="header-line"></div>
                 ${ecole?.id ? `<div style="font-size:10px; font-weight:700;">Agréé par l'État - Plateforme EduMatrix</div>` : ''}
-                <h2 class="bulletin-title">Bulletin du ${bulletin.trimestre === 1 ? '1<sup>er</sup>' : bulletin.trimestre === 2 ? '2<sup>ème</sup>' : '3<sup>ème</sup>'} Trimestre</h2>
+                <h2 class="bulletin-title">Bulletin du ${bulletin.trimestre === 1 ? '1<sup>er</sup>' : bulletin.trimestre === 2 ? '2<sup>ème</sup>' : '3<sup>ème</sup>'} ${typePeriode === 'semestre' ? 'Semestre' : 'Trimestre'}</h2>
             </div>
         </div>
 
@@ -316,7 +320,7 @@ export default function BulletinsPage() {
 
         <div style="margin:20px 0; overflow:hidden;">
             <div class="final-average-box">
-                <span class="avg-label">MOYENNE DU TRIMESTRE :</span>
+                <span class="avg-label">MOYENNE DU ${typePeriode === 'semestre' ? 'SEMESTRE' : 'TRIMESTRE'} :</span>
                 <span class="avg-value">${displayMoyenneTotal.toFixed(2)}</span>
             </div>
         </div>
@@ -459,9 +463,18 @@ export default function BulletinsPage() {
           <div className="space-y-2">
             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400">Période scolaire</label>
             <select value={selectedTrimestre} onChange={(e) => setSelectedTrimestre(Number(e.target.value) as 1|2|3)} className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10">
-              <option value={1}>1er Trimestre</option>
-              <option value={2}>2ème Trimestre</option>
-              <option value={3}>3ème Trimestre</option>
+              {typePeriode === 'semestre' ? (
+                <>
+                  <option value={1}>1er Semestre</option>
+                  <option value={2}>2ème Semestre</option>
+                </>
+              ) : (
+                <>
+                  <option value={1}>1er Trimestre</option>
+                  <option value={2}>2ème Trimestre</option>
+                  <option value={3}>3ème Trimestre</option>
+                </>
+              )}
             </select>
           </div>
           <div className="space-y-2">

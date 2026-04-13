@@ -42,6 +42,7 @@ export default function NotesPage() {
   const [selectedTrimestre, setSelectedTrimestre] = useState<1 | 2 | 3>(1)
   const [selectedEvaluation, setSelectedEvaluation] = useState<string>('')
   const [anneeScolaire, setAnneeScolaire] = useState<string>('2024-2025')
+  const [typePeriode, setTypePeriode] = useState<'trimestre' | 'semestre'>('trimestre')
   
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -76,6 +77,16 @@ export default function NotesPage() {
   async function loadBaseData(schoolId: string) {
     setLoading(true)
     try {
+      const { data: ecole } = await supabase
+        .from('ecoles')
+        .select('type_periode')
+        .eq('id', schoolId)
+        .single()
+        
+      if (ecole?.type_periode) {
+        setTypePeriode(ecole.type_periode)
+      }
+
       await Promise.all([
         loadNiveaux(schoolId),
         loadSeries(schoolId),
@@ -502,9 +513,18 @@ export default function NotesPage() {
               onChange={(e) => setSelectedTrimestre(Number(e.target.value) as 1 | 2 | 3)}
               className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all"
             >
-              <option value={1}>1er Trimestre</option>
-              <option value={2}>2ème Trimestre</option>
-              <option value={3}>3ème Trimestre</option>
+              {typePeriode === 'semestre' ? (
+                <>
+                  <option value={1}>1er Semestre</option>
+                  <option value={2}>2ème Semestre</option>
+                </>
+              ) : (
+                <>
+                  <option value={1}>1er Trimestre</option>
+                  <option value={2}>2ème Trimestre</option>
+                  <option value={3}>3ème Trimestre</option>
+                </>
+              )}
             </select>
           </div>
 
@@ -694,7 +714,9 @@ export default function NotesPage() {
                               <span className="text-lg font-black text-slate-900">
                                 {(selectedClasseData?.niveau_info?.cycle === 'primaire' ? moyenneEleve / 2 : moyenneEleve).toFixed(2)}
                               </span>
-                              <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Trim. {selectedTrimestre}</span>
+                              <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest">
+                                {typePeriode === 'semestre' ? 'Sem.' : 'Trim.'} {selectedTrimestre}
+                              </span>
                             </div>
                           ) : (
                             <div className="flex flex-col items-center opacity-30">

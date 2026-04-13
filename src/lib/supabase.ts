@@ -20,6 +20,7 @@ export interface Ecole {
   tampon_url: string | null
   signature_url: string | null
   calculation_method?: 'BLOCKS' | 'WEIGHTED'
+  type_periode?: 'trimestre' | 'semestre'
   statut: StatutEcole
   created_at: string
 }
