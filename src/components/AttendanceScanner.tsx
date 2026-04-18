@@ -114,13 +114,13 @@ async function processAttendance(studentId: string, classeId: string, ecoleId: s
       statut,
     }
 
+    // IMPORTANT: La table presences sur Supabase n'a pas de colonne ecole_id. 
+    // Dexie en a besoin pour le hors-ligne, mais on doit l'enlever pour Supabase.
+    const { ecole_id: _, ...supabasePayload } = presenceData;
+
     // 5. Save Presence: Try Supabase first if online
     if (isOnline) {
       try {
-        // IMPORTANT: La table presences sur Supabase n'a pas de colonne ecole_id. 
-        // Dexie en a besoin pour le hors-ligne, mais on doit l'enlever pour Supabase.
-        const { ecole_id: _, ...supabasePayload } = presenceData;
-
         const { error } = await (supabase as any)
           .from('presences')
           .insert(supabasePayload)
@@ -145,7 +145,6 @@ async function processAttendance(studentId: string, classeId: string, ecoleId: s
     } else if (db) {
       // Offline mode
       await db.presences.put(presenceData as any)
-      const { ecole_id: _, ...supabasePayload } = presenceData;
       await addToSyncQueue('presences', 'INSERT', supabasePayload as any, ecoleId)
     }
 
