@@ -33,6 +33,7 @@ import { generatePaiementRecuPDF, printPaiementRecuPDF, sharePaiementRecu, Paiem
 import { Skeleton } from '@/components/Skeleton'
 import { db } from '@/lib/db'
 import { syncFromSupabase, addToSyncQueue } from '@/lib/syncService'
+import { formatDate, formatMonthYear, formatDateTime } from '@/lib/dateUtils'
 import type { 
   LocalEleve, 
   LocalFraisScolaire, 
@@ -406,7 +407,7 @@ export default function PaiementsPage() {
     window.open(url, '_blank')
     
     // Update last reminder date locally
-    const today = new Date().toLocaleDateString('fr-FR')
+    const today = formatDate(new Date())
     try {
       const efs = elevesFrais.filter(ef => ef.eleve_id === eleve.id)
       for (const ef of efs) {
@@ -449,7 +450,7 @@ export default function PaiementsPage() {
 
   // Monthly payments data for chart
   const paiementsParMois = paiements.reduce((acc, paiement) => {
-    const mois = new Date(paiement.date_paiement).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+    const mois = formatMonthYear(paiement.date_paiement)
     if (!acc[mois]) acc[mois] = 0
     acc[mois] += paiement.montant
     return acc
@@ -919,7 +920,7 @@ export default function PaiementsPage() {
                         </div>
                         <div className="pt-3 border-t border-slate-50 mt-1 flex items-center justify-between">
                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                            {new Date(p.date_paiement).toLocaleDateString('fr-FR')} à {new Date(p.date_paiement).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                            {formatDateTime(p.date_paiement)}
                           </span>
                           <span className="text-[10px] font-black text-slate-400 uppercase italic">
                             {p.reference || p.mode || 'N/A'}

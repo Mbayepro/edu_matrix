@@ -10,6 +10,7 @@ import {
   ChevronRight, ClipboardList, Clock,
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
+import { getTodayDate } from '@/lib/dateUtils'
 
 const GradesEntry       = dynamic(() => import('@/components/GradesEntry'),       { ssr: false })
 const AttendanceScanner = dynamic(() => import('@/components/AttendanceScanner'), { ssr: false })
@@ -84,7 +85,7 @@ export default function TeacherDashboard() {
       
       if (classesError || !classes?.length) throw new Error('Classes failed')
 
-      const today = new Date().toISOString().split('T')[0]
+      const today = getTodayDate()
 
       const classStats = await Promise.all(
         classes.map(async (cl: any) => {

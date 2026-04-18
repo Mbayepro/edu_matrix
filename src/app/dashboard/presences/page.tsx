@@ -11,6 +11,7 @@ import { useTeacherClasses } from '@/hooks/useTeacherClasses'
 import { db } from '@/lib/db'
 import { addToSyncQueue, syncFromSupabase } from '@/lib/syncService'
 import { useNetwork } from '@/hooks/useNetwork'
+import { getTodayDate, formatDateLong } from '@/lib/dateUtils'
 
 interface ElevePresence {
   id: string
@@ -113,7 +114,7 @@ export default function PresencesPage() {
 
   async function loadTodayPresences(cId: string) {
     if (!db) return
-    const today = new Date().toISOString().split('T')[0]
+    const today = getTodayDate()
     
     // Load all students for the class from Dexie
     const studentsData = await db.eleves.where('classe_id').equals(cId).toArray()
@@ -146,7 +147,7 @@ export default function PresencesPage() {
   async function markPresenceManually(eleveId: string, statut: 'présent' | 'absent' | 'retard') {
     setMarking(eleveId)
     try {
-      const today = new Date().toISOString().split('T')[0]
+      const today = getTodayDate()
       const now = new Date().toTimeString().split(' ')[0]
       const existing = eleves.find(e => e.id === eleveId)
       
@@ -208,7 +209,7 @@ export default function PresencesPage() {
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">Feuille de Présence</h1>
           </div>
           <p className="text-sm text-slate-500 font-medium tracking-tight">
-            {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            {formatDateLong(new Date())}
           </p>
         </div>
 

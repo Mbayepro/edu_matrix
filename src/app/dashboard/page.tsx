@@ -86,6 +86,8 @@ import { db } from '@/lib/db'
 import { syncFromSupabase, flushSyncQueue } from '@/lib/syncService'
 import { useNetwork } from '@/hooks/useNetwork'
 
+import { getTodayDate } from '@/lib/dateUtils'
+
 export default function DashboardPage() {
   const router = useRouter()
   const { profile, ecole, loading: profileLoading } = useProfile()
@@ -131,7 +133,7 @@ export default function DashboardPage() {
     
     try {
       // 0. Robust local date (YYYY-MM-DD) - matching the rest of the app
-      const today = new Date().toISOString().split('T')[0]
+      const today = getTodayDate()
 
       // 0. PUSH PENDING DATA FIRST (Garantit que le serveur est à jour avant de lire les stats)
       if (isOnlineSafe) {

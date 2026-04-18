@@ -8,6 +8,7 @@
 
 import { supabase } from './supabase'
 import { getDb, type SyncAction } from './db'
+import { getTodayDate } from './dateUtils'
 
 // ─── PULL : Supabase → cache local ───────────────────────────────────────────
 
@@ -36,8 +37,8 @@ export async function syncFromSupabase(ecoleId: string): Promise<void> {
     { name: 'evaluations', query: supabase.from('evaluations').select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) },
     { name: 'eleves', query: supabase.from('eleves').select('*').eq('ecole_id', ecoleId) }, // Les élèves restent tous chargés pour le moment
     { name: 'notes', query: supabase.from('notes').select('*').eq('ecole_id', ecoleId) }, // TODO: Ajouter colonne annee_scolaire dans notes
-    // Use slightly different query for presences (no ecole_id column)
-    { name: 'presences', query: supabase.from('presences').select('*').gte('date', new Date(new Date().getFullYear(), 8, 1).toISOString()) }, // Depuis septembre de cette année
+    // On filtre bien par ecole_id pour ne pas récupérer les présences des autres écoles
+    { name: 'presences', query: supabase.from('presences').select('*').eq('ecole_id', ecoleId).gte('date', new Date(new Date().getFullYear(), 8, 1).toISOString()) }, // Depuis septembre de cette année
     { name: 'profiles', query: supabase.from('profiles').select('*').eq('ecole_id', ecoleId) },
     { name: 'frais_scolaires', query: supabase.from('frais_scolaires').select('*').eq('ecole_id', ecoleId) },
     { name: 'eleves_frais', query: supabase.from('eleves_frais').select('*').eq('ecole_id', ecoleId) },
@@ -267,7 +268,7 @@ export async function cleanupLocalCache(): Promise<void> {
     // Garder les présences des 3 derniers mois uniquement
     const threeMonthsAgo = new Date()
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
-    const oldDate = threeMonthsAgo.toISOString().split('T')[0]
+    const oldDate = threeMonthsAgo.toISOString().split('T')[0] // Gardé en ISO pour comparer avec la BDD
     
     const countPresences = await db.presences.where('date').below(oldDate).delete()
     

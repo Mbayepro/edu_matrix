@@ -6,7 +6,7 @@ import { Loader2, FileText, Plus, X, Trash2, Edit2 } from 'lucide-react';
 import { useProfile } from '@/hooks/useProfile';
 
 
-import { useNetwork } from '@/hooks/useNetwork';
+import { getTodayDate } from '@/lib/dateUtils';
 import { db } from '@/lib/db';
 import { addToSyncQueue, syncFromSupabase } from '@/lib/syncService';
 
@@ -59,10 +59,10 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
 
   const [newEval, setNewEval] = useState({
     type: 'controle' as 'controle' | 'devoir' | 'composition',
-    date: new Date().toISOString().split('T')[0],
+    date: getTodayDate(),
     coef: 1,
     bareme: 20,
-    libelle: '',
+    libelle: ''
   });
 
   const [niveau, setNiveau] = useState<any>(null);
@@ -175,7 +175,7 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
     } finally {
       setSaving(false);
       setShowNewEvalModal(false);
-      setNewEval({ type: 'controle', date: new Date().toISOString().split('T')[0], coef: 1, bareme: 20, libelle: '' });
+      setNewEval({ type: 'controle', date: getTodayDate(), coef: 1, bareme: 20, libelle: '' });
     }
   };
 

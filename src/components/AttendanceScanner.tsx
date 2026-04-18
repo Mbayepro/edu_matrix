@@ -6,6 +6,7 @@ import {
   Loader2, UserCheck, RefreshCw, Camera
 } from 'lucide-react'
 import { useNetwork } from '@/hooks/useNetwork'
+import { getTodayDate } from '@/lib/dateUtils'
 import { db } from '@/lib/db'
 import { syncFromSupabase, addToSyncQueue } from '@/lib/syncService'
 import { supabase } from '@/lib/supabase'
@@ -65,7 +66,7 @@ async function processAttendance(studentId: string, classeId: string, ecoleId: s
     }
 
     const realStudentId = eleve.id
-    const today = new Date().toISOString().split('T')[0]
+    const today = getTodayDate()
     const now   = new Date().toTimeString().split(' ')[0]
 
     // 3. Check for existing presence
@@ -235,7 +236,7 @@ export default function AttendanceScanner({ classeId }: { classeId: string }) {
   async function loadTodayCount() {
     if (!db) return
     try {
-      const today = new Date().toISOString().split('T')[0]
+      const today = getTodayDate()
       const count = await db.presences
         .where('date').equals(today)
         .count()

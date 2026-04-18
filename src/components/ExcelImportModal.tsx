@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Classe } from '@/lib/supabase'
 import { X, UploadCloud, Loader2, Table as TableIcon, CheckCircle2, AlertCircle } from 'lucide-react'
+import { getTodayDate } from '@/lib/dateUtils'
 import * as XLSX from 'xlsx'
 import Papa from 'papaparse'
 

@@ -17,6 +17,7 @@ import {
 import { useProfile } from '@/hooks/useProfile'
 import { useToast } from '@/contexts/ToastContext'
 import { useTeacherClasses } from '@/hooks/useTeacherClasses'
+import { getTodayDate } from '@/lib/dateUtils'
 
 export default function NotesPage() {
   const { profile, loading: profileLoading } = useProfile()
@@ -50,7 +51,7 @@ export default function NotesPage() {
   const [showNewEvalModal, setShowNewEvalModal] = useState(false)
   const [newEval, setNewEval] = useState({
     type: 'controle' as 'controle' | 'devoir' | 'composition',
-    date: new Date().toISOString().split('T')[0],
+    date: getTodayDate(),
     coef: 1,
     bareme: 20,
   })
@@ -306,7 +307,7 @@ export default function NotesPage() {
         setShowNewEvalModal(false)
         setNewEval({
           type: 'controle',
-          date: new Date().toISOString().split('T')[0],
+          date: getTodayDate(),
           coef: 1,
           bareme: 20,
         })
