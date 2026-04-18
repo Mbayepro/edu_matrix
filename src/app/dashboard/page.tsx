@@ -130,8 +130,8 @@ export default function DashboardPage() {
     setLoading(stats === null)
     
     try {
-      // 0. Robust local date (YYYY-MM-DD)
-      const today = new Date().toLocaleDateString('en-CA')
+      // 0. Robust local date (YYYY-MM-DD) - matching the rest of the app
+      const today = new Date().toISOString().split('T')[0]
 
       // 0. PUSH PENDING DATA FIRST (Garantit que le serveur est à jour avant de lire les stats)
       if (isOnlineSafe) {
@@ -166,8 +166,8 @@ export default function DashboardPage() {
           supabase.from('eleves').select('id, statut_paiement').eq('ecole_id', schoolId),
           supabase.from('profiles').select('id').eq('ecole_id', schoolId).eq('role', 'teacher'),
           supabase.from('classes').select('id').eq('ecole_id', schoolId),
-          // Note: On ne filtre pas par ecole_id ici au cas où des anciennes lignes ont NULL suite au script SQL
-          supabase.from('presences').select('id, eleve_id').eq('date', today).in('statut', ['présent', 'retard']),
+          // On filtre par ecole_id, même si certaines vieilles lignes ont NULL (elles seront ignorées, mais au moins on ne tape pas la limite de 1000 lignes globale)
+          supabase.from('presences').select('id, eleve_id').eq('date', today).eq('ecole_id', schoolId).in('statut', ['présent', 'retard']),
         ])
 
         if (elRes.error || profRes.error || clRes.error || presRes.error) {
@@ -175,14 +175,16 @@ export default function DashboardPage() {
           showToast('Erreur de mise à jour en temps réel.', 'error')
         } else {
           const schoolEleveIds = new Set(elRes.data?.map((e: any) => e.id) || [])
-          const filteredPresences = presRes.data?.filter((p: any) => schoolEleveIds.has(p.eleve_id)) || []
+          
+          // La requête filtre déjà par ecole_id, plus besoin de vérifier eleve_id si on fait confiance à l'intégrité de la BDD
+          const presencesAujourd = presRes.data?.length || 0
 
           const s: DashboardStats = {
             totalEleves: elRes.data?.length || 0,
             totalEnseignants: profRes.data?.length || 0,
             elevesImpayes: elRes.data?.filter((e: any) => e.statut_paiement === 'impayé').length || 0,
             totalClasses: clRes.data?.length || 0,
-            presencesAujourd: filteredPresences.length,
+            presencesAujourd,
           }
           setStats(s)
           
