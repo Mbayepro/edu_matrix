@@ -163,7 +163,7 @@ export default function PresencesPage() {
         statut
       }
 
-      // 1. Local & Optimistic
+      // 1. Local & Optimistic (avec ecole_id pour Dexie)
       if (db) {
         await db.presences.put(presenceData as any)
         setEleves(prev => prev.map(e => e.id === eleveId ? { ...e, presence_id: pId, statut, heure: now } : e))
@@ -171,7 +171,9 @@ export default function PresencesPage() {
 
       // 2. Queue
       if (ecoleId) {
-        await addToSyncQueue('presences', 'INSERT', presenceData as any, ecoleId)
+        // IMPORTANT: La table presences sur Supabase n'a pas de colonne ecole_id.
+        const { ecole_id: _, ...supabasePayload } = presenceData;
+        await addToSyncQueue('presences', 'INSERT', supabasePayload as any, ecoleId)
       }
     } finally {
       setMarking(null)

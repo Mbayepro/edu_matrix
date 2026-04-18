@@ -37,8 +37,8 @@ export async function syncFromSupabase(ecoleId: string): Promise<void> {
     { name: 'evaluations', query: supabase.from('evaluations').select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) },
     { name: 'eleves', query: supabase.from('eleves').select('*').eq('ecole_id', ecoleId) }, // Les élèves restent tous chargés pour le moment
     { name: 'notes', query: supabase.from('notes').select('*').eq('ecole_id', ecoleId) }, // TODO: Ajouter colonne annee_scolaire dans notes
-    // On filtre bien par ecole_id pour ne pas récupérer les présences des autres écoles
-    { name: 'presences', query: supabase.from('presences').select('*').eq('ecole_id', ecoleId).gte('date', new Date(new Date().getFullYear(), 8, 1).toISOString()) }, // Depuis septembre de cette année
+    // Use slightly different query for presences (no ecole_id column on Supabase)
+    { name: 'presences', query: supabase.from('presences').select('*').gte('date', new Date(new Date().getFullYear(), 8, 1).toISOString()) }, // Depuis septembre de cette année
     { name: 'profiles', query: supabase.from('profiles').select('*').eq('ecole_id', ecoleId) },
     { name: 'frais_scolaires', query: supabase.from('frais_scolaires').select('*').eq('ecole_id', ecoleId) },
     { name: 'eleves_frais', query: supabase.from('eleves_frais').select('*').eq('ecole_id', ecoleId) },
@@ -121,14 +121,20 @@ export async function flushSyncQueue(): Promise<{ flushed: number; errors: numbe
 async function executeAction(action: SyncAction): Promise<void> {
   const { table, action: type, payload } = action
 
+  // Sécurité supplémentaire : s'assurer qu'aucune action sur la table presences ne contienne ecole_id
+  const safePayload = { ...payload };
+  if (table === 'presences' && 'ecole_id' in safePayload) {
+    delete safePayload.ecole_id;
+  }
+
   switch (type) {
     case 'INSERT': {
-      const { error } = await (supabase as any).from(table).insert(payload)
+      const { error } = await (supabase as any).from(table).insert(safePayload)
       if (error) throw new Error(error.message)
       break
     }
     case 'UPDATE': {
-      const { id, ...fields } = payload as { id: string; updated_at?: string; [key: string]: unknown }
+      const { id, ...fields } = safePayload as { id: string; updated_at?: string; [key: string]: unknown }
       
       // Si on a un updated_at dans le payload, on veut s'assurer de ne pas écraser une version plus récente sur le serveur.
       if (fields.updated_at) {

@@ -168,8 +168,8 @@ export default function DashboardPage() {
           supabase.from('eleves').select('id, statut_paiement').eq('ecole_id', schoolId),
           supabase.from('profiles').select('id').eq('ecole_id', schoolId).eq('role', 'teacher'),
           supabase.from('classes').select('id').eq('ecole_id', schoolId),
-          // On filtre par ecole_id, même si certaines vieilles lignes ont NULL (elles seront ignorées, mais au moins on ne tape pas la limite de 1000 lignes globale)
-          supabase.from('presences').select('id, eleve_id').eq('date', today).eq('ecole_id', schoolId).in('statut', ['présent', 'retard']),
+          // Attention : la table presences n'a pas de colonne ecole_id sur Supabase, on récupère tout pour aujourd'hui
+          supabase.from('presences').select('id, eleve_id').eq('date', today).in('statut', ['présent', 'retard']),
         ])
 
         if (elRes.error || profRes.error || clRes.error || presRes.error) {
@@ -178,8 +178,9 @@ export default function DashboardPage() {
         } else {
           const schoolEleveIds = new Set(elRes.data?.map((e: any) => e.id) || [])
           
-          // La requête filtre déjà par ecole_id, plus besoin de vérifier eleve_id si on fait confiance à l'intégrité de la BDD
-          const presencesAujourd = presRes.data?.length || 0
+          // Le filtre par eleve_id est OBLIGATOIRE car la requête ne filtre pas par ecole_id
+          const filteredPresences = presRes.data?.filter((p: any) => schoolEleveIds.has(p.eleve_id)) || []
+          const presencesAujourd = filteredPresences.length
 
           const s: DashboardStats = {
             totalEleves: elRes.data?.length || 0,
