@@ -7,6 +7,7 @@ import { useProfile } from '@/hooks/useProfile';
 
 
 import { getTodayDate } from '@/lib/dateUtils';
+import { useNetwork } from '@/hooks/useNetwork';
 import { db } from '@/lib/db';
 import { addToSyncQueue, syncFromSupabase } from '@/lib/syncService';
 
