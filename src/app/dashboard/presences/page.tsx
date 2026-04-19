@@ -171,9 +171,7 @@ export default function PresencesPage() {
 
       // 2. Queue
       if (ecoleId) {
-        // IMPORTANT: La table presences sur Supabase n'a pas de colonne ecole_id.
-        const { ecole_id: _, ...supabasePayload } = presenceData;
-        await addToSyncQueue('presences', 'INSERT', supabasePayload as any, ecoleId)
+        await addToSyncQueue('presences', 'INSERT', presenceData as any, ecoleId)
       }
     } finally {
       setMarking(null)

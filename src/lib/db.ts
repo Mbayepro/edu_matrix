@@ -82,19 +82,15 @@ export class EduMatrixDB extends Dexie {
       niveaux:     'id, ecole_id',
       series:      'id, ecole_id',
       profiles:    'id, ecole_id, role',
-      emargements: 'id, prof_id, classe_id, matiere_id, ecole_id',
-      frais_scolaires: 'id, ecole_id',
-      eleves_frais: 'id, eleve_id, ecole_id',
-      paiements:   'id, eleve_id, ecole_id',
-      sync_queue:  '++id, table, action, createdAt, attempts',
     })
-
-    this.version(5).stores({
-      // Index composés pour accélérer les requêtes du Dashboard (ex: ecole_id + statut_paiement)
+    
+    this.version(6).stores({
       eleves:      'id, ecole_id, classe_id, telephone_parent, [ecole_id+statut_paiement]',
       presences:   'id, eleve_id, date, classe_id, ecole_id, [ecole_id+date]',
-    }).upgrade(trans => {
-      // Les index composés sont générés automatiquement par Dexie pour les nouvelles entrées
+      paiements:   'id, eleve_id, ecole_id, date_paiement',
+      emargements: 'id, prof_id, classe_id, matiere_id, ecole_id, date_heure',
+    }).upgrade((trans) => {
+      // Migration automatique des index
     })
   }
 
@@ -112,14 +108,14 @@ export class EduMatrixDB extends Dexie {
     const [eleves, notes, evaluations, presences, coeffs] = await Promise.all([
       this.eleves.where('classe_id').equals(classeId).toArray(),
       this.notes.where('ecole_id').equals(ecoleId).toArray(),
-      this.evaluations.where('classe_id').equals(classeId).and(e => e.trimestre === trimestre).toArray(),
+      this.evaluations.where('classe_id').equals(classeId).and((e: LocalEvaluation) => e.trimestre === trimestre).toArray(),
       this.presences.where('classe_id').equals(classeId).toArray(),
       // For coefficients, we'll try to find them or use defaults
       this.matieres.where('ecole_id').equals(ecoleId).toArray(),
     ])
 
     // Mapper matieres en format "coefficients" attendu par le moteur
-    const coefficients = coeffs.map(m => ({
+    const coefficients = coeffs.map((m: LocalMatiere) => ({
       matiere_id: m.id,
       coefficient: m.coefficient || 1,
       matiere: m
@@ -139,7 +135,7 @@ export class EduMatrixDB extends Dexie {
     )
 
     // Fill missing Niveau/Serie info
-    bulletins.forEach(b => {
+    bulletins.forEach((b: BulletinData) => {
       b.niveau = { cycle: isPrimaire ? 'primaire' : 'moyen', code: classe.niveau } as any
     })
 

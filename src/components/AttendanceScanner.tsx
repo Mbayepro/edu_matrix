@@ -114,22 +114,18 @@ async function processAttendance(studentId: string, classeId: string, ecoleId: s
       statut,
     }
 
-    // IMPORTANT: La table presences sur Supabase n'a pas de colonne ecole_id. 
-    // Dexie en a besoin pour le hors-ligne, mais on doit l'enlever pour Supabase.
-    const { ecole_id: _, ...supabasePayload } = presenceData;
-
     // 5. Save Presence: Try Supabase first if online
     if (isOnline) {
       try {
         const { error } = await (supabase as any)
           .from('presences')
-          .insert(supabasePayload)
+          .insert(presenceData)
         
         if (error) {
           console.warn('[Attendance] Supabase error, falling back to local sync:', error)
           if (db) {
             await db.presences.put(presenceData as any)
-            await addToSyncQueue('presences', 'INSERT', supabasePayload as any, ecoleId)
+            await addToSyncQueue('presences', 'INSERT', presenceData as any, ecoleId)
           }
         } else if (db) {
           // Success: update Dexie cache
@@ -137,15 +133,15 @@ async function processAttendance(studentId: string, classeId: string, ecoleId: s
         }
       } catch (err) {
         console.warn('[Attendance] Network exception:', err)
-        if (db) {
-          await db.presences.put(presenceData as any)
-          await addToSyncQueue('presences', 'INSERT', supabasePayload as any, ecoleId)
-        }
+          if (db) {
+            await db.presences.put(presenceData as any)
+            await addToSyncQueue('presences', 'INSERT', presenceData as any, ecoleId)
+          }
       }
     } else if (db) {
       // Offline mode
       await db.presences.put(presenceData as any)
-      await addToSyncQueue('presences', 'INSERT', supabasePayload as any, ecoleId)
+      await addToSyncQueue('presences', 'INSERT', presenceData as any, ecoleId)
     }
 
     return {

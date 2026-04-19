@@ -94,7 +94,7 @@ export default function TeacherDashboard() {
             supabase.from('notes').select('id', { count: 'exact', head: true })
               .in('eleve_id', (await supabase.from('eleves').select('id').eq('classe_id', cl.id)).data?.map((e: any) => e.id) ?? []),
             supabase.from('presences').select('id', { count: 'exact', head: true })
-              .eq('classe_id', cl.id).eq('date', today),
+              .eq('ecole_id', prof.ecole_id).eq('classe_id', cl.id).eq('date', today),
           ])
           return { classe: cl, nbEleves: nbEleves ?? 0, nbNotes: nbNotes ?? 0, presAujourd: presAujourd ?? 0 }
         })

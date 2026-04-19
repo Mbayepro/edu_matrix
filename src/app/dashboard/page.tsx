@@ -132,13 +132,13 @@ export default function DashboardPage() {
     setLoading(stats === null)
     
     try {
-      // 0. Robust local date (YYYY-MM-DD) - matching the rest of the app
       const today = getTodayDate()
+      console.log("[Dashboard Debug] Target Date:", today)
+      console.log("[Dashboard Debug] School ID:", schoolId)
 
-      // 0. PUSH PENDING DATA FIRST (Garantit que le serveur est à jour avant de lire les stats)
+      // 0. PUSH PENDING DATA IN BACKGROUND
       if (isOnlineSafe) {
-        setIsRefreshing(true)
-        await flushSyncQueue()
+        void flushSyncQueue() // Non-bloquant
       }
       
       // 1. FAST LOAD FROM DEXIE (Instant UI)
@@ -171,19 +171,17 @@ export default function DashboardPage() {
           supabase.from('eleves').select('id, statut_paiement').eq('ecole_id', schoolId),
           supabase.from('profiles').select('id').eq('ecole_id', schoolId).eq('role', 'teacher'),
           supabase.from('classes').select('id').eq('ecole_id', schoolId),
-          // Attention : la table presences n'a pas de colonne ecole_id sur Supabase, on récupère tout pour aujourd'hui
-          supabase.from('presences').select('id, eleve_id').eq('date', today).in('statut', ['présent', 'retard']),
+          // Recherche directe par ecole_id
+          supabase.from('presences').select('id, eleve_id').eq('ecole_id', schoolId).eq('date', today).in('statut', ['présent', 'retard']),
         ])
 
         if (elRes.error || profRes.error || clRes.error || presRes.error) {
-          console.error('[Dashboard] Supabase error:', { elRes, profRes, clRes, presRes })
-          showToast('Erreur de mise à jour en temps réel.', 'error')
+          console.error('[Dashboard Debug] Supabase Error:', { elRes, profRes, clRes, presRes })
         } else {
-          const schoolEleveIds = new Set(elRes.data?.map((e: any) => e.id) || [])
-          
-          // Le filtre par eleve_id est OBLIGATOIRE car la requête ne filtre pas par ecole_id
-          const filteredPresences = presRes.data?.filter((p: any) => schoolEleveIds.has(p.eleve_id)) || []
+          console.log("[Dashboard Debug] Supabase Presences Raw:", presRes.data)
+          const filteredPresences = presRes.data || []
           const presencesAujourd = filteredPresences.length
+          console.log("[Dashboard Debug] Computed Count:", presencesAujourd)
 
           const s: DashboardStats = {
             totalEleves: elRes.data?.length || 0,

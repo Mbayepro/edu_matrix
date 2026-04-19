@@ -193,6 +193,7 @@ CREATE TABLE IF NOT EXISTS public.notes (
 -- ─────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.presences (
   id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  ecole_id  UUID REFERENCES public.ecoles(id) ON DELETE CASCADE,
   eleve_id  UUID NOT NULL REFERENCES public.eleves(id) ON DELETE CASCADE,
   classe_id UUID NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE,
   date      DATE NOT NULL DEFAULT CURRENT_DATE,

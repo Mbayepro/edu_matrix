@@ -37,13 +37,12 @@ export async function syncFromSupabase(ecoleId: string): Promise<void> {
     { name: 'evaluations', query: supabase.from('evaluations').select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) },
     { name: 'eleves', query: supabase.from('eleves').select('*').eq('ecole_id', ecoleId) }, // Les élèves restent tous chargés pour le moment
     { name: 'notes', query: supabase.from('notes').select('*').eq('ecole_id', ecoleId) }, // TODO: Ajouter colonne annee_scolaire dans notes
-    // Use slightly different query for presences (no ecole_id column on Supabase)
-    { name: 'presences', query: supabase.from('presences').select('*').gte('date', new Date(new Date().getFullYear(), 8, 1).toISOString()) }, // Depuis septembre de cette année
+    { name: 'presences', query: supabase.from('presences').select('*').eq('ecole_id', ecoleId) }, 
     { name: 'profiles', query: supabase.from('profiles').select('*').eq('ecole_id', ecoleId) },
     { name: 'frais_scolaires', query: supabase.from('frais_scolaires').select('*').eq('ecole_id', ecoleId) },
     { name: 'eleves_frais', query: supabase.from('eleves_frais').select('*').eq('ecole_id', ecoleId) },
-    { name: 'paiements', query: supabase.from('paiements').select('*').eq('ecole_id', ecoleId).gte('date_paiement', new Date(new Date().getFullYear(), 8, 1).toISOString()) },
-    { name: 'emargements', query: supabase.from('emargements').select('*').eq('ecole_id', ecoleId).gte('date', new Date(new Date().getFullYear(), 8, 1).toISOString()) }
+    { name: 'paiements', query: supabase.from('paiements').select('*').eq('ecole_id', ecoleId) },
+    { name: 'emargements', query: supabase.from('emargements').select('*').eq('ecole_id', ecoleId) }
   ]
 
   for (const t of tables) {
@@ -54,6 +53,9 @@ export async function syncFromSupabase(ecoleId: string): Promise<void> {
         continue
       }
       if (data && data.length > 0) {
+        if (t.name === 'presences') {
+          console.info(`[EduMatrix Sync] 📥 Reçu ${data.length} présences pour l'école ${ecoleId}`)
+        }
         const tableObj = (db as any)[t.name]
         if (tableObj) {
           await tableObj.bulkPut(data)
@@ -121,11 +123,8 @@ export async function flushSyncQueue(): Promise<{ flushed: number; errors: numbe
 async function executeAction(action: SyncAction): Promise<void> {
   const { table, action: type, payload } = action
 
-  // Sécurité supplémentaire : s'assurer qu'aucune action sur la table presences ne contienne ecole_id
   const safePayload = { ...payload };
-  if (table === 'presences' && 'ecole_id' in safePayload) {
-    delete safePayload.ecole_id;
-  }
+  // Suppression de la contrainte artificielle sur ecole_id maintenant que la colonne existe
 
   switch (type) {
     case 'INSERT': {
