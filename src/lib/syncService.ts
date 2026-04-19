@@ -56,7 +56,7 @@ export async function syncFromSupabase(ecoleId: string): Promise<void> {
         if (t.name === 'presences') {
           console.info(`[EduMatrix Sync] 📥 Reçu ${data.length} présences pour l'école ${ecoleId}`)
         }
-        const tableObj = (db as any)[t.name]
+        const tableObj = db.table(t.name)
         if (tableObj) {
           await tableObj.bulkPut(data)
         }
@@ -84,7 +84,8 @@ export async function flushSyncQueue(): Promise<{ flushed: number; errors: numbe
   if (!navigator.onLine) return { flushed: 0, errors: 0 }
 
   const db = getDb()
-  const queue = await db.sync_queue.orderBy('createdAt').toArray()
+  const syncQueue = db.table('sync_queue')
+  const queue = await syncQueue.orderBy('createdAt').toArray()
   if (queue.length === 0) return { flushed: 0, errors: 0 }
 
   console.info(`[EduMatrix Sync] ⬆️  Push ${queue.length} action(s) en attente...`)
@@ -95,21 +96,21 @@ export async function flushSyncQueue(): Promise<{ flushed: number; errors: numbe
   for (const action of queue) {
     try {
       await executeAction(action)
-      await db.sync_queue.delete(action.id!)
+      await syncQueue.delete(action.id!)
       flushed++
     } catch (err) {
       errors++
       const message = err instanceof Error ? err.message : String(err)
       console.error(`[EduMatrix Sync] ❌ Erreur action #${action.id}:`, message)
       // Incrémente le compteur d'échecs
-      await db.sync_queue.update(action.id!, {
+      await syncQueue.update(action.id!, {
         attempts: action.attempts + 1,
         lastError: message,
       })
       // Abandon après 5 tentatives pour éviter les boucles infinies
       if (action.attempts >= 4) {
         console.warn(`[EduMatrix Sync] ⚠️ Action #${action.id} abandonnée après 5 tentatives`)
-        await db.sync_queue.delete(action.id!)
+        await syncQueue.delete(action.id!)
       }
     }
   }
@@ -208,13 +209,17 @@ export async function addToSyncQueue(
       
       // Si on arrive ici, l'écriture Supabase a réussi. 
       // On applique la modification au cache local (Dexie) directement sans passer par la queue.
-      const tableObj = (db as any)[table]
-      if (tableObj) {
+      // Si on arrive ici, l'écriture Supabase a réussi. 
+      // On applique la modification au cache local (Dexie) directement sans passer par la queue.
+      try {
+        const tableObj = db.table(table)
         if (action === 'INSERT' || action === 'UPDATE') {
           await tableObj.put(payload)
         } else if (action === 'DELETE' && payload.id) {
           await tableObj.delete(payload.id)
         }
+      } catch (e) {
+        console.warn(`[EduMatrix Sync] Cache local update skipped: ${table}`)
       }
       
       // Essayer de flush le reste de la queue au passage
@@ -228,7 +233,8 @@ export async function addToSyncQueue(
   }
 
   // 2. OFFLINE FALLBACK (ou échec direct)
-  await db.sync_queue.add({
+  const syncQueue = db.table('sync_queue')
+  await syncQueue.add({
     table,
     action,
     payload,
@@ -238,13 +244,15 @@ export async function addToSyncQueue(
   })
   
   // Appliquer la modification au cache local (Dexie) pour que l'UI soit à jour immédiatement
-  const tableObj = (db as any)[table]
-  if (tableObj) {
+  try {
+    const tableObj = db.table(table)
     if (action === 'INSERT' || action === 'UPDATE') {
       await tableObj.put(payload)
     } else if (action === 'DELETE' && payload.id) {
       await tableObj.delete(payload.id)
     }
+  } catch (e) {
+    console.warn(`[EduMatrix Sync] Cache local update skipped: ${table}`)
   }
 }
 
@@ -255,7 +263,7 @@ export async function getPendingActionsCount(): Promise<number> {
   if (typeof window === 'undefined') return 0
   try {
     const db = getDb()
-    return await db.sync_queue.count()
+    return await db.table('sync_queue').count()
   } catch {
     return 0
   }
@@ -275,12 +283,14 @@ export async function cleanupLocalCache(): Promise<void> {
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
     const oldDate = threeMonthsAgo.toISOString().split('T')[0] // Gardé en ISO pour comparer avec la BDD
     
-    const countPresences = await db.presences.where('date').below(oldDate).delete()
+    const presenceTable = db.table('presences')
+    const countPresences = await presenceTable.where('date').below(oldDate).delete()
     
     // Garder les paiements de l'année scolaire en cours (depuis septembre dernier)
     const currentYear = new Date().getFullYear()
     const startOfSchoolYear = new Date(currentYear, 8, 1).toISOString() // 1er Septembre
-    const countPaiements = await db.paiements.where('date_paiement').below(startOfSchoolYear).delete()
+    const paiementTable = db.table('paiements')
+    const countPaiements = await paiementTable.where('date_paiement').below(startOfSchoolYear).delete()
     
     if (countPresences > 0 || countPaiements > 0) {
       console.info(`[EduMatrix GC] Cache nettoyé: ${countPresences} présences, ${countPaiements} paiements supprimés.`)

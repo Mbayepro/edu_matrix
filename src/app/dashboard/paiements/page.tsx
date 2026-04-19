@@ -76,6 +76,11 @@ export default function PaiementsPage() {
   const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
   
   const selectedFrais = useMemo(() => frais.find(f => f.id === selectedFraisId), [frais, selectedFraisId])
+  const isMensuel = useMemo(() => {
+    if (!selectedFrais) return false
+    const lib = (selectedFrais.libelle || '').toLowerCase()
+    return selectedFrais.frequence === 'mensuel' || lib.includes('mensu') || lib.includes('scolarit')
+  }, [selectedFrais])
 
   const { isOnline } = useNetwork()
 
@@ -234,26 +239,36 @@ export default function PaiementsPage() {
         if (error) throw error
 
         // 2. Update local Dexie for cache
-        if (db?.paiements) {
-          await db.paiements.add(newPaiement)
-        }
-        // Update student balance locally too
-        const ef = await db.eleves_frais.where({ eleve_id: selectedEleve.id, frais_id: selectedFraisId }).first()
-        if (ef) {
-           const updatedAcompte = (ef as any).montant_paye ? (ef as any).montant_paye + m : m
-           await db.eleves_frais.update(ef.id, { montant_paye: updatedAcompte } as any)
+        try {
+          const paiementTable = db.table('paiements')
+          await paiementTable.add(newPaiement)
+          // Update student balance locally too
+          const efTable = db.table('eleves_frais')
+          const ef = await efTable.where({ eleve_id: selectedEleve.id, frais_id: selectedFraisId }).first()
+          if (ef) {
+             const updatedAcompte = (ef as any).montant_paye ? (ef as any).montant_paye + m : m
+             await efTable.update(ef.id, { montant_paye: updatedAcompte } as any)
+          }
+        } catch (e) {
+          console.warn('Local save fail:', e)
         }
         showToast('Paiement enregistré (En ligne) !', 'success')
       } else {
         // 3. Offline Fallback
-        await db.paiements.add(newPaiement)
-        await addToSyncQueue('paiements', 'INSERT', newPaiement as any, ecoleId)
-        
-        // Local balance update
-        const ef = await db.eleves_frais.where({ eleve_id: selectedEleve.id, frais_id: selectedFraisId }).first()
-        if (ef) {
-           const updatedAcompte = (ef as any).montant_paye ? (ef as any).montant_paye + m : m
-           await db.eleves_frais.update(ef.id, { montant_paye: updatedAcompte } as any)
+        try {
+          const paiementTable = db.table('paiements')
+          await paiementTable.add(newPaiement)
+          await addToSyncQueue('paiements', 'INSERT', newPaiement as any, ecoleId)
+          
+          // Local balance update
+          const efTable = db.table('eleves_frais')
+          const ef = await efTable.where({ eleve_id: selectedEleve.id, frais_id: selectedFraisId }).first()
+          if (ef) {
+             const updatedAcompte = (ef as any).montant_paye ? (ef as any).montant_paye + m : m
+             await efTable.update(ef.id, { montant_paye: updatedAcompte } as any)
+          }
+        } catch (e) {
+          console.warn('Local save fail:', e)
         }
         showToast('Paiement enregistré (Hors-ligne) !', 'success')
       }
@@ -356,7 +371,8 @@ export default function PaiementsPage() {
     }
     
     try {
-      await db.eleves.update(eleveId, { telephone_parent: phone })
+      const eleveTable = db.table('eleves')
+      await eleveTable.update(eleveId, { telephone_parent: phone })
       await addToSyncQueue('eleves', 'UPDATE', { id: eleveId, telephone_parent: phone }, ecoleId!)
       setEleves(prev => prev.map(e => e.id === eleveId ? { ...e, telephone_parent: phone } : e))
       setEditingPhoneId(null)
@@ -400,10 +416,14 @@ export default function PaiementsPage() {
           }
           
           // Store locally
-          await db.eleves_frais.add(newEF)
-          // Queue for Supabase
-          await addToSyncQueue('eleves_frais', 'INSERT', newEF as any, ecoleId)
-          count++
+          try {
+            await db.table('eleves_frais').add(newEF)
+            // Queue for Supabase
+            await addToSyncQueue('eleves_frais', 'INSERT', newEF as any, ecoleId)
+            count++
+          } catch (e) {
+            console.warn('EleveFrais add fail:', e)
+          }
         }
       }
 
@@ -432,9 +452,10 @@ export default function PaiementsPage() {
     // Update last reminder date locally
     const today = formatDate(new Date())
     try {
+      const efTable = db.table('eleves_frais')
       const efs = elevesFrais.filter(ef => ef.eleve_id === eleve.id)
       for (const ef of efs) {
-        await db.eleves_frais.update(ef.id, { derniere_relance_le: today } as any)
+        await efTable.update(ef.id, { derniere_relance_le: today } as any)
       }
       // Reload local data to reflect date
       if (ecoleId) await loadElevesFraisLocal(ecoleId)
@@ -845,7 +866,7 @@ export default function PaiementsPage() {
                     </select>
                   </div>
 
-                  {selectedFrais?.frequence === 'mensuel' && (
+                  {isMensuel && (
                     <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
                       <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Mois concerné</label>
                       <select

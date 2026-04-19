@@ -49,15 +49,26 @@ async function processAttendance(studentId: string, classeId: string, ecoleId: s
       
       if (!error && data) {
         eleve = data
-        if (db) void db.eleves.put(data)
+        if (db) {
+          try {
+            await db.table('eleves').put(data)
+          } catch (e) {
+            console.warn('Sync student fail:', e)
+          }
+        }
       }
     }
 
     // 2. Fallback to Dexie
     if (!eleve && db) {
-      eleve = await db.eleves.get(studentId)
-      if (!eleve) {
-        eleve = await db.eleves.where('matricule').equals(studentId).first()
+      try {
+        const eleveTable = db.table('eleves')
+        eleve = await eleveTable.get(studentId)
+        if (!eleve) {
+          eleve = await eleveTable.where('matricule').equals(studentId).first()
+        }
+      } catch (e) {
+        console.warn('Local student fetch fail:', e)
       }
     }
 
@@ -82,10 +93,15 @@ async function processAttendance(studentId: string, classeId: string, ecoleId: s
     }
 
     if (!existing && db) {
-      existing = await db.presences
-        .where('eleve_id').equals(realStudentId)
-        .and((p: any) => p.date === today)
-        .first()
+      try {
+        const presenceTable = db.table('presences')
+        existing = await presenceTable
+          .where('eleve_id').equals(realStudentId)
+          .and((p: any) => p.date === today)
+          .first()
+      } catch (e) {
+        console.warn('Local presence check fail:', e)
+      }
     }
 
     if (existing) {
@@ -237,7 +253,8 @@ export default function AttendanceScanner({ classeId }: { classeId: string }) {
     if (!db) return
     try {
       const today = getTodayDate()
-      const count = await db.presences
+      const presenceTable = db.table('presences')
+      const count = await presenceTable
         .where('date').equals(today)
         .count()
       setTodayCount(count)
