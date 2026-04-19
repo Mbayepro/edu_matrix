@@ -251,13 +251,19 @@ export default function AttendanceScanner({ classeId }: { classeId: string }) {
     const trimmed = studentId.trim()
 
     setLoading(true)
-    const r = await processAttendance(trimmed, classeId, ecoleId)
-    setResult(r)
-    if (r.status === 'success') {
-      setTodayCount((c) => c + 1)
+    try {
+      const r = await processAttendance(trimmed, classeId, ecoleId)
+      setResult(r)
+      if (r.status === 'success') {
+        setTodayCount((c) => c + 1)
+      }
+    } catch (err) {
+      console.error('[Scanner] handleScan error:', err)
+      setResult({ status: 'error', message: 'Une erreur inattendue est survenue.' })
+    } finally {
+      setLoading(false)
+      setManualId('')
     }
-    setLoading(false)
-    setManualId('')
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {

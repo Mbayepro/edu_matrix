@@ -72,25 +72,21 @@ export class EduMatrixDB extends Dexie {
   constructor() {
     super('EduMatrixDB')
 
-    this.version(3).stores({
-      eleves:      'id, ecole_id, classe_id',
+    this.version(7).stores({
+      eleves:      'id, ecole_id, classe_id, matricule, telephone_parent, [ecole_id+statut_paiement]',
       classes:     'id, ecole_id',
       matieres:    'id, ecole_id',
       notes:       'id, eleve_id, evaluation_id, ecole_id',
-      evaluations: 'id, ecole_id, classe_id, matiere_id',
-      presences:   'id, eleve_id, date, classe_id, ecole_id',
+      evaluations: 'id, ecole_id, classe_id, matiere_id, trimestre, annee_scolaire',
+      presences:   'id, eleve_id, date, classe_id, ecole_id, [ecole_id+date]',
       niveaux:     'id, ecole_id',
       series:      'id, ecole_id',
       profiles:    'id, ecole_id, role',
-    })
-    
-    this.version(6).stores({
-      eleves:      'id, ecole_id, classe_id, telephone_parent, [ecole_id+statut_paiement]',
-      presences:   'id, eleve_id, date, classe_id, ecole_id, [ecole_id+date]',
-      paiements:   'id, eleve_id, ecole_id, date_paiement',
       emargements: 'id, prof_id, classe_id, matiere_id, ecole_id, date_heure',
-    }).upgrade((trans) => {
-      // Migration automatique des index
+      frais_scolaires: 'id, ecole_id',
+      eleves_frais: 'id, eleve_id, ecole_id',
+      paiements:   'id, eleve_id, ecole_id, date_paiement',
+      sync_queue:  '++id, table, ecole_id, createdAt'
     })
   }
 
