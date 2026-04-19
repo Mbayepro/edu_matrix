@@ -74,19 +74,7 @@ export class EduMatrixDB extends Dexie {
   constructor() {
     super('EduMatrixDB')
 
-    this.version(3).stores({
-      eleves:      'id, ecole_id, classe_id',
-      classes:     'id, ecole_id',
-      matieres:    'id, ecole_id',
-      notes:       'id, eleve_id, evaluation_id, ecole_id',
-      evaluations: 'id, ecole_id, classe_id, matiere_id',
-      presences:   'id, eleve_id, date, classe_id, ecole_id',
-      niveaux:     'id, ecole_id',
-      series:      'id, ecole_id',
-      profiles:    'id, ecole_id, role',
-    })
-
-    this.version(8).stores({
+    this.version(15).stores({
       eleves:      'id, ecole_id, classe_id, matricule, telephone_parent, [ecole_id+statut_paiement]',
       classes:     'id, ecole_id',
       matieres:    'id, ecole_id',
@@ -102,6 +90,22 @@ export class EduMatrixDB extends Dexie {
       paiements:   'id, eleve_id, ecole_id, date_paiement, mois',
       sync_queue:  '++id, table, ecole_id, createdAt'
     })
+
+    // Explicit table assignments to ensure properties are ALWAYS defined on the instance
+    this.eleves      = this.table('eleves') as any
+    this.classes     = this.table('classes') as any
+    this.matieres    = this.table('matieres') as any
+    this.notes       = this.table('notes') as any
+    this.evaluations = this.table('evaluations') as any
+    this.presences   = this.table('presences') as any
+    this.niveaux     = this.table('niveaux') as any
+    this.series      = this.table('series') as any
+    this.profiles    = this.table('profiles') as any
+    this.emargements = this.table('emargements') as any
+    this.frais_scolaires = this.table('frais_scolaires') as any
+    this.eleves_frais    = this.table('eleves_frais') as any
+    this.paiements       = this.table('paiements') as any
+    this.sync_queue      = this.table('sync_queue') as any
   }
 
   // ─── Helpers Métier ────────────────────────────────────────────────────────
@@ -164,6 +168,14 @@ export function getDb(): EduMatrixDB {
   }
   if (!_db) {
     _db = new EduMatrixDB()
+    _db.open().catch(err => {
+      console.error('[EduMatrix DB] Open failed:', err)
+      if (err.name === 'VersionError' || err.name === 'SchemaError') {
+        Dexie.delete('EduMatrixDB').then(() => {
+          if (typeof window !== 'undefined') window.location.reload()
+        })
+      }
+    })
   }
   return _db
 }

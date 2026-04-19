@@ -117,65 +117,79 @@ export default function PaiementsPage() {
 
   // Local Loaders
   async function loadElevesLocal(schoolId: string) {
-    if (!db) return
-    const data = await db.eleves.where('ecole_id').equals(schoolId).toArray()
-    let filtered = data
-    if (search.trim()) {
-      const s = search.toLowerCase()
-      filtered = data.filter((e: LocalEleve) => 
-        e.nom.toLowerCase().includes(s) || 
-        e.prenom.toLowerCase().includes(s) || 
-        (e.matricule && e.matricule.toLowerCase().includes(s))
-      )
+    try {
+      const table = db.table('eleves')
+      const data = await table.where('ecole_id').equals(schoolId).toArray()
+      let filtered = data
+      if (search.trim()) {
+        const s = search.toLowerCase()
+        filtered = data.filter((e: LocalEleve) => 
+          e.nom.toLowerCase().includes(s) || 
+          e.prenom.toLowerCase().includes(s) || 
+          (e.matricule && e.matricule.toLowerCase().includes(s))
+        )
+      }
+      
+      // Enrich with class name
+      const classTable = db.table('classes')
+      const classes = await classTable.where('ecole_id').equals(schoolId).toArray()
+      const classMap = new Map(classes.map((c: LocalClasse) => [c.id, c.nom_classe]))
+      
+      setEleves(filtered.map((e: LocalEleve) => ({
+        ...e,
+        classe: { nom_classe: classMap.get(e.classe_id) || 'N/A' }
+      })) as EleveWithClasse[])
+    } catch (err) {
+      console.warn('loadElevesLocal fail:', err)
     }
-    // Enrich with class name
-    const classes = await db.classes.where('ecole_id').equals(schoolId).toArray()
-    const classMap = new Map(classes.map((c: LocalClasse) => [c.id, c.nom_classe]))
-    
-    setEleves(filtered.map((e: LocalEleve) => ({
-      ...e,
-      classe: { nom_classe: classMap.get(e.classe_id) || 'N/A' }
-    })) as EleveWithClasse[])
   }
 
   async function loadFraisLocal(schoolId: string) {
-    if (!db) return
-    const data = await db.frais_scolaires.where('ecole_id').equals(schoolId).toArray()
-    setFrais(data.filter((f: LocalFraisScolaire) => f.is_active))
+    try {
+      const table = db.table('frais_scolaires')
+      const data = await table.where('ecole_id').equals(schoolId).toArray()
+      setFrais(data.filter((f: LocalFraisScolaire) => f.is_active) as any)
+    } catch (err) {
+      console.warn('loadFraisLocal fail:', err)
+    }
   }
 
   async function loadElevesFraisLocal(schoolId: string) {
-    if (!db) return
-    let data = await db.eleves_frais.where('ecole_id').equals(schoolId).toArray()
+    try {
+      const table = db.table('eleves_frais')
+      let data = await table.where('ecole_id').equals(schoolId).toArray()
 
-    // Sécurité : si la base locale est vide, tenter une lecture directe sur Supabase
-    if (data.length === 0 && typeof navigator !== 'undefined' && navigator.onLine) {
-      try {
+      // Sécurité : si la base locale est vide, tenter une lecture directe sur Supabase
+      if (data.length === 0 && typeof navigator !== 'undefined' && navigator.onLine) {
         const { data: remoteData, error } = await supabase
           .from('eleves_frais')
           .select('*')
           .eq('ecole_id', schoolId)
           
         if (!error && remoteData && remoteData.length > 0) {
-          await db.eleves_frais.bulkPut(remoteData as any)
+          await table.bulkPut(remoteData as any)
           data = remoteData as any
         }
-      } catch (err) {
-        console.warn('Erreur fallback Supabase eleves_frais:', err)
       }
+      setElevesFrais(data as any)
+    } catch (err) {
+      console.warn('loadElevesFraisLocal fail:', err)
     }
-
-    setElevesFrais(data)
   }
 
   async function loadPaiementsLocal(schoolId: string) {
-    if (!db) return
-    const data = await db.paiements.where('ecole_id').equals(schoolId).toArray()
-    setPaiements(data.sort((a: LocalPaiement, b: LocalPaiement) => new Date(b.date_paiement).getTime() - new Date(a.date_paiement).getTime()))
-    
-    // Also load classes for the assignment tool
-    const cls = await db.classes.where('ecole_id').equals(schoolId).toArray()
-    setClasses(cls)
+    try {
+      const table = db.table('paiements')
+      const data = await table.where('ecole_id').equals(schoolId).toArray()
+      setPaiements(data.sort((a: LocalPaiement, b: LocalPaiement) => new Date(b.date_paiement).getTime() - new Date(a.date_paiement).getTime()) as any)
+      
+      // Also load classes for the assignment tool
+      const classTable = db.table('classes')
+      const cls = await classTable.where('ecole_id').equals(schoolId).toArray()
+      setClasses(cls as any)
+    } catch (err) {
+      console.warn('loadPaiementsLocal fail:', err)
+    }
   }
 
   // Re-filter when search changes
@@ -220,7 +234,9 @@ export default function PaiementsPage() {
         if (error) throw error
 
         // 2. Update local Dexie for cache
-        await db.paiements.add(newPaiement)
+        if (db?.paiements) {
+          await db.paiements.add(newPaiement)
+        }
         // Update student balance locally too
         const ef = await db.eleves_frais.where({ eleve_id: selectedEleve.id, frais_id: selectedFraisId }).first()
         if (ef) {
@@ -521,7 +537,7 @@ export default function PaiementsPage() {
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Reste à recouvrer</p>
               <div className="text-2xl font-black text-slate-900 leading-none">
-                {totalRestant.toLocaleString('fr-FR')} <span className="text-[10px] font-black ml-1 uppercase text-slate-400">F</span>
+                {loading ? '...' : totalRestant.toLocaleString('fr-FR')} <span className="text-[10px] font-black ml-1 uppercase text-slate-400">F</span>
               </div>
             </div>
           </div>
@@ -536,7 +552,7 @@ export default function PaiementsPage() {
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Encaissé</p>
               <div className="text-2xl font-black text-emerald-600 leading-none">
-                {totalEncaisse.toLocaleString('fr-FR')} <span className="text-[10px] font-black ml-1 uppercase opacity-60">F</span>
+                {loading ? '...' : totalEncaisse.toLocaleString('fr-FR')} <span className="text-[10px] font-black ml-1 uppercase opacity-60">F</span>
               </div>
             </div>
           </div>
