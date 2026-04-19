@@ -216,7 +216,7 @@ export async function addToSyncQueue(
         if (action === 'INSERT' || action === 'UPDATE') {
           await tableObj.put(payload)
         } else if (action === 'DELETE' && payload.id) {
-          await tableObj.delete(payload.id)
+          await tableObj.delete(payload.id as string)
         }
       } catch (e) {
         console.warn(`[EduMatrix Sync] Cache local update skipped: ${table}`)
@@ -249,7 +249,7 @@ export async function addToSyncQueue(
     if (action === 'INSERT' || action === 'UPDATE') {
       await tableObj.put(payload)
     } else if (action === 'DELETE' && payload.id) {
-      await tableObj.delete(payload.id)
+      await tableObj.delete(payload.id as string)
     }
   } catch (e) {
     console.warn(`[EduMatrix Sync] Cache local update skipped: ${table}`)
