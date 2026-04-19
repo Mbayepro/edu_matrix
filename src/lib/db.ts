@@ -34,7 +34,9 @@ export interface LocalProfile extends Profile {}
 export interface LocalEmargement extends Emargement {}
 export interface LocalFraisScolaire extends FraisScolaire {}
 export interface LocalEleveFrais extends EleveFrais {}
-export interface LocalPaiement extends Paiement {}
+export interface LocalPaiement extends Paiement {
+  mois?: string | null
+}
 
 /**
  * Une action en attente de synchronisation vers Supabase.
@@ -72,7 +74,19 @@ export class EduMatrixDB extends Dexie {
   constructor() {
     super('EduMatrixDB')
 
-    this.version(7).stores({
+    this.version(3).stores({
+      eleves:      'id, ecole_id, classe_id',
+      classes:     'id, ecole_id',
+      matieres:    'id, ecole_id',
+      notes:       'id, eleve_id, evaluation_id, ecole_id',
+      evaluations: 'id, ecole_id, classe_id, matiere_id',
+      presences:   'id, eleve_id, date, classe_id, ecole_id',
+      niveaux:     'id, ecole_id',
+      series:      'id, ecole_id',
+      profiles:    'id, ecole_id, role',
+    })
+
+    this.version(8).stores({
       eleves:      'id, ecole_id, classe_id, matricule, telephone_parent, [ecole_id+statut_paiement]',
       classes:     'id, ecole_id',
       matieres:    'id, ecole_id',
@@ -85,7 +99,7 @@ export class EduMatrixDB extends Dexie {
       emargements: 'id, prof_id, classe_id, matiere_id, ecole_id, date_heure',
       frais_scolaires: 'id, ecole_id',
       eleves_frais: 'id, eleve_id, ecole_id',
-      paiements:   'id, eleve_id, ecole_id, date_paiement',
+      paiements:   'id, eleve_id, ecole_id, date_paiement, mois',
       sync_queue:  '++id, table, ecole_id, createdAt'
     })
   }
@@ -155,4 +169,5 @@ export function getDb(): EduMatrixDB {
 }
 
 // Export par défaut du getter pour faciliter l'import
-export const db = typeof window !== 'undefined' ? new EduMatrixDB() : null as unknown as EduMatrixDB
+// Export du singleton pour faciliter l'import
+export const db = typeof window !== 'undefined' ? getDb() : null as unknown as EduMatrixDB

@@ -72,6 +72,10 @@ export default function PaiementsPage() {
   const [assignFeeId, setAssignFeeId] = useState('')
   const [assignClasseId, setAssignClasseId] = useState('all')
   const [classes, setClasses] = useState<LocalClasse[]>([])
+  const [selectedMonth, setSelectedMonth] = useState('')
+  const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
+  
+  const selectedFrais = useMemo(() => frais.find(f => f.id === selectedFraisId), [frais, selectedFraisId])
 
   const { isOnline } = useNetwork()
 
@@ -185,7 +189,7 @@ export default function PaiementsPage() {
     setSaving(true)
 
     const m = Number(montant.replace(',', '.'))
-    const newPaiement: Paiement = {
+    const newPaiement: LocalPaiement = {
       id: crypto.randomUUID(),
       ecole_id: ecoleId,
       eleve_id: selectedEleve.id,
@@ -193,6 +197,7 @@ export default function PaiementsPage() {
       montant: m,
       mode: mode || null,
       reference: reference || null,
+      mois: selectedMonth || null,
       date_paiement: new Date().toISOString(),
       created_at: new Date().toISOString()
     }
@@ -208,7 +213,8 @@ export default function PaiementsPage() {
           montant: newPaiement.montant,
           mode: newPaiement.mode,
           reference: newPaiement.reference,
-          date_paiement: newPaiement.date_paiement
+          date_paiement: newPaiement.date_paiement,
+          mois: (newPaiement as any).mois // Inclusion du mois si la colonne existe
         })
         
         if (error) throw error
@@ -239,6 +245,7 @@ export default function PaiementsPage() {
       setMontant('')
       setMode('')
       setReference('')
+      setSelectedMonth('')
       
       // Reload UI
       await Promise.all([
@@ -821,6 +828,23 @@ export default function PaiementsPage() {
                       ))}
                     </select>
                   </div>
+
+                  {selectedFrais?.frequence === 'mensuel' && (
+                    <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Mois concerné</label>
+                      <select
+                        value={selectedMonth}
+                        onChange={(e) => setSelectedMonth(e.target.value)}
+                        className="w-full bg-slate-100 border-none rounded-2xl px-5 py-4 text-sm font-bold text-slate-900 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all appearance-none cursor-pointer"
+                        required
+                      >
+                        <option value="">Sélectionner le mois…</option>
+                        {months.map((m) => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   
                   <div className="space-y-2">
                     <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Montant versé (F CFA)</label>
@@ -899,7 +923,9 @@ export default function PaiementsPage() {
                             <p className="text-lg font-black text-slate-900 leading-none">
                               {p.montant.toLocaleString('fr-FR')} <span className="text-xs uppercase text-slate-400">F</span>
                             </p>
-                            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mt-1">{fLibelle}</p>
+                            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mt-1">
+                              {fLibelle} {(p as any).mois ? `— ${(p as any).mois}` : ''}
+                            </p>
                           </div>
                           <div className="flex gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
                             <button 
