@@ -236,11 +236,13 @@ export default function DashboardPage() {
         const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
         const startDate = sevenDaysAgo.toISOString().split('T')[0]
         const presRawAll = await db.presences.where('date').between(startDate, today + '\uffff').toArray()
-        const presRaw = presRawAll.filter(p => localElevesIds.has(p.eleve_id))
-
+        
         // Extract today's absences and retards
         const allEleves = await db.eleves.where('ecole_id').equals(schoolId).toArray()
+        const localElevesIds = new Set(allEleves.map(e => e.id))
         const eleveMap = new Map(allEleves.map(e => [e.id, e]))
+        
+        const presRaw = presRawAll.filter(p => localElevesIds.has(p.eleve_id))
         
         const todaysAbsences = presRaw
           .filter(p => p.date === today && (p.statut === 'absent' || p.statut === 'retard'))
