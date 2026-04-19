@@ -143,13 +143,16 @@ export default function DashboardPage() {
       
       // 1. FAST LOAD FROM DEXIE (Instant UI)
       if (db) {
-        const [totalEleves, totalTeach, elevesImpayes, totalClasses, presencesAujourd] = await Promise.all([
+        const localElevesIds = new Set((await db.eleves.where('ecole_id').equals(schoolId).toArray()).map(e => e.id))
+        const [totalEleves, totalTeach, elevesImpayes, totalClasses, presRawToday] = await Promise.all([
           db.eleves.where('ecole_id').equals(schoolId).count(),
           db.profiles.where('ecole_id').equals(schoolId).and(p => p.role === 'teacher').count(),
           db.eleves.where('ecole_id').equals(schoolId).and(e => e.statut_paiement === 'impayé').count(),
           db.classes.where('ecole_id').equals(schoolId).count(),
-          db.presences.where('ecole_id').equals(schoolId).and(p => p.date === today && (p.statut === 'présent' || p.statut === 'retard')).count(),
+          db.presences.where('date').equals(today).toArray(),
         ])
+        
+        const presencesAujourd = presRawToday.filter(p => localElevesIds.has(p.eleve_id) && (p.statut === 'présent' || p.statut === 'retard')).length
 
         setStats({
           totalEleves,
@@ -232,7 +235,8 @@ export default function DashboardPage() {
         // Présences 7 derniers jours (Dexie)
         const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
         const startDate = sevenDaysAgo.toISOString().split('T')[0]
-        const presRaw = await db.presences.where('[ecole_id+date]').between([schoolId, startDate], [schoolId, today + '\uffff']).toArray()
+        const presRawAll = await db.presences.where('date').between(startDate, today + '\uffff').toArray()
+        const presRaw = presRawAll.filter(p => localElevesIds.has(p.eleve_id))
 
         // Extract today's absences and retards
         const allEleves = await db.eleves.where('ecole_id').equals(schoolId).toArray()
@@ -359,14 +363,6 @@ export default function DashboardPage() {
           </div>
           
           <div className="flex gap-4">
-            <button 
-              onClick={() => ecoleId && loadAll(ecoleId)}
-              className="bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-3xl p-4 border border-white/20 flex flex-col items-center justify-center transition-all active:scale-95 group/btn"
-              title="Synchroniser maintenant"
-            >
-              <RefreshCw className={`w-8 h-8 text-emerald-400 mb-1 ${isRefreshing ? 'animate-spin' : 'group-hover/btn:rotate-180 transition-transform duration-700'}`} />
-              <p className="text-[8px] font-black uppercase tracking-widest opacity-60">Actualiser</p>
-            </button>
             <div className="bg-white/5 backdrop-blur-md rounded-3xl p-6 border border-white/10 text-center min-w-[120px]">
               <p className="text-3xl font-black text-emerald-400">{stats?.presencesAujourd ?? 0}</p>
               <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1">Présences</p>
