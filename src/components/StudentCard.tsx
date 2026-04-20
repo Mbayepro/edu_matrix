@@ -88,9 +88,9 @@ function PhysicalCard({ eleve, ecole, classeNom, isPrint = false }: {
   classeNom: string
   isPrint?: boolean
 }) {
-  const qrData = JSON.stringify({ id: eleve.id, matricule: eleve.matricule })
-  // Utilisation de l'API qrserver pour assurer la consistance absolue avec la version d'impression
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}`
+  const qrData = eleve.id
+  // Utilisation de l'API qrserver avec correction d'erreur élevée (ecc=H) pour une lecture robuste
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=H&data=${encodeURIComponent(qrData)}`
 
   return (
     <div
@@ -134,7 +134,9 @@ function PhysicalCard({ eleve, ecole, classeNom, isPrint = false }: {
             <BookOpen className="w-4 h-4 text-emerald-600" />
           </div>
         )}
-        <img src={qrUrl} alt="QR" className="w-[50px] h-[50px] rounded border border-slate-200 p-0.5 bg-white shadow-sm" />
+        <div className="bg-white p-1 rounded-lg border border-slate-200 shadow-sm">
+          <img src={qrUrl} alt="QR" className="w-[65px] h-[65px] object-contain" />
+        </div>
       </div>
 
       {/* Background decorative elements */}

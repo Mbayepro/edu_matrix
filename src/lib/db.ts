@@ -70,25 +70,27 @@ export class EduMatrixDB extends Dexie {
   eleves_frais!: Table<LocalEleveFrais, string>
   paiements!:   Table<LocalPaiement,   string>
   sync_queue!:  Table<SyncAction,      number>
+  sync_metadata!: Table<{ id: string, table_name: string, last_synced_at: string, ecole_id: string }, string>
 
   constructor() {
     super('EduMatrixDB')
 
-    this.version(15).stores({
-      eleves:      'id, ecole_id, classe_id, matricule, telephone_parent, [ecole_id+statut_paiement]',
-      classes:     'id, ecole_id',
-      matieres:    'id, ecole_id',
-      notes:       'id, eleve_id, evaluation_id, ecole_id',
-      evaluations: 'id, ecole_id, classe_id, matiere_id, trimestre, annee_scolaire',
-      presences:   'id, eleve_id, date, classe_id, ecole_id, [ecole_id+date]',
-      niveaux:     'id, ecole_id',
-      series:      'id, ecole_id',
-      profiles:    'id, ecole_id, role',
-      emargements: 'id, prof_id, classe_id, matiere_id, ecole_id, date_heure',
-      frais_scolaires: 'id, ecole_id',
-      eleves_frais: 'id, eleve_id, ecole_id',
-      paiements:   'id, eleve_id, ecole_id, date_paiement, mois',
-      sync_queue:  '++id, table, ecole_id, createdAt'
+    this.version(16).stores({
+      eleves:      'id, ecole_id, classe_id, matricule, telephone_parent, updated_at, [ecole_id+statut_paiement]',
+      classes:     'id, ecole_id, updated_at',
+      matieres:    'id, ecole_id, updated_at',
+      notes:       'id, eleve_id, evaluation_id, ecole_id, updated_at',
+      evaluations: 'id, ecole_id, classe_id, matiere_id, trimestre, updated_at',
+      presences:   'id, eleve_id, date, classe_id, ecole_id, updated_at, [ecole_id+date]',
+      niveaux:     'id, ecole_id, updated_at',
+      series:      'id, ecole_id, updated_at',
+      profiles:    'id, ecole_id, role, updated_at',
+      emargements: 'id, prof_id, classe_id, matiere_id, ecole_id, updated_at',
+      frais_scolaires: 'id, ecole_id, updated_at',
+      eleves_frais: 'id, eleve_id, ecole_id, updated_at',
+      paiements:   'id, eleve_id, ecole_id, date_paiement, mois, updated_at',
+      sync_queue:  '++id, table, ecole_id, createdAt',
+      sync_metadata: 'id, table_name, ecole_id'
     })
 
     // Explicit table assignments to ensure properties are ALWAYS defined on the instance
@@ -106,6 +108,7 @@ export class EduMatrixDB extends Dexie {
     this.eleves_frais    = this.table('eleves_frais') as any
     this.paiements       = this.table('paiements') as any
     this.sync_queue      = this.table('sync_queue') as any
+    this.sync_metadata   = this.table('sync_metadata') as any
   }
 
   // ─── Helpers Métier ────────────────────────────────────────────────────────

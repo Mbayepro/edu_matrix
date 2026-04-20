@@ -16,7 +16,9 @@ CREATE TABLE IF NOT EXISTS public.ecoles (
   tampon_url    TEXT,
   signature_url TEXT,
   calculation_method TEXT NOT NULL DEFAULT 'BLOCKS' CHECK (calculation_method IN ('BLOCKS', 'WEIGHTED')),
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at    TIMESTAMPTZ
 );
 
 -- For existing deployments, make schema.sql idempotent with new columns
@@ -36,6 +38,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   nom         TEXT NOT NULL,
   prenom      TEXT NOT NULL,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at  TIMESTAMPTZ,
   UNIQUE(user_id)
 );
 
@@ -50,10 +54,10 @@ CREATE TABLE IF NOT EXISTS public.matieres (
   niveau     TEXT, -- Ancien champ, à migrer vers niveaux
   coefficient INTEGER NOT NULL DEFAULT 1, -- Ancien champ, à migrer vers coefficients_matieres
   is_active  BOOLEAN NOT NULL DEFAULT TRUE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  -- Nouveaux champs
   cycle      TEXT CHECK (cycle IN ('primaire', 'moyen', 'secondaire')),
-  code_matiere TEXT -- Code officiel du ministère
+  code_matiere TEXT, -- Code officiel du ministère
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ
 );
 
 -- ─────────────────────────────────────────
@@ -64,7 +68,10 @@ CREATE TABLE IF NOT EXISTS public.classes (
   ecole_id    UUID NOT NULL REFERENCES public.ecoles(id) ON DELETE CASCADE,
   nom_classe  TEXT NOT NULL,
   niveau      TEXT NOT NULL,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  niveau      TEXT NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at  TIMESTAMPTZ
 );
 
 -- ─────────────────────────────────────────
@@ -80,7 +87,9 @@ CREATE TABLE IF NOT EXISTS public.eleves (
   date_naissance  DATE,
   photo_url       TEXT,
   statut_paiement TEXT NOT NULL DEFAULT 'impayé' CHECK (statut_paiement IN ('payé', 'impayé', 'partiel')),
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at      TIMESTAMPTZ
 );
 
 -- ─────────────────────────────────────────

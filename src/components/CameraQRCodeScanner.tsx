@@ -51,7 +51,15 @@ export default function CameraQRCodeScanner({ onScan, onClose }: CameraQRCodeSca
       setError(null)
       await html5QrCode.start(
         id,
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        { 
+          fps: 20, 
+          qrbox: (viewfinderWidth, viewfinderHeight) => {
+            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+            const qrboxSize = Math.floor(minEdge * 0.7);
+            return { width: qrboxSize, height: qrboxSize };
+          },
+          aspectRatio: 1.0
+        },
         (text) => { onScan(text); stopScanner() },
         () => {}
       )

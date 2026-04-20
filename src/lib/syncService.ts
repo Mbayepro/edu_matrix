@@ -47,18 +47,46 @@ export async function syncFromSupabase(ecoleId: string): Promise<void> {
 
   for (const t of tables) {
     try {
-      const { data, error } = await t.query
+      // 1. Chercher la date de dernière synchro locale pour cette table
+      const meta = await db.sync_metadata.get(`${t.name}_${ecoleId}`)
+      const lastSyncedAt = meta?.last_synced_at
+
+      let query = t.query
+      if (lastSyncedAt) {
+        query = query.gt('updated_at', lastSyncedAt)
+      }
+
+      const { data, error } = await query
+      
       if (error) {
         console.warn(`[EduMatrix Sync] ⚠️ Skip ${t.name}: ${error.message}`)
         continue
       }
+
       if (data && data.length > 0) {
-        if (t.name === 'presences') {
-          console.info(`[EduMatrix Sync] 📥 Reçu ${data.length} présences pour l'école ${ecoleId}`)
-        }
         const tableObj = db.table(t.name)
         if (tableObj) {
-          await tableObj.bulkPut(data)
+          // Séparer les actifs des supprimés (Soft Delete)
+          const toPut = data.filter((row: any) => !row.deleted_at)
+          const toDelete = data.filter((row: any) => row.deleted_at).map((row: any) => row.id)
+
+          if (toPut.length > 0) await tableObj.bulkPut(toPut)
+          if (toDelete.length > 0) await tableObj.bulkDelete(toDelete)
+          
+          console.info(`[EduMatrix Sync] 📥 ${t.name} : +${toPut.length} modifiés, -${toDelete.length} supprimés`)
+
+          // 2. Mettre à jour le timestamp de synchro (prendre le plus récent des data reçus)
+          const latestUpdate = data.reduce((max: string, row: any) => 
+            !max || row.updated_at > max ? row.updated_at : max, '')
+          
+          if (latestUpdate) {
+            await db.sync_metadata.put({
+              id: `${t.name}_${ecoleId}`,
+              table_name: t.name,
+              ecole_id: ecoleId,
+              last_synced_at: latestUpdate
+            })
+          }
         }
       }
     } catch (err) {
@@ -136,9 +164,8 @@ async function executeAction(action: SyncAction): Promise<void> {
     case 'UPDATE': {
       const { id, ...fields } = safePayload as { id: string; updated_at?: string; [key: string]: unknown }
       
-      // Si on a un updated_at dans le payload, on veut s'assurer de ne pas écraser une version plus récente sur le serveur.
+      // BLOQUAGE DES CONFLITS : Contrôle de concurrence optimiste
       if (fields.updated_at) {
-        // Option 1 : Check and update en 2 étapes (Fallback simple)
         const { data: serverData } = await (supabase as any)
           .from(table)
           .select('updated_at')
@@ -147,12 +174,13 @@ async function executeAction(action: SyncAction): Promise<void> {
           
         if (serverData && serverData.updated_at) {
           const serverTime = new Date(serverData.updated_at).getTime()
-          const localTime = new Date(fields.updated_at).getTime()
+          const localOriginalTime = new Date(fields.updated_at).getTime()
           
-          if (serverTime > localTime) {
-            console.warn(`[EduMatrix Sync] Conflit détecté sur ${table}/${id}. Le serveur a une version plus récente. Action ignorée.`)
-            // On pourrait idéalement re-télécharger la ligne ici pour mettre à jour Dexie
-            return
+          // Si le serveur a une version plus récente que celle que nous avions au moment de la modif
+          if (serverTime > localOriginalTime) {
+            const errorMsg = `CONFLIT : La ligne dans ${table} (${id}) a été modifiée par un autre utilisateur. Action bloquée.`
+            console.error(`[EduMatrix Sync] 🛑 ${errorMsg}`)
+            throw new Error(errorMsg)
           }
         }
       }
@@ -163,8 +191,14 @@ async function executeAction(action: SyncAction): Promise<void> {
     }
     case 'DELETE': {
       const { id } = payload as { id: string }
-      const { error } = await (supabase as any).from(table).delete().eq('id', id)
-      if (error) throw new Error(error.message)
+      // On privilégie le Soft Delete si la colonne existe (mise à jour de deleted_at)
+      const { error } = await (supabase as any).from(table).update({ deleted_at: new Date().toISOString() }).eq('id', id)
+      
+      // Fallback au Hard Delete si erreur (ex: colonne deleted_at pas encore migrée partout)
+      if (error) {
+        const { error: delError } = await (supabase as any).from(table).delete().eq('id', id)
+        if (delError) throw new Error(delError.message)
+      }
       break
     }
   }

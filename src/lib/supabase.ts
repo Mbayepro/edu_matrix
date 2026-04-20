@@ -23,6 +23,8 @@ export interface Ecole {
   type_periode?: 'trimestre' | 'semestre'
   statut: StatutEcole
   created_at: string
+  updated_at?: string
+  deleted_at?: string | null
 }
 
 export interface Profile {
@@ -33,6 +35,8 @@ export interface Profile {
   nom: string
   prenom: string
   created_at: string
+  updated_at?: string
+  deleted_at?: string | null
 }
 
 
@@ -62,6 +66,8 @@ export interface Niveau {
   ordre: number
   is_active: boolean
   created_at: string
+  updated_at?: string
+  deleted_at?: string | null
 }
 
 export interface Serie {
@@ -72,6 +78,8 @@ export interface Serie {
   description: string | null
   is_active: boolean
   created_at: string
+  updated_at?: string
+  deleted_at?: string | null
 }
 
 export interface CoefficientMatiere {
@@ -182,6 +190,8 @@ export interface FraisScolaire {
   niveau: string | null
   is_active: boolean
   created_at: string
+  updated_at?: string
+  deleted_at?: string | null
 }
 
 export interface EleveFrais {
@@ -206,6 +216,8 @@ export interface Paiement {
   mois?: string | null
   date_paiement: string
   created_at: string
+  updated_at?: string
+  deleted_at?: string | null
 }
 
 export interface EnseignantClasse {
