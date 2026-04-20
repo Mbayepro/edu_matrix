@@ -74,6 +74,7 @@ export default function PaiementsPage() {
   const [classes, setClasses] = useState<LocalClasse[]>([])
   const [selectedMonth, setSelectedMonth] = useState('')
   const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
+  const SCHOOL_MONTHS = ['Octobre', 'Novembre', 'Décembre', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet']
   
   const selectedFrais = useMemo(() => frais.find(f => f.id === selectedFraisId), [frais, selectedFraisId])
   const isMensuel = useMemo(() => {
@@ -81,6 +82,23 @@ export default function PaiementsPage() {
     const lib = (selectedFrais.libelle || '').toLowerCase()
     return selectedFrais.frequence === 'mensuel' || lib.includes('mensu') || lib.includes('scolarit')
   }, [selectedFrais])
+
+  const getMoisImpayes = (eleveId: string, itemFraisId: string) => {
+    // 1. Trouver le frais pour vérifer s'il est mensuel
+    const f = frais.find(fr => fr.id === itemFraisId)
+    if (!f) return []
+    const lib = (f.libelle || '').toLowerCase()
+    if (f.frequence !== 'mensuel' && !lib.includes('mensu') && !lib.includes('scolarit')) return []
+
+    // 2. Lister les mois déjà payés pour ce frais
+    const moisPayes = paiements
+      .filter(p => p.eleve_id === eleveId && p.frais_id === itemFraisId)
+      .map(p => (p as any).mois)
+      .filter(Boolean)
+
+    // 3. Retourner les mois du calendrier non présents dans moisPayes
+    return SCHOOL_MONTHS.filter(m => !moisPayes.includes(m))
+  }
 
   const { isOnline } = useNetwork()
 
@@ -252,6 +270,10 @@ export default function PaiementsPage() {
         } catch (e) {
           console.warn('Local save fail:', e)
         }
+
+        // Force recalcul local du statut pour l'instantanéité UI
+        await db!.recalculateEleveStatus(selectedEleve.id)
+
         showToast('Paiement enregistré (En ligne) !', 'success')
       } else {
         // 3. Offline Fallback
@@ -270,6 +292,10 @@ export default function PaiementsPage() {
         } catch (e) {
           console.warn('Local save fail:', e)
         }
+
+        // Force recalcul local du statut
+        await db!.recalculateEleveStatus(selectedEleve.id)
+
         showToast('Paiement enregistré (Hors-ligne) !', 'success')
       }
 
@@ -278,8 +304,9 @@ export default function PaiementsPage() {
       setReference('')
       setSelectedMonth('')
       
-      // Reload UI
+      // Reload UI: ON RECHARGE AUSSI LES ELEVES POUR LE STATUT
       await Promise.all([
+        loadElevesLocal(ecoleId),
         loadElevesFraisLocal(ecoleId),
         loadPaiementsLocal(ecoleId)
       ])
@@ -776,6 +803,26 @@ export default function PaiementsPage() {
                       }`}>
                         {e.statut_paiement}
                       </span>
+                      {/* Affichage des mois impayés si frais mensuels assignés */}
+                      {(() => {
+                        const mensuelFrais = elevesFrais.find(ef => {
+                          const fr = frais.find(f => f.id === ef.frais_id)
+                          return ef.eleve_id === e.id && (fr?.frequence === 'mensuel' || fr?.libelle?.toLowerCase().includes('scolarit'))
+                        })
+                        if (mensuelFrais) {
+                          const impayes = getMoisImpayes(e.id, mensuelFrais.frais_id)
+                          if (impayes.length > 0) {
+                            return (
+                              <div className="mt-1 flex flex-wrap gap-1 justify-end max-w-[150px]">
+                                <span className="text-[7px] font-black text-red-500 uppercase w-full text-right bg-red-50 px-1 rounded">
+                                  Dû: {impayes.slice(0, 3).join(', ')}{impayes.length > 3 ? '...' : ''}
+                                </span>
+                              </div>
+                            )
+                          }
+                        }
+                        return null
+                      })()}
                       {activeTab === 'impayes' && (
                         <div className="flex items-center gap-2">
                            {e.telephone_parent ? (

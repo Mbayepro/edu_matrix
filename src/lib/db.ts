@@ -155,6 +155,27 @@ export class EduMatrixDB extends Dexie {
 
     return bulletins
   }
+
+  async recalculateEleveStatus(eleveId: string): Promise<string> {
+    const efTable = this.table('eleves_frais')
+    const pTable = this.table('paiements')
+    const eTable = this.table('eleves')
+
+    const [efs, paiements] = await Promise.all([
+      efTable.where('eleve_id').equals(eleveId).toArray(),
+      pTable.where('eleve_id').equals(eleveId).toArray()
+    ])
+
+    const totalDu = efs.reduce((sum, ef) => sum + (Number((ef as any).montant_a_payer) || (Number(ef.montant_du) - Number(ef.montant_remise))), 0)
+    const totalPaye = paiements.reduce((sum, p) => sum + Number(p.montant), 0)
+
+    let statut: 'payé' | 'partiel' | 'impayé' = 'impayé'
+    if (totalPaye >= totalDu && totalDu > 0) statut = 'payé'
+    else if (totalPaye > 0) statut = 'partiel'
+
+    await eTable.update(eleveId, { statut_paiement: statut })
+    return statut
+  }
 }
 
 // ─── Singleton ─────────────────────────────────────────────────────────────────
