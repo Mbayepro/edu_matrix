@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -938,6 +938,7 @@ export type Database = {
           mode: string | null
           montant: number
           reference: string | null
+          mois: string | null
         }
         Insert: {
           created_at?: string
@@ -949,6 +950,7 @@ export type Database = {
           mode?: string | null
           montant: number
           reference?: string | null
+          mois?: string | null
         }
         Update: {
           created_at?: string
@@ -960,6 +962,7 @@ export type Database = {
           mode?: string | null
           montant?: number
           reference?: string | null
+          mois?: string | null
         }
         Relationships: [
           {

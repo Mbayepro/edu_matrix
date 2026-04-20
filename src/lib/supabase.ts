@@ -203,6 +203,7 @@ export interface Paiement {
   montant: number
   mode: string | null
   reference: string | null
+  mois?: string | null
   date_paiement: string
   created_at: string
 }

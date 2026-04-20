@@ -241,6 +241,7 @@ CREATE TABLE IF NOT EXISTS public.paiements (
   montant      NUMERIC(10,2) NOT NULL,
   mode         TEXT,
   reference    TEXT,
+  mois         TEXT,
   date_paiement TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -274,6 +275,7 @@ CREATE INDEX IF NOT EXISTS idx_frais_scolaires_ecole_id ON public.frais_scolaire
 CREATE INDEX IF NOT EXISTS idx_eleves_frais_eleve_id    ON public.eleves_frais(eleve_id);
 CREATE INDEX IF NOT EXISTS idx_paiements_eleve_id       ON public.paiements(eleve_id);
 CREATE INDEX IF NOT EXISTS idx_paiements_ecole_id       ON public.paiements(ecole_id);
+CREATE INDEX IF NOT EXISTS idx_paiements_mois           ON public.paiements(mois);
 
 -- ─────────────────────────────────────────
 -- VUES SQL pour le calcul des moyennes
