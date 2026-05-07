@@ -18,6 +18,7 @@ import { useNetwork } from '@/hooks/useNetwork'
 import { ToastProvider } from '@/contexts/ToastContext'
 import InstallButton from './InstallButton'
 import QuickGuide from './QuickGuide'
+import PremiumBackground from './PremiumBackground'
 
 interface NavItem {
   label:    string
@@ -325,15 +326,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   )
 
   return (
-    <div className="min-h-screen bg-slate-50 flex relative overflow-hidden">
-      {/* Dynamic Background Accents */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] left-[20%] w-[500px] h-[500px] bg-amber-500/5 rounded-full blur-[100px]" />
-      </div>
+    <div className="min-h-screen mesh-gradient flex relative overflow-hidden">
+      <PremiumBackground />
 
       {/* ── Sidebar desktop ── */}
-      <aside className="hidden lg:flex flex-col w-64 bg-slate-900 shrink-0 fixed top-0 left-0 bottom-0 z-30">
+      <aside className="hidden lg:flex flex-col w-64 premium-glass shrink-0 fixed top-0 left-0 bottom-0 z-30 border-r border-white/5">
         <SidebarContent />
       </aside>
 
@@ -341,10 +338,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/60 backdrop-blur-xl"
             onClick={() => setSidebarOpen(false)}
           />
-          <aside className="absolute left-0 top-0 bottom-0 w-72 bg-slate-900 flex flex-col z-50 shadow-2xl">
+          <aside className="absolute left-0 top-0 bottom-0 w-72 premium-glass flex flex-col z-50 shadow-2xl">
             <button
               onClick={() => setSidebarOpen(false)}
               className="absolute top-4 right-4 p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white"
@@ -360,7 +357,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex-1 flex flex-col lg:ml-64 min-w-0">
 
         {/* Top bar */}
-        <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-xl border-b border-slate-100 px-4 lg:px-8 py-4 flex items-center gap-4">
+        <header className="sticky top-0 z-20 premium-glass px-4 lg:px-8 py-4 flex items-center gap-4 border-b border-white/5">
           <button
             className="lg:hidden p-2.5 rounded-2xl bg-slate-50 hover:bg-emerald-50 text-slate-600 hover:text-emerald-600 transition-all duration-200"
             onClick={() => setSidebarOpen(true)}
@@ -370,13 +367,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
  
           {/* Page Title & Date */}
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-black text-slate-900 tracking-tight leading-none mb-1">
+            <h2 className="text-lg font-black text-white tracking-tight leading-none mb-1">
               {visibleNav.find(
                 (n) => pathname === n.href || (n.href !== '/dashboard' && pathname.startsWith(n.href))
               )?.label ?? 'EduMatrix'}
             </h2>
             <div className="flex items-center gap-2">
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest hidden sm:block">
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest hidden sm:block">
                 {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
               </p>
             </div>
@@ -384,9 +381,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
  
           {/* Action icons */}
           <div className="flex items-center gap-2">
-            <button className="relative p-2.5 rounded-2xl bg-slate-50 hover:bg-emerald-50 text-slate-500 hover:text-emerald-600 transition-all group">
+            <button className="relative p-2.5 rounded-2xl bg-white/5 hover:bg-emerald-500/20 text-slate-400 hover:text-emerald-400 transition-all group border border-white/5">
               <Bell className="w-5 h-5" />
-              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-amber-500 rounded-full border-2 border-white animate-bounce" />
+              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-amber-500 rounded-full border-2 border-slate-900 animate-bounce" />
             </button>
           </div>
         </header>

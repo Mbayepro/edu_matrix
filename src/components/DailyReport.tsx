@@ -90,21 +90,21 @@ export default function DailyReport({ ecoleId }: { ecoleId: string }) {
   }
 
   return (
-    <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden h-full flex flex-col">
-      <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+    <div className="premium-glass rounded-[3rem] overflow-hidden h-full flex flex-col">
+      <div className="p-8 border-b border-white/5 flex items-center justify-between">
         <div className="flex items-center gap-4">
-           <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center">
+           <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10">
               <BarChart3 className="w-6 h-6 text-emerald-400" />
            </div>
            <div>
-              <h2 className="font-black text-slate-900 text-base uppercase tracking-wider">Bilan du Jour</h2>
-              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Temps réel — {new Date().toLocaleDateString('fr-FR')}</p>
+              <h2 className="font-black text-white text-base uppercase tracking-wider">Bilan du Jour</h2>
+              <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Temps réel — {new Date().toLocaleDateString('fr-FR')}</p>
            </div>
         </div>
         <button 
           onClick={archiveReport}
           disabled={saving}
-          className="p-3 rounded-xl bg-slate-50 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all disabled:opacity-50"
+          className="p-3 rounded-xl bg-white/5 text-slate-500 hover:text-emerald-400 hover:bg-white/10 transition-all disabled:opacity-50 border border-white/10"
           title="Archiver le rapport"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -114,24 +114,24 @@ export default function DailyReport({ ecoleId }: { ecoleId: string }) {
       <div className="p-8 flex-1 space-y-6">
          {/* Stats Grid */}
          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-slate-50 rounded-3xl p-5 border border-slate-100">
-               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Présence</p>
+            <div className="bg-white/5 rounded-3xl p-5 border border-white/5">
+               <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Présence</p>
                <div className="flex items-center gap-2">
-                  <span className="text-xl font-black text-slate-900">{stats.presence_rate.toFixed(0)}%</span>
+                  <span className="text-xl font-black text-white">{stats.presence_rate.toFixed(0)}%</span>
                   {stats.presence_rate >= 90 ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <AlertCircle className="w-4 h-4 text-amber-500" />}
                </div>
             </div>
-            <div className="bg-slate-50 rounded-3xl p-5 border border-slate-100">
-               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Cours donnés</p>
+            <div className="bg-white/5 rounded-3xl p-5 border border-white/5">
+               <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Cours donnés</p>
                <div className="flex items-center gap-2">
-                  <span className="text-xl font-black text-slate-900">{stats.nb_emargements}</span>
+                  <span className="text-xl font-black text-white">{stats.nb_emargements}</span>
                   <TrendingUp className="w-4 h-4 text-blue-500" />
                </div>
             </div>
          </div>
 
          {/* Financial Summary */}
-         <div className="bg-emerald-600 rounded-[2rem] p-6 text-white relative overflow-hidden group">
+         <div className="bg-emerald-600 rounded-[2rem] p-6 text-white relative overflow-hidden group shadow-lg shadow-emerald-900/20">
             <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-110" />
             <p className="text-[9px] font-black uppercase tracking-widest text-emerald-200 mb-1">Encaissements du jour</p>
             <div className="flex items-center justify-between">
@@ -145,18 +145,18 @@ export default function DailyReport({ ecoleId }: { ecoleId: string }) {
 
          {/* Today's Context */}
          <div className="space-y-3">
-            <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">
+            <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-500 px-1">
                <span>Détails</span>
                <History className="w-3.5 h-3.5" />
             </div>
             <div className="space-y-2">
-               <div className="flex justify-between items-center p-3 bg-slate-50/50 rounded-xl border border-slate-100">
+               <div className="flex justify-between items-center p-3 bg-white/5 rounded-xl border border-white/5">
                   <span className="text-[10px] font-bold text-slate-500 uppercase">Élèves présents</span>
-                  <span className="text-xs font-black text-slate-900">{stats.presents}</span>
+                  <span className="text-xs font-black text-white">{stats.presents}</span>
                </div>
-               <div className="flex justify-between items-center p-3 bg-slate-50/50 rounded-xl border border-slate-100">
+               <div className="flex justify-between items-center p-3 bg-white/5 rounded-xl border border-white/5">
                   <span className="text-[10px] font-bold text-slate-500 uppercase">Absences signalées</span>
-                  <span className="text-xs font-black text-rose-600">{stats.absents}</span>
+                  <span className="text-xs font-black text-rose-500">{stats.absents}</span>
                </div>
             </div>
          </div>
@@ -165,7 +165,7 @@ export default function DailyReport({ ecoleId }: { ecoleId: string }) {
       <div className="p-8 pt-0">
          <button 
            onClick={() => showToast('Historique bientôt disponible', 'info')}
-           className="w-full py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/10"
+           className="w-full py-4 bg-white text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-400 transition-all shadow-xl shadow-black/20"
          >
            Voir l&apos;historique complet
          </button>
