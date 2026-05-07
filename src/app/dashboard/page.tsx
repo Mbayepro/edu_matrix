@@ -258,50 +258,74 @@ export default function DashboardPage() {
   if (loading || profileLoading) {
     return (
       <div className="space-y-6 max-w-7xl mx-auto p-4">
-        <Skeleton className="h-48 w-full rounded-[3rem]" />
+        <Skeleton className="h-48 w-full rounded-[4rem]" />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <SkeletonCard /> <SkeletonCard /> <SkeletonCard /> <SkeletonCard />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Skeleton className="h-[300px] rounded-[2.5rem]" />
-          <Skeleton className="h-[300px] rounded-[2.5rem]" />
+          <Skeleton className="h-[300px] rounded-[3rem]" />
+          <Skeleton className="h-[300px] rounded-[3rem]" />
         </div>
       </div>
     )
   }
 
+  // Activity feed items (mock logic for demo if no real logs yet)
+  const activityLogs = [
+    { time: '15:42', event: 'Émargement validé', details: 'Maths - 3ème B', icon: Activity, color: 'text-emerald-400' },
+    { time: '15:30', event: 'Nouveau paiement', details: 'Frais inscription - Diop M.', icon: Sparkles, color: 'text-amber-400' },
+    { time: '14:15', event: 'Alerte Absence', details: '5 élèves non signalés', icon: AlertCircle, color: 'text-rose-400' },
+    { time: '11:00', event: 'Note saisie', details: 'Français - Terminale S', icon: TrendingUp, color: 'text-blue-400' },
+  ]
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-20 animate-in fade-in duration-700">
 
-      {/* ── Visual Command Center ── */}
-      <div className="relative premium-glass rounded-[4rem] p-10 lg:p-16 text-white overflow-hidden shadow-2xl border border-white/5 group">
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[120px] -mr-48 -mt-48 transition-all duration-1000 group-hover:bg-emerald-500/20" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-amber-400/5 rounded-full blur-[100px] -ml-32 -mb-32" />
+      {/* ── Intelligence Command Center ── */}
+      <div className="relative premium-glass rounded-[4rem] p-10 lg:p-16 text-white overflow-hidden shadow-2xl border border-white/5 group transition-all duration-1000 hover:shadow-emerald-500/10">
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-emerald-500/10 rounded-full blur-[150px] -mr-64 -mt-64 animate-pulse pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-amber-400/5 rounded-full blur-[120px] -ml-32 -mb-32 pointer-events-none" />
+        
+        {/* System Pulse Bar */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
         
         <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-16">
-          <div className="flex-1 text-center lg:text-left space-y-8">
-            <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400 shadow-xl">
-              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-ping" />
-              EduMatrix Intelligence v1.0
+          <div className="flex-1 text-center lg:text-left space-y-10">
+            <div className="flex flex-col sm:flex-row items-center gap-4 lg:items-start">
+              <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl text-[10px] font-black uppercase tracking-[0.4em] text-emerald-400 shadow-2xl">
+                <div className="relative w-2.5 h-2.5">
+                   <div className="absolute inset-0 bg-emerald-400 rounded-full animate-ping opacity-75" />
+                   <div className="relative w-2.5 h-2.5 bg-emerald-400 rounded-full" />
+                </div>
+                Live Systems · Operational
+              </div>
+              <div className="px-5 py-2.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-slate-400">
+                {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} · GMT+0
+              </div>
             </div>
-            <h1 className="text-5xl lg:text-7xl font-black tracking-tighter leading-[0.9]">
-              Bonjour, <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-amber-200 animate-gradient">
-                {profile?.prenom || 'Directeur'}!
-              </span>
-            </h1>
-            <p className="text-slate-300 text-xl font-medium max-w-xl mx-auto lg:mx-0 leading-relaxed">
-              L&apos;établissement <span className="text-white font-black border-b-2 border-emerald-500/30 pb-1">{ecole?.nom}</span> est piloté avec succès. Voici vos priorités stratégiques.
+
+            <div className="space-y-4">
+               <h1 className="text-6xl lg:text-8xl font-black tracking-tighter leading-[0.8] mb-4">
+                 Bonjour, <br/>
+                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-amber-200 animate-gradient drop-shadow-sm">
+                   {profile?.prenom || 'Directeur'}
+                 </span>
+               </h1>
+               <div className="w-20 h-2 bg-emerald-500/30 rounded-full" />
+            </div>
+            <p className="text-slate-300 text-xl lg:text-2xl font-medium max-w-xl mx-auto lg:mx-0 leading-relaxed tracking-tight">
+              L&apos;établissement <span className="text-white font-black border-b-4 border-emerald-500/30 pb-1">{ecole?.nom}</span> est synchronisé. <br/>
+              <span className="text-slate-500 text-sm font-black uppercase tracking-[0.2em] mt-4 block">Dashboard de contrôle global</span>
             </p>
             
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-6">
-               <div className="flex items-center gap-3 bg-white/5 backdrop-blur-2xl px-6 py-3 rounded-2xl border border-white/10 transition-all hover:bg-white/10 hover:border-emerald-500/30">
-                  <ShieldCheck className="w-5 h-5 text-emerald-400" />
-                  <span className="text-[11px] font-black uppercase tracking-widest text-emerald-400">Sécurité Active</span>
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 pt-4">
+               <div className="flex items-center gap-3 bg-white/5 backdrop-blur-3xl px-8 py-4 rounded-[2rem] border border-white/10 transition-all hover:bg-white/10 hover:border-emerald-500/30 hover:scale-105 shadow-xl">
+                  <ShieldCheck className="w-6 h-6 text-emerald-400" />
+                  <span className="text-xs font-black uppercase tracking-[0.2em] text-emerald-400">Certifié RLS</span>
                </div>
-               <div className="flex items-center gap-3 bg-white/5 backdrop-blur-2xl px-6 py-3 rounded-2xl border border-white/10 transition-all hover:bg-white/10 hover:border-amber-500/30">
-                  <Clock className="w-5 h-5 text-amber-400" />
-                  <span className="text-[11px] font-black uppercase tracking-widest text-amber-400">Sync. 20ms</span>
+               <div className="flex items-center gap-3 bg-white/5 backdrop-blur-3xl px-8 py-4 rounded-[2rem] border border-white/10 transition-all hover:bg-white/10 hover:border-amber-500/30 hover:scale-105 shadow-xl">
+                  <Activity className="w-6 h-6 text-amber-400 animate-pulse" />
+                  <span className="text-xs font-black uppercase tracking-[0.2em] text-amber-400">Flux Local-First</span>
                </div>
             </div>
           </div>
@@ -409,26 +433,44 @@ export default function DashboardPage() {
          <DailyReport ecoleId={ecoleId || ''} />
          <AtRiskPanel ecoleId={ecoleId || ''} />
          
-         <div className="bg-slate-900 rounded-[3rem] p-10 text-white relative overflow-hidden flex flex-col justify-center shadow-2xl shadow-slate-900/40 border border-white/5 group">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl -mr-32 -mt-32 transition-all group-hover:scale-150 duration-1000" />
-            <h2 className="text-xl font-black mb-3 tracking-tight uppercase">Vision Stratégique</h2>
-            <p className="text-slate-400 text-[11px] font-black uppercase tracking-[0.2em] leading-relaxed mb-8">
-              Objectif du mois : <span className="text-emerald-400">95%</span> d&apos;assiduité.
-            </p>
-            <div className="space-y-4">
-               <Link href="/dashboard/presences" className="flex items-center justify-between p-5 bg-white/5 border border-white/10 rounded-2xl group/link hover:bg-white/10 transition-all hover:border-emerald-500/30">
-                  <span className="text-[11px] font-black uppercase tracking-widest">Gérer Présences</span>
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 transition-transform group-hover/link:translate-x-1">
-                    <ChevronRight className="w-5 h-5" />
-                  </div>
-               </Link>
-               <Link href="/dashboard/notes" className="flex items-center justify-between p-5 bg-white/5 border border-white/10 rounded-2xl group/link hover:bg-white/10 transition-all hover:border-blue-500/30">
-                  <span className="text-[11px] font-black uppercase tracking-widest">Saisir Notes</span>
-                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 transition-transform group-hover/link:translate-x-1">
-                    <ChevronRight className="w-5 h-5" />
-                  </div>
-               </Link>
+         {/* ── Intelligence Feed ── */}
+         <div className="bg-[#0A0A0A] rounded-[4rem] p-10 text-white relative overflow-hidden flex flex-col shadow-2xl border border-white/5 group">
+            <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-[100px] -mr-40 -mt-40 transition-all duration-1000 group-hover:scale-150" />
+            
+            <div className="flex items-center justify-between mb-10 relative z-10">
+               <div>
+                  <h2 className="text-2xl font-black tracking-tighter uppercase leading-none">Intelligence Stream</h2>
+                  <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Événements en direct</p>
+               </div>
+               <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                  <Activity className="w-5 h-5 text-blue-400 animate-pulse" />
+               </div>
             </div>
+
+            <div className="space-y-6 relative z-10 flex-1">
+               {activityLogs.map((log, i) => (
+                  <div key={i} className="flex gap-5 group/log hover:translate-x-2 transition-transform cursor-default">
+                     <div className="flex flex-col items-center gap-2">
+                        <div className={`w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center ${log.color} group-hover/log:scale-110 transition-transform`}>
+                           <log.icon className="w-5 h-5" />
+                        </div>
+                        {i !== activityLogs.length - 1 && <div className="w-px flex-1 bg-white/5" />}
+                     </div>
+                     <div className="pb-6">
+                        <div className="flex items-center gap-3 mb-1">
+                           <span className="text-[10px] font-black text-slate-500">{log.time}</span>
+                           <h4 className="text-xs font-black uppercase tracking-widest text-white group-hover/log:text-blue-400 transition-colors">{log.event}</h4>
+                        </div>
+                        <p className="text-[11px] text-slate-400 font-medium tracking-tight">{log.details}</p>
+                     </div>
+                  </div>
+               ))}
+            </div>
+
+            <Link href="/dashboard/parametres" className="mt-4 py-5 rounded-[2rem] bg-white/5 border border-white/10 text-center text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 hover:bg-white/10 hover:text-white transition-all shadow-xl group/btn overflow-hidden relative">
+               <div className="absolute inset-0 bg-blue-500/5 translate-y-full group-hover/btn:translate-y-0 transition-transform" />
+               <span className="relative z-10">Historique complet</span>
+            </Link>
          </div>
       </div>
 

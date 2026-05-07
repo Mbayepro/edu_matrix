@@ -63,14 +63,35 @@
     box-shadow: 0 30px 60px -12px rgba(16, 185, 129, 0.15);
   }
 
-  /* Mesh Background Utility */
+  /* Mesh Background Utility - Ultra Premium Animated */
   .mesh-gradient {
     background-color: var(--obsidian);
     background-image: 
-      radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.12) 0px, transparent 55%),
-      radial-gradient(at 100% 100%, rgba(5, 150, 105, 0.08) 0px, transparent 55%),
-      radial-gradient(at 50% 50%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+      radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.15) 0px, transparent 55%),
+      radial-gradient(at 100% 0%, rgba(59, 130, 246, 0.08) 0px, transparent 55%),
+      radial-gradient(at 100% 100%, rgba(251, 191, 36, 0.05) 0px, transparent 55%),
+      radial-gradient(at 0% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 55%);
     background-attachment: fixed;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mesh-gradient::before {
+    content: "";
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at center, rgba(16, 185, 129, 0.03) 0%, transparent 40%);
+    animation: meshRotate 60s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  @keyframes meshRotate {
+    0%   { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
   }
 
   /* Glow Effects */
