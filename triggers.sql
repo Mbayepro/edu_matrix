@@ -241,6 +241,20 @@ CREATE TRIGGER trg_recalculate_statut_paiement_on_paiements
   FOR EACH ROW
   EXECUTE FUNCTION public.recalculate_statut_paiement_trigger();
 
+-- ─────────────────────────────────────────
+-- SÉCURITÉ : Révocation des accès API
+-- ─────────────────────────────────────────
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.handle_updated_at() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.generate_matricule() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.recalculate_statut_paiement_trigger() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.get_my_ecole_id() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.get_my_role() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.calculate_moyenne_ponderee(uuid, integer) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.recalculate_statut_paiement(uuid) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.get_payment_coverage_status(uuid) FROM PUBLIC;
+
+
 DROP TRIGGER IF EXISTS trg_recalculate_statut_paiement_on_eleves_frais ON public.eleves_frais;
 CREATE TRIGGER trg_recalculate_statut_paiement_on_eleves_frais
   AFTER INSERT OR UPDATE OR DELETE ON public.eleves_frais

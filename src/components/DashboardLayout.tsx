@@ -17,6 +17,7 @@ import {
 import { useNetwork } from '@/hooks/useNetwork'
 import { ToastProvider } from '@/contexts/ToastContext'
 import InstallButton from './InstallButton'
+import QuickGuide from './QuickGuide'
 
 interface NavItem {
   label:    string
@@ -394,6 +395,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <main className="flex-1 p-4 lg:p-6 animate-fade-in">
           <ToastProvider>
             {children}
+            <QuickGuide />
           </ToastProvider>
         </main>
       </div>

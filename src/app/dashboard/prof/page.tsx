@@ -3,9 +3,11 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import {
-  Users, BookOpen, ClipboardType, UserCheck, Edit3, ChevronRight, Loader2
+  Users, BookOpen, ClipboardType, UserCheck, Edit3, ChevronRight, Loader2,
+  Clock, Calendar, AlertCircle, ArrowRight, BookMarked
 } from 'lucide-react'
 import Link from 'next/link'
+import { getTodayDate } from '@/lib/dateUtils'
 
 interface DashboardStats {
   nbClasses: number;
@@ -31,12 +33,14 @@ export default function ProfDashboard() {
     nbEleves: 0,
     devoirsEnAttente: 0,
   });
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
     loadDashboard();
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
   }, []);
 
-  // ÉTAPE 2 : La fonction getClassesForProf(profId)
   async function getClassesForProf(profId: string) {
     const { data, error } = await supabase
       .from('enseignants_classes')
@@ -71,7 +75,6 @@ export default function ProfDashboard() {
       if (!prof) return;
       setProfile(prof);
 
-      // Récupération des classes affectées via la nouvelle fonction
       const affData = await getClassesForProf(prof.id);
       
       let totalEleves = 0;
@@ -87,14 +90,11 @@ export default function ProfDashboard() {
         })
       );
 
-      // Simulation pour "Devoirs en attente" (à connecter à vos vraies données d'évaluation)
-      const devoirsAttente = 3; 
-
       setAffectations(enrichies);
       setStats({
         nbClasses: enrichies.length,
         nbEleves: totalEleves,
-        devoirsEnAttente: devoirsAttente
+        devoirsEnAttente: 3 // Simulation
       });
 
     } catch (err) {
@@ -107,111 +107,172 @@ export default function ProfDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-10 h-10 animate-spin text-emerald-600" />
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-emerald-500/20 rounded-full animate-pulse" />
+          <Loader2 className="w-8 h-8 animate-spin text-emerald-600 absolute inset-0 m-auto" />
+        </div>
       </div>
     );
   }
 
+  const getGreeting = () => {
+    const hour = currentTime.getHours();
+    if (hour < 12) return 'Bonjour';
+    if (hour < 18) return 'Bon après-midi';
+    return 'Bonsoir';
+  };
+
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-10">
+    <div className="max-w-7xl mx-auto space-y-8 pb-20 animate-in fade-in duration-700">
       
-      {/* Header orienté Action */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none">
-            Bonjour, {profile?.prenom} {profile?.nom}
-          </h1>
-          <p className="text-sm text-slate-500 font-medium max-w-2xl tracking-tight mt-2">
-            Voici l'aperçu de vos classes et vos prochaines actions pédagogiques.
-          </p>
-        </div>
-      </div>
-
-      {/* ÉTAPE 3 : Cards de Statistiques Épurées */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm p-6 flex items-center gap-6 group hover:border-blue-200 transition-all">
-          <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center group-hover:bg-blue-500 transition-colors">
-            <BookOpen className="w-6 h-6 text-blue-500 group-hover:text-white transition-colors" />
-          </div>
-          <div>
-            <p className="text-xs font-black uppercase tracking-widest text-slate-400">Mes Classes</p>
-            <p className="text-3xl font-black text-slate-900 group-hover:text-blue-600 transition-colors">{stats.nbClasses}</p>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm p-6 flex items-center gap-6 group hover:border-emerald-200 transition-all">
-          <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center group-hover:bg-emerald-500 transition-colors">
-            <Users className="w-6 h-6 text-emerald-500 group-hover:text-white transition-colors" />
-          </div>
-          <div>
-            <p className="text-xs font-black uppercase tracking-widest text-slate-400">Mes Élèves</p>
-            <p className="text-3xl font-black text-slate-900 group-hover:text-emerald-600 transition-colors">{stats.nbEleves}</p>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-3xl border border-slate-200/60 shadow-sm p-6 flex items-center gap-6 group hover:border-amber-200 transition-all">
-          <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center group-hover:bg-amber-500 transition-colors">
-            <ClipboardType className="w-6 h-6 text-amber-500 group-hover:text-white transition-colors" />
-          </div>
-          <div>
-            <p className="text-xs font-black uppercase tracking-widest text-slate-400">Devoirs à Noter</p>
-            <p className="text-3xl font-black text-slate-900 group-hover:text-amber-600 transition-colors">{stats.devoirsEnAttente}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Section Principale : Liste structurée par Cartes */}
-      <div>
-        <h2 className="text-lg font-black text-slate-900 mb-6 uppercase tracking-wider">Gérer Mes Classes</h2>
+      {/* ── Smart Hero Section ── */}
+      <div className="relative overflow-hidden rounded-[3rem] bg-slate-950 p-8 md:p-12 text-white shadow-2xl shadow-emerald-900/20">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/20 rounded-full blur-[120px] -mr-48 -mt-48 animate-pulse" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-400/10 rounded-full blur-[100px] -ml-32 -mb-32" />
         
-        {affectations.length === 0 ? (
-          <div className="py-24 text-center bg-white rounded-3xl border border-slate-200/60 shadow-sm">
-            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <BookOpen className="w-10 h-10 text-slate-300" />
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-black uppercase tracking-widest text-emerald-400">
+              <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+              Espace Enseignant
             </div>
-            <p className="text-lg font-bold text-slate-900">Aucune classe ne vous a été assignée.</p>
-            <p className="text-sm text-slate-500 font-medium mt-2">Veuillez contacter la direction.</p>
+            <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-none">
+              {getGreeting()}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-amber-300">{profile?.prenom}!</span>
+            </h1>
+            <p className="text-slate-400 font-medium max-w-md">
+              Il est <span className="text-white">{currentTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>. Voici l&apos;aperçu de vos priorités pédagogiques pour aujourd&apos;hui.
+            </p>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+
+          <div className="grid grid-cols-2 gap-4 w-full md:w-auto">
+             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 text-center group hover:bg-white/10 transition-all">
+                <p className="text-3xl font-black text-emerald-400 mb-1">{stats.nbClasses}</p>
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Classes</p>
+             </div>
+             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 text-center group hover:bg-white/10 transition-all">
+                <p className="text-3xl font-black text-amber-400 mb-1">{stats.devoirsEnAttente}</p>
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">À Noter</p>
+             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Main Dashboard Content ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Left Column: My Classes (2/3) */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="flex items-center justify-between ml-2">
+            <h2 className="text-xl font-black text-slate-900 uppercase tracking-wider flex items-center gap-3">
+              <BookMarked className="w-5 h-5 text-emerald-600" />
+              Mes Classes
+            </h2>
+            <Link href="/dashboard/classes" className="text-xs font-black text-emerald-600 uppercase tracking-widest hover:underline">
+              Voir tout
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {affectations.map((aff) => (
-              <div key={aff.id} className="bg-white rounded-[2rem] border border-slate-200/70 shadow-sm hover:shadow-xl hover:shadow-emerald-900/5 transition-all duration-300 p-8 flex flex-col justify-between group">
+              <div key={aff.id} className="group relative bg-white rounded-[2.5rem] border border-slate-200/60 p-8 shadow-sm hover:shadow-2xl hover:shadow-emerald-900/5 transition-all duration-500 overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-150" />
                 
-                <div className="flex justify-between items-start mb-6">
-                  <div>
-                    <h3 className="text-2xl font-black text-slate-800 leading-tight">
-                      {aff.classe.nom_classe}
-                    </h3>
-                    <p className="text-sm font-bold text-emerald-600 mt-1 uppercase tracking-wider">
-                      {aff.matiere ? aff.matiere.nom : 'Généraliste'}
-                    </p>
+                <div className="relative z-10">
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-emerald-600 font-black text-xl border border-slate-100 group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-500">
+                      {aff.classe.nom_classe[0]}
+                    </div>
+                    <div className="bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 flex items-center gap-2">
+                      <Users className="w-4 h-4 text-slate-400" />
+                      <span className="text-sm font-bold text-slate-600">{aff.nbEleves}</span>
+                    </div>
                   </div>
-                  <div className="bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 flex items-center gap-2">
-                    <Users className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm font-bold text-slate-600">{aff.nbEleves}</span>
+
+                  <h3 className="text-2xl font-black text-slate-900 group-hover:text-emerald-600 transition-colors">
+                    {aff.classe.nom_classe}
+                  </h3>
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest mt-1">
+                    {aff.matiere?.nom || 'Enseignant Titulaire'}
+                  </p>
+
+                  <div className="mt-8 grid grid-cols-2 gap-3">
+                    <Link href={`/dashboard/presences?classeId=${aff.classe_id}`} className="flex-1">
+                      <button className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-600/20 active:scale-95 flex items-center justify-center gap-2">
+                        <UserCheck className="w-3.5 h-3.5" />
+                        Appel
+                      </button>
+                    </Link>
+                    <Link href={`/dashboard/notes?classeId=${aff.classe_id}`} className="flex-1">
+                      <button className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-slate-900/20 active:scale-95 flex items-center justify-center gap-2">
+                        <Edit3 className="w-3.5 h-3.5" />
+                        Notes
+                      </button>
+                    </Link>
                   </div>
-                </div>
-
-                {/* Call to Actions */}
-                <div className="flex gap-3 mt-4">
-                  <Link href={`/dashboard/notes?classeId=${aff.classe_id}`} className="flex-1">
-                    <button className="w-full py-3.5 rounded-2xl bg-slate-900 hover:bg-emerald-600 text-white text-sm font-black transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-900/20 hover:shadow-emerald-600/30">
-                      <Edit3 className="w-4 h-4" />
-                      Saisir les notes
-                    </button>
-                  </Link>
-
-                  <Link href={`/dashboard/eleves?classeId=${aff.classe_id}`} className="flex-1">
-                    <button className="w-full py-3.5 rounded-2xl bg-white border-2 border-slate-100 hover:border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-black transition-all flex items-center justify-center gap-2">
-                      <UserCheck className="w-4 h-4" />
-                      Voir les élèves
-                    </button>
-                  </Link>
                 </div>
               </div>
             ))}
           </div>
-        )}
+        </div>
+
+        {/* Right Column: Shortcuts & Quick Insights (1/3) */}
+        <div className="space-y-8">
+          
+          {/* Quick Actions Panel */}
+          <div className="bg-white rounded-[2.5rem] border border-slate-200/60 p-8 shadow-sm">
+            <h2 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em] mb-6">Actions Rapides</h2>
+            <div className="space-y-4">
+              {[
+                { label: 'Cahier de Textes', icon: ClipboardType, color: 'text-blue-600 bg-blue-50', href: '/dashboard/teacher/emargement' },
+                { label: 'Saisie de Notes',  icon: Edit3,         color: 'text-emerald-600 bg-emerald-50', href: '/dashboard/notes' },
+                { label: 'Mes Bulletins',    icon: BookOpen,      color: 'text-amber-600 bg-amber-50', href: '/dashboard/bulletins' },
+                { label: 'Liste Élèves',     icon: Users,         color: 'text-violet-600 bg-violet-50', href: '/dashboard/eleves' },
+              ].map((item) => (
+                <Link key={item.label} href={item.href} className="group flex items-center gap-4 p-4 rounded-[2rem] border border-transparent hover:border-slate-100 hover:bg-slate-50 transition-all">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 group-hover:rotate-3 ${item.color}`}>
+                    <item.icon className="w-5 h-5" />
+                  </div>
+                  <span className="flex-1 text-sm font-black text-slate-700 group-hover:text-slate-900 transition-colors">{item.label}</span>
+                  <div className="w-8 h-8 rounded-full bg-white border border-slate-100 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0">
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Today's Context Card */}
+          <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl -mr-16 -mt-16 group-hover:bg-amber-500/20 transition-all" />
+            <div className="relative z-10 space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                   <Calendar className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Calendrier</p>
+                   <p className="text-sm font-bold">{currentTime.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                </div>
+              </div>
+
+              <div className="p-4 bg-white/5 rounded-2xl border border-white/10 space-y-2">
+                 <div className="flex items-center gap-2">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+                    <p className="text-[10px] font-black uppercase tracking-widest text-amber-400">Rappel</p>
+                 </div>
+                 <p className="text-xs text-slate-300 leading-relaxed font-medium">
+                   N&apos;oubliez pas de clôturer vos notes pour le 1er trimestre avant vendredi soir.
+                 </p>
+              </div>
+
+              <button className="w-full py-4 bg-white/10 hover:bg-white text-white hover:text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2">
+                 Voir mon planning
+                 <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
   );

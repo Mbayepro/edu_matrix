@@ -8,7 +8,8 @@ import { useProfile } from '@/hooks/useProfile'
 import type { Profile, Ecole } from '@/lib/supabase'
 import {
   Users, BookOpen, AlertCircle, LayoutGrid,
-  TrendingUp, UserCheck, Activity, ChevronRight, MessageCircle
+  TrendingUp, UserCheck, Activity, ChevronRight, MessageCircle,
+  ShieldCheck, ArrowUpRight, ArrowDownRight, Clock, Sparkles
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -17,6 +18,11 @@ import {
 import { Skeleton, SkeletonCard } from '@/components/Skeleton'
 import { useToast } from '@/contexts/ToastContext'
 import { RefreshCw } from 'lucide-react'
+import { CalculateurMoyennes } from '@/lib/calculMoyennes'
+import { db } from '@/lib/db'
+import { syncFromSupabase, flushSyncQueue } from '@/lib/syncService'
+import { useNetwork } from '@/hooks/useNetwork'
+import { getTodayDate } from '@/lib/dateUtils'
 
 interface DashboardStats {
   totalEleves:      number
@@ -35,13 +41,14 @@ interface RecentEleve {
 }
 
 function StatCard({
-  icon: Icon, label, value, color, subtitle,
+  icon: Icon, label, value, color, subtitle, trend
 }: {
   icon: React.ElementType
   label: string
   value: number
   color: 'emerald' | 'blue' | 'amber' | 'violet'
   subtitle?: string
+  trend?: { val: string, positive: boolean }
 }) {
   const c = {
     emerald: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
@@ -51,17 +58,28 @@ function StatCard({
   }[color]
 
   return (
-    <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 group">
-      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 border transition-transform duration-300 group-hover:scale-110 ${c}`}>
-        <Icon className="w-5 h-5" />
+    <div className="bg-white rounded-[2.5rem] p-7 border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-500 group relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50/50 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-110" />
+      
+      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 border transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 ${c}`}>
+        <Icon className="w-6 h-6" />
       </div>
-      <div className="space-y-1">
-        <h3 className="text-3xl font-black text-slate-900 tracking-tight">{value.toLocaleString('fr-FR')}</h3>
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+
+      <div className="space-y-1 relative z-10">
+        <div className="flex items-center justify-between">
+          <h3 className="text-3xl font-black text-slate-900 tracking-tight">{value.toLocaleString('fr-FR')}</h3>
+          {trend && (
+            <div className={`flex items-center gap-0.5 text-[10px] font-black px-2 py-1 rounded-lg ${trend.positive ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+              {trend.positive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+              {trend.val}
+            </div>
+          )}
+        </div>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
         {subtitle && (
-          <div className="flex items-center gap-1.5 mt-2">
-            <span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
-            <p className="text-[10px] text-slate-400 font-medium">{subtitle}</p>
+          <div className="flex items-center gap-1.5 mt-3">
+            <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse" />
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{subtitle}</p>
           </div>
         )}
       </div>
@@ -72,21 +90,17 @@ function StatCard({
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-slate-900 text-white text-xs rounded-xl px-3 py-2 shadow-xl">
-      <p className="font-semibold mb-1">{label}</p>
+    <div className="bg-slate-900/95 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest rounded-xl px-4 py-3 shadow-2xl border border-white/10">
+      <p className="mb-2 text-slate-400 border-b border-white/10 pb-1">{label}</p>
       {payload.map((p: any) => (
-        <p key={p.name} style={{ color: p.color }}>{p.name} : {p.value}</p>
+        <div key={p.name} className="flex items-center justify-between gap-4 mt-1">
+          <span style={{ color: p.color }}>{p.name}</span>
+          <span className="text-white">{p.value}</span>
+        </div>
       ))}
     </div>
   )
 }
-
-import { CalculateurMoyennes } from '@/lib/calculMoyennes'
-import { db } from '@/lib/db'
-import { syncFromSupabase, flushSyncQueue } from '@/lib/syncService'
-import { useNetwork } from '@/hooks/useNetwork'
-
-import { getTodayDate } from '@/lib/dateUtils'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -96,14 +110,6 @@ export default function DashboardPage() {
   const { showToast } = useToast()
   const [isRefreshing, setIsRefreshing] = useState(false)
 
-  useEffect(() => {
-    if (profile?.role === 'superadmin') {
-      router.push('/dashboard/superadmin')
-    } else if (profile?.role === 'teacher') {
-      router.push('/dashboard/teacher')
-    }
-  }, [profile, router])
-
   const [stats,         setStats]         = useState<DashboardStats | null>(null)
   const [recentEleves,  setRecentEleves]  = useState<RecentEleve[]>([])
   const [recentEmargements, setRecentEmargements] = useState<any[]>([])
@@ -112,7 +118,14 @@ export default function DashboardPage() {
   const [notesChart,    setNotesChart]    = useState<{ classe: string; moyenne: number }[]>([])
   const [loading,       setLoading]       = useState(true)
 
-  // Trigger refresh when sync is finished
+  useEffect(() => {
+    if (profile?.role === 'superadmin') {
+      router.push('/dashboard/superadmin')
+    } else if (profile?.role === 'teacher') {
+      router.push('/dashboard/teacher')
+    }
+  }, [profile, router])
+
   useEffect(() => {
     if (ecoleId && isOnline && pendingCount === 0) {
       loadAll(ecoleId)
@@ -133,15 +146,8 @@ export default function DashboardPage() {
     
     try {
       const today = getTodayDate()
-      console.log("[Dashboard Debug] Target Date:", today)
-      console.log("[Dashboard Debug] School ID:", schoolId)
-
-      // 0. PUSH PENDING DATA IN BACKGROUND
-      if (isOnlineSafe) {
-        void flushSyncQueue() // Non-bloquant
-      }
+      if (isOnlineSafe) void flushSyncQueue()
       
-      // 1. FAST LOAD FROM DEXIE (Instant UI)
       if (db) {
         const localElevesIds = new Set((await db.eleves.where('ecole_id').equals(schoolId).toArray()).map(e => e.id))
         const [totalEleves, totalTeach, elevesImpayes, totalClasses, presRawToday] = await Promise.all([
@@ -163,97 +169,51 @@ export default function DashboardPage() {
         })
       }
 
-      // 2. REAL-TIME UPDATE FROM SUPABASE (If Online)
       if (isOnlineSafe) {
         setIsRefreshing(true)
-        // Parallel fetching from server
         const [elRes, profRes, clRes, presRes] = await Promise.all([
           supabase.from('eleves').select('id, statut_paiement').eq('ecole_id', schoolId),
           supabase.from('profiles').select('id').eq('ecole_id', schoolId).eq('role', 'teacher'),
           supabase.from('classes').select('id').eq('ecole_id', schoolId),
-          // Recherche directe par ecole_id
           supabase.from('presences').select('id, eleve_id').eq('ecole_id', schoolId).eq('date', today).in('statut', ['présent', 'retard']),
         ])
 
-        if (elRes.error || profRes.error || clRes.error || presRes.error) {
-          console.error('[Dashboard Debug] Supabase Error:', { elRes, profRes, clRes, presRes })
-        } else {
-          console.log("[Dashboard Debug] Supabase Presences Raw:", presRes.data)
-          const filteredPresences = presRes.data || []
-          const presencesAujourd = filteredPresences.length
-          console.log("[Dashboard Debug] Computed Count:", presencesAujourd)
-
+        if (!elRes.error && !profRes.error && !clRes.error && !presRes.error) {
           const s: DashboardStats = {
             totalEleves: elRes.data?.length || 0,
             totalEnseignants: profRes.data?.length || 0,
             elevesImpayes: elRes.data?.filter((e: any) => e.statut_paiement === 'impayé').length || 0,
             totalClasses: clRes.data?.length || 0,
-            presencesAujourd,
+            presencesAujourd: presRes.data?.length || 0,
           }
           setStats(s)
-          
-          // Background pull to update local charts
           void syncFromSupabase(schoolId)
         }
         setIsRefreshing(false)
       }
 
-      // 3. Load Charts (Dexie remains the source for complex chart calculations)
       if (db) {
-        // Récents élèves (Dexie)
         const recents = await db.eleves.where('ecole_id').equals(schoolId).limit(6).toArray()
         const classesMap = new Map((await db.classes.where('ecole_id').equals(schoolId).toArray()).map(c => [c.id, c.nom_classe]))
-        
-        setRecentEleves(recents.map(e => ({
-          ...e,
-          classe: { nom_classe: classesMap.get(e.classe_id) || 'N/A' }
-        })) as unknown as RecentEleve[])
+        setRecentEleves(recents.map(e => ({ ...e, classe: { nom_classe: classesMap.get(e.classe_id) || 'N/A' } })) as unknown as RecentEleve[])
 
-        // Récents émargements (Dexie)
-        const emargRaw = await db.emargements
-          .where('ecole_id').equals(schoolId)
-          .reverse()
-          .limit(5)
-          .toArray()
-        
-        const [allProfs, allMats] = await Promise.all([
-          db.profiles.where('ecole_id').equals(schoolId).toArray(),
-          db.matieres.where('ecole_id').equals(schoolId).toArray()
-        ])
+        const emargRaw = await db.emargements.where('ecole_id').equals(schoolId).reverse().limit(5).toArray()
+        const [allProfs, allMats] = await Promise.all([db.profiles.where('ecole_id').equals(schoolId).toArray(), db.matieres.where('ecole_id').equals(schoolId).toArray()])
         const profMap = new Map(allProfs.map(p => [p.id, `${p.prenom} ${p.nom}`]))
         const matMap = new Map(allMats.map(m => [m.id, m.nom]))
+        setRecentEmargements(emargRaw.map(e => ({ ...e, prof_nom: profMap.get(e.prof_id) || 'Inconnu', classe_nom: classesMap.get(e.classe_id) || 'N/A', matiere_nom: matMap.get(e.matiere_id) || 'N/A' })))
 
-        setRecentEmargements(emargRaw.map(e => ({
-          ...e,
-          prof_nom: profMap.get(e.prof_id) || 'Inconnu',
-          classe_nom: classesMap.get(e.classe_id) || 'N/A',
-          matiere_nom: matMap.get(e.matiere_id) || 'N/A'
-        })))
-
-        // Présences 7 derniers jours (Dexie)
         const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
-        const startDate = sevenDaysAgo.toISOString().split('T')[0]
-        const presRawAll = await db.presences.where('date').between(startDate, today + '\uffff').toArray()
-        
-        // Extract today's absences and retards
+        const presRawAll = await db.presences.where('date').between(sevenDaysAgo.toISOString().split('T')[0], today + '\uffff').toArray()
         const allEleves = await db.eleves.where('ecole_id').equals(schoolId).toArray()
         const localElevesIds = new Set(allEleves.map(e => e.id))
         const eleveMap = new Map(allEleves.map(e => [e.id, e]))
-        
         const presRaw = presRawAll.filter(p => localElevesIds.has(p.eleve_id))
         
-        const todaysAbsences = presRaw
-          .filter(p => p.date === today && (p.statut === 'absent' || p.statut === 'retard'))
-          .map(p => {
-            const e = eleveMap.get(p.eleve_id)
-            return {
-              ...p,
-              eleve_nom: e ? `${e.prenom} ${e.nom}` : 'Inconnu',
-              telephone: e?.telephone_parent || '',
-              classe_nom: classesMap.get(p.classe_id) || 'N/A'
-            }
-          })
-        setAbsencesJour(todaysAbsences)
+        setAbsencesJour(presRaw.filter(p => p.date === today && (p.statut === 'absent' || p.statut === 'retard')).map(p => {
+          const e = eleveMap.get(p.eleve_id)
+          return { ...p, eleve_nom: e ? `${e.prenom} ${e.nom}` : 'Inconnu', telephone: e?.telephone_parent || '', classe_nom: classesMap.get(p.classe_id) || 'N/A' }
+        }))
 
         const presMap: Record<string, { present: number; absent: number }> = {}
         for (let i = 6; i >= 0; i--) {
@@ -265,55 +225,27 @@ export default function DashboardPage() {
           if (p.statut === 'présent' || p.statut === 'retard') presMap[p.date].present++
           else presMap[p.date].absent++
         })
-        setPresenceChart(Object.entries(presMap).map(([ds, counts]) => ({
-          jour: new Date(ds).toLocaleDateString('fr-FR', { weekday: 'short' }),
-          ...counts
-        })))
+        setPresenceChart(Object.entries(presMap).map(([ds, counts]) => ({ jour: new Date(ds).toLocaleDateString('fr-FR', { weekday: 'short' }), ...counts })))
 
-        // Moyennes par classe (Dexie using engine logic)
         const classesList = await db.classes.where('ecole_id').equals(schoolId).limit(6).toArray()
         const notesCache = await db.notes.where('ecole_id').equals(schoolId).toArray()
         const evalsCache = await db.evaluations.where('ecole_id').equals(schoolId).toArray()
         const evalsMap = new Map(evalsCache.map(v => [v.id, v]))
-
         const avgs = classesList.map(cl => {
-          const classNotes = notesCache.filter(n => {
-            const ev = evalsMap.get(n.evaluation_id)
-            return ev?.classe_id === cl.id
-          })
+          const classNotes = notesCache.filter(n => evalsMap.get(n.evaluation_id)?.classe_id === cl.id)
           if (!classNotes.length) return { classe: cl.nom_classe, moyenne: 0 }
-
           const studentIds = Array.from(new Set(classNotes.map(n => n.eleve_id)))
           const studentAverages = studentIds.map(sid => {
             const sNotes = classNotes.filter(n => n.eleve_id === sid)
-            const notesCC = sNotes.filter(n => evalsMap.get(n.evaluation_id)?.type !== 'composition').map(n => {
-              const ev = evalsMap.get(n.evaluation_id)
-              return (n.note / (ev?.bareme || 20)) * 20
-            })
+            const notesCC = sNotes.filter(n => evalsMap.get(n.evaluation_id)?.type !== 'composition').map(n => (n.note / (evalsMap.get(n.evaluation_id)?.bareme || 20)) * 20)
             const noteCompRaw = sNotes.find(n => evalsMap.get(n.evaluation_id)?.type === 'composition')
-            let noteComp: number | null = null
-            if (noteCompRaw) {
-               const ev = evalsMap.get(noteCompRaw.evaluation_id)
-               noteComp = (noteCompRaw.note / (ev?.bareme || 20)) * 20
-            }
-
-            const res = CalculateurMoyennes.calculerMoyenneMatiereBase(
-              notesCC,
-              noteComp,
-              'BLOCKS',
-              (cl.niveau?.includes('CM') || cl.niveau?.includes('CE') || cl.niveau?.includes('CP') || cl.niveau?.includes('CI'))
-            )
-            return res.moyenne
+            let noteComp = noteCompRaw ? (noteCompRaw.note / (evalsMap.get(noteCompRaw.evaluation_id)?.bareme || 20)) * 20 : null
+            return CalculateurMoyennes.calculerMoyenneMatiereBase(notesCC, noteComp, 'BLOCKS', true).moyenne
           })
-
-          return { 
-            classe: cl.nom_classe, 
-            moyenne: Math.round((studentAverages.reduce((a, b) => a + b, 0) / studentAverages.length) * 100) / 100
-          }
+          return { classe: cl.nom_classe, moyenne: Math.round((studentAverages.reduce((a, b) => a + b, 0) / studentAverages.length) * 100) / 100 }
         })
         setNotesChart(avgs.filter(a => a.moyenne > 0))
       }
-
     } catch (err) {
       console.warn('[Dashboard] Data load error:', err)
     } finally {
@@ -323,250 +255,246 @@ export default function DashboardPage() {
 
   if (loading || profileLoading) {
     return (
-      <div className="space-y-5 max-w-7xl mx-auto">
-        <Skeleton className="h-32 w-full rounded-2xl" />
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
+      <div className="space-y-6 max-w-7xl mx-auto p-4">
+        <Skeleton className="h-48 w-full rounded-[3rem]" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <SkeletonCard /> <SkeletonCard /> <SkeletonCard /> <SkeletonCard />
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Skeleton className="h-[250px] rounded-2xl" />
-          <Skeleton className="h-[250px] rounded-2xl" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Skeleton className="h-[300px] rounded-[2.5rem]" />
+          <Skeleton className="h-[300px] rounded-[2.5rem]" />
         </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-5 max-w-7xl mx-auto">
+    <div className="space-y-8 max-w-7xl mx-auto pb-20 animate-in fade-in duration-700">
 
-      {/* Premium Banner */}
-      <div className="relative bg-slate-950 rounded-[2.5rem] p-8 lg:p-10 text-white overflow-hidden shadow-2xl shadow-emerald-900/20 border border-white/5">
-        {/* Animated background elements */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-600/20 rounded-full blur-[120px] -mr-48 -mt-48" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-400/10 rounded-full blur-[100px] -ml-32 -mb-32" />
+      {/* ── Visual Command Center ── */}
+      <div className="relative bg-slate-950 rounded-[3rem] p-10 lg:p-14 text-white overflow-hidden shadow-2xl shadow-emerald-900/20 border border-white/5 group">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-600/10 rounded-full blur-[120px] -mr-48 -mt-48 transition-all group-hover:bg-emerald-600/20" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-amber-400/5 rounded-full blur-[100px] -ml-32 -mb-32" />
         
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="flex-1 text-center md:text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-4">
-              <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-              Session en cours
+        <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-12">
+          <div className="flex-1 text-center lg:text-left space-y-6">
+            <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">
+              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+              Direction Académique
             </div>
-            <h1 className="text-3xl lg:text-4xl font-black tracking-tight mb-2">
-              Ravi de vous revoir, <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-amber-300">{profile?.prenom}!</span>
+            <h1 className="text-4xl lg:text-6xl font-black tracking-tight leading-none">
+              Bonjour, <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-amber-200">{profile?.prenom}!</span>
             </h1>
-            <p className="text-slate-400 text-sm font-medium max-w-sm mx-auto md:mx-0">
-              Voici ce qui se passe aujourd&apos;hui à <span className="text-slate-200 font-bold">{ecole?.nom}</span>.
+            <p className="text-slate-400 text-lg font-medium max-w-xl mx-auto lg:mx-0 leading-relaxed">
+              Votre établissement <span className="text-white font-bold">{ecole?.nom}</span> est sous contrôle. Voici les indicateurs clés de ce matin.
             </p>
+            
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-4">
+               <div className="flex items-center gap-2 bg-white/5 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Système Sécurisé</span>
+               </div>
+               <div className="flex items-center gap-2 bg-white/5 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10">
+                  <Clock className="w-4 h-4 text-amber-400" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Sync. Temps Réel</span>
+               </div>
+            </div>
           </div>
           
-          <div className="flex gap-4">
-            <div className="bg-white/5 backdrop-blur-md rounded-3xl p-6 border border-white/10 text-center min-w-[120px]">
-              <p className="text-3xl font-black text-emerald-400">{stats?.presencesAujourd ?? 0}</p>
-              <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1">Présences</p>
-            </div>
-            <div className="bg-white/5 backdrop-blur-md rounded-3xl p-6 border border-white/10 text-center min-w-[120px]">
-              <p className="text-3xl font-black text-amber-400">{stats?.elevesImpayes ?? 0}</p>
-              <p className="text-[10px] text-amber-500 font-black uppercase tracking-widest mt-1">Impayés</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-        <StatCard icon={Users}       label="Élèves inscrits"  value={stats?.totalEleves      ?? 0} color="emerald" />
-        <StatCard icon={BookOpen}    label="Enseignants"      value={stats?.totalEnseignants ?? 0} color="blue"    />
-        <StatCard icon={LayoutGrid}  label="Classes"          value={stats?.totalClasses     ?? 0} color="violet"  />
-        <StatCard icon={AlertCircle} label="Frais impayés"    value={stats?.elevesImpayes    ?? 0} color="amber" subtitle="élèves" />
-      </div>
-
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center">
-                <Activity className="w-4 h-4 text-emerald-600" />
+          <div className="grid grid-cols-2 gap-6">
+            <div className="bg-white/5 backdrop-blur-2xl rounded-[2.5rem] p-10 border border-white/10 text-center min-w-[180px] shadow-2xl transition-transform hover:scale-105">
+              <p className="text-5xl font-black text-emerald-400 mb-2">{stats?.presencesAujourd ?? 0}</p>
+              <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Présences du jour</p>
+              <div className="mt-4 flex items-center justify-center gap-1.5">
+                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
+                 <span className="text-[9px] font-bold text-emerald-500/80 uppercase">En direct</span>
               </div>
-              <h2 className="font-bold text-slate-900 text-sm">Présences — 7 jours</h2>
             </div>
-          </div>
-          {presenceChart.every((d) => d.present === 0 && d.absent === 0) ? (
-            <div className="flex items-center justify-center h-48 text-slate-400 text-sm italic">
-              Aucune donnée disponible.
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={presenceChart} barGap={4} barCategoryGap="40%">
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                <XAxis dataKey="jour" tick={{ fontSize: 11, fill: '#64748b', fontWeight: 'bold' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                <Tooltip content={<ChartTooltip />} />
-                <Bar dataKey="present" name="Présents" fill="#10b981" radius={[6,6,0,0]} />
-                <Bar dataKey="absent"  name="Absents"  fill="#fbbf24" radius={[6,6,0,0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-
-        <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center">
-                <TrendingUp className="w-4 h-4 text-blue-600" />
+            <div className="bg-white/5 backdrop-blur-2xl rounded-[2.5rem] p-10 border border-white/10 text-center min-w-[180px] shadow-2xl transition-transform hover:scale-105">
+              <p className="text-5xl font-black text-amber-400 mb-2">{stats?.elevesImpayes ?? 0}</p>
+              <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Paiements dus</p>
+              <div className="mt-4 flex items-center justify-center gap-1.5">
+                 <span className="text-[9px] font-bold text-amber-500/80 uppercase tracking-tighter">Relances suggérées</span>
               </div>
-              <h2 className="font-bold text-slate-900 text-sm">Moyennes par classe</h2>
             </div>
           </div>
-          {notesChart.length === 0 ? (
-            <div className="flex items-center justify-center h-48 text-slate-400 text-sm italic">
-              Aucune note enregistrée.
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={notesChart}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                <XAxis dataKey="classe" tick={{ fontSize: 10, fill: '#64748b', fontWeight: 'bold' }} axisLine={false} tickLine={false} />
-                <YAxis domain={[0, 20]} tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                <Tooltip content={<ChartTooltip />} />
-                <Line type="monotone" dataKey="moyenne" name="Moyenne" stroke="#3b82f6" strokeWidth={4}
-                  dot={{ fill: '#3b82f6', strokeWidth: 2, r: 6, stroke: '#fff' }} />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
         </div>
       </div>
 
-      {/* Bottom */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-5 border-b border-slate-50">
-            <h2 className="font-bold text-slate-900 text-sm">Dernières inscriptions</h2>
-            <Link href="/dashboard/eleves" className="px-3 py-1.5 rounded-xl bg-slate-50 text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:bg-emerald-50 transition-colors">
-              Voir tout
+      {/* ── Core Statistics ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        <StatCard icon={Users}       label="Élèves inscrits"  value={stats?.totalEleves      ?? 0} color="emerald" trend={{ val: '+12%', positive: true }} />
+        <StatCard icon={BookOpen}    label="Enseignants"      value={stats?.totalEnseignants ?? 0} color="blue"    subtitle="Personnel actif" />
+        <StatCard icon={LayoutGrid}  label="Classes"          value={stats?.totalClasses     ?? 0} color="violet"  subtitle="Salles occupées" />
+        <StatCard icon={AlertCircle} label="Alertes Frais"    value={stats?.elevesImpayes    ?? 0} color="amber"   trend={{ val: '-4%', positive: true }} />
+      </div>
+
+      {/* ── Analytics & Insights ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="bg-white rounded-[3rem] border border-slate-100 shadow-sm p-8 hover:shadow-xl transition-all duration-500">
+          <div className="flex items-center justify-between mb-10">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center border border-emerald-100 shadow-sm">
+                <Activity className="w-6 h-6 text-emerald-600" />
+              </div>
+              <div>
+                <h2 className="font-black text-slate-900 text-base uppercase tracking-wider">Activité Présences</h2>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Derniers 7 jours d&apos;appel</p>
+              </div>
+            </div>
+          </div>
+          <div className="h-[250px]">
+            {presenceChart.every((d) => d.present === 0 && d.absent === 0) ? (
+              <div className="flex items-center justify-center h-full text-slate-400 text-sm italic">Aucune donnée disponible.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={presenceChart} barGap={6} barCategoryGap="30%">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="jour" tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: '900' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <Tooltip content={<ChartTooltip />} cursor={{ fill: '#f8fafc' }} />
+                  <Bar dataKey="present" name="Présents" fill="#10b981" radius={[8,8,0,0]} />
+                  <Bar dataKey="absent"  name="Absents"  fill="#fbbf24" radius={[8,8,0,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-[3rem] border border-slate-100 shadow-sm p-8 hover:shadow-xl transition-all duration-500">
+          <div className="flex items-center justify-between mb-10">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center border border-blue-100 shadow-sm">
+                <TrendingUp className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <h2 className="font-black text-slate-900 text-base uppercase tracking-wider">Performance Globale</h2>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Moyennes par classe</p>
+              </div>
+            </div>
+          </div>
+          <div className="h-[250px]">
+            {notesChart.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-slate-400 text-sm italic">Aucune note enregistrée.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={notesChart}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="classe" tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: '900' }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[0, 20]} tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Line type="monotone" dataKey="moyenne" name="Moyenne" stroke="#3b82f6" strokeWidth={6}
+                    dot={{ fill: '#3b82f6', strokeWidth: 3, r: 8, stroke: '#fff' }} 
+                    activeDot={{ r: 10, strokeWidth: 0 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Operational Grid ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Recent Enrollments */}
+        <div className="lg:col-span-2 bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-8 py-7 border-b border-slate-50 bg-slate-50/30">
+            <h2 className="font-black text-slate-900 text-sm uppercase tracking-widest flex items-center gap-2">
+               <Users className="w-4 h-4 text-emerald-600" />
+               Derniers inscrits
+            </h2>
+            <Link href="/dashboard/eleves" className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-emerald-600 hover:border-emerald-200 transition-all shadow-sm">
+              Gérer la liste
             </Link>
           </div>
           {recentEleves.length === 0 ? (
-            <div className="p-12 text-center text-slate-400 text-sm italic">Aucun élève inscrit.</div>
+            <div className="p-16 text-center text-slate-400 text-sm italic">Aucun élève inscrit.</div>
           ) : (
-            <ul className="divide-y divide-slate-50">
-              {recentEleves.map((e) => (
-                <li key={e.id} className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50/50 transition-colors group">
-                  <div className="w-10 h-10 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl flex items-center justify-center text-emerald-600 text-sm font-black transition-transform group-hover:scale-110">
-                    {e.prenom[0]?.toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-slate-900 truncate group-hover:text-emerald-600 transition-colors">{e.prenom} {e.nom}</p>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{(e.classe as any)?.nom_classe ?? 'Niveau non défini'}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] font-mono font-bold text-slate-400">{e.matricule}</p>
-                    <div className="w-8 h-1 bg-emerald-100 rounded-full mt-1 ml-auto group-hover:w-12 transition-all" />
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <tbody className="divide-y divide-slate-50">
+                  {recentEleves.map((e) => (
+                    <tr key={e.id} className="hover:bg-slate-50/80 transition-colors group">
+                      <td className="px-8 py-5">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-400 rounded-2xl flex items-center justify-center text-white text-base font-black shadow-lg shadow-emerald-500/10 transition-transform group-hover:scale-110">
+                            {e.prenom[0]}
+                          </div>
+                          <div>
+                            <p className="text-sm font-black text-slate-900 truncate group-hover:text-emerald-600 transition-colors uppercase">{e.prenom} {e.nom}</p>
+                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-tighter mt-0.5">{(e.classe as any)?.nom_classe}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-8 py-5 text-right">
+                        <p className="text-[10px] font-mono font-black text-slate-400 bg-slate-100 px-2 py-1 rounded-lg inline-block">{e.matricule}</p>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 
-        {/* Absences & Retards du jour */}
-        <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-5 border-b border-slate-50">
-            <h2 className="font-bold text-slate-900 text-sm">Absences & Retards du jour</h2>
-            <Link href="/dashboard/presences" className="px-3 py-1.5 rounded-xl bg-slate-50 text-[10px] font-black uppercase tracking-widest text-amber-600 hover:bg-amber-50 transition-colors">
-              Gérer
-            </Link>
+        {/* Real-time Alerts */}
+        <div className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+          <div className="flex items-center justify-between px-8 py-7 border-b border-slate-50 bg-amber-50/30">
+            <h2 className="font-black text-amber-600 text-sm uppercase tracking-widest flex items-center gap-2">
+               <AlertCircle className="w-4 h-4" />
+               Vigilance Absences
+            </h2>
           </div>
-          {absencesJour.length === 0 ? (
-            <div className="p-12 text-center text-slate-400 text-sm italic">Aucune absence ni retard aujourd'hui. Super !</div>
-          ) : (
-            <ul className="divide-y divide-slate-50 max-h-[300px] overflow-y-auto custom-scrollbar">
-              {absencesJour.map((a) => (
-                <li key={a.id} className="flex items-center gap-3 px-6 py-4 hover:bg-slate-50/50 transition-colors group">
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shrink-0 transition-transform group-hover:scale-110 ${a.statut === 'absent' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'}`}>
-                    {a.eleve_nom[0]?.toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-slate-900 truncate group-hover:text-amber-600 transition-colors">{a.eleve_nom}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">{a.classe_nom}</p>
-                      <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md ${a.statut === 'absent' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'}`}>
-                        {a.statut}
-                      </span>
+          <div className="flex-1 overflow-y-auto max-h-[400px] scrollbar-thin scrollbar-thumb-slate-200">
+            {absencesJour.length === 0 ? (
+              <div className="p-16 text-center text-slate-400 text-sm italic">Parfait ! Aucune alerte aujourd&apos;hui.</div>
+            ) : (
+              <ul className="divide-y divide-slate-50">
+                {absencesJour.map((a) => (
+                  <li key={a.id} className="flex items-center gap-4 px-8 py-5 hover:bg-slate-50 transition-colors group">
+                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-xs font-black shrink-0 transition-transform group-hover:scale-110 ${a.statut === 'absent' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'}`}>
+                      {a.eleve_nom[0]}
                     </div>
-                  </div>
-                  {a.telephone && (
-                    <button
-                      onClick={() => {
-                        const msg = encodeURIComponent(`Bonjour, l'école ${ecole?.nom} vous informe que votre enfant ${a.eleve_nom} a été marqué ${a.statut} aujourd'hui. Merci de nous contacter pour plus d'informations.`);
-                        window.open(`https://wa.me/${a.telephone.replace(/\s+/g, '').replace('+', '')}?text=${msg}`, '_blank');
-                      }}
-                      className="w-7 h-7 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-sm shrink-0 active:scale-95"
-                      title="Prévenir sur WhatsApp"
-                    >
-                      <MessageCircle className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="lg:col-span-2 bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-5 border-b border-slate-50">
-            <h2 className="font-bold text-slate-900 text-sm">Derniers cours démarrés</h2>
-            <Link href="/dashboard/emargements" className="px-3 py-1.5 rounded-xl bg-slate-50 text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:bg-indigo-50 transition-colors">
-              Cahier de Textes
-            </Link>
-          </div>
-          {recentEmargements.length === 0 ? (
-            <div className="p-12 text-center text-slate-400 text-sm italic">Aucun cours enregistré aujourd'hui.</div>
-          ) : (
-            <ul className="divide-y divide-slate-50">
-              {recentEmargements.map((em) => (
-                <li key={em.id} className="px-6 py-4 hover:bg-slate-50/50 transition-colors group">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">{em.matiere_nom}</span>
-                    <span className="text-[9px] font-bold text-slate-400">{new Date(em.date_heure).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
-                  </div>
-                  <p className="text-sm font-bold text-slate-900 truncate">{em.sujet_cours}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <p className="text-[10px] text-slate-500 font-medium">Par {em.prof_nom}</p>
-                    <span className="w-1 h-1 bg-slate-300 rounded-full" />
-                    <p className="text-[10px] text-slate-500 font-bold uppercase">{em.classe_nom}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6">
-          <h2 className="font-bold text-slate-900 text-sm mb-6 uppercase tracking-widest">Raccourcis</h2>
-          <div className="space-y-3">
-            {[
-              { label: 'Nouvel élève',      href: '/dashboard/eleves/nouveau',   icon: Users,        c: 'text-emerald-600 bg-emerald-50' },
-              { label: 'Saisir Notes',      href: '/dashboard/notes',            icon: TrendingUp,   c: 'text-blue-600 bg-blue-50' },
-              { label: 'Présences',         href: '/dashboard/presences',        icon: UserCheck,    c: 'text-amber-600 bg-amber-50' },
-              { label: 'Configuration',      href: '/dashboard/parametres',       icon: BookOpen,     c: 'text-violet-600 bg-violet-50' },
-            ].map((a) => (
-              <Link key={a.label} href={a.href}
-                className="flex items-center gap-4 p-3 rounded-2xl border border-transparent hover:border-slate-100 hover:bg-slate-50/50 group transition-all">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:rotate-6 ${a.c}`}>
-                  <a.icon className="w-5 h-5" />
-                </div>
-                <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 flex-1">{a.label}</span>
-                <div className="w-6 h-6 rounded-full bg-white border border-slate-100 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                </div>
-              </Link>
-            ))}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-black text-slate-900 truncate uppercase group-hover:text-amber-600 transition-colors">{a.eleve_nom}</p>
+                      <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-0.5">{a.classe_nom} • {a.statut}</p>
+                    </div>
+                    {a.telephone && (
+                      <button
+                        onClick={() => {
+                          const msg = encodeURIComponent(`Bonjour, l'école ${ecole?.nom} vous informe que votre enfant ${a.eleve_nom} a été marqué ${a.statut} aujourd'hui.`);
+                          window.open(`https://wa.me/${a.telephone.replace(/\s+/g, '').replace('+', '')}?text=${msg}`, '_blank');
+                        }}
+                        className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-sm active:scale-95 shrink-0"
+                        title="Informer les parents"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
+
+        {/* Shortcuts Panel */}
+        <div className="lg:col-span-3 grid grid-cols-2 lg:grid-cols-4 gap-6">
+           {[
+             { label: 'Inscrire un élève',  href: '/dashboard/eleves/nouveau', icon: Users, color: 'text-emerald-600 bg-emerald-50' },
+             { label: 'Saisir les Notes',   href: '/dashboard/notes',         icon: TrendingUp, color: 'text-blue-600 bg-blue-50' },
+             { label: 'Feuille d\'Appel',   href: '/dashboard/presences',     icon: UserCheck, color: 'text-amber-600 bg-amber-50' },
+             { label: 'Configuration',      href: '/dashboard/parametres',    icon: BookOpen, color: 'text-violet-600 bg-violet-50' },
+           ].map((a) => (
+             <Link key={a.label} href={a.href} className="group bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 flex flex-col items-center text-center gap-4">
+                <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:rotate-6 ${a.color} shadow-lg shadow-black/5`}>
+                   <a.icon className="w-8 h-8" />
+                </div>
+                <span className="text-xs font-black text-slate-600 group-hover:text-slate-900 uppercase tracking-widest">{a.label}</span>
+             </Link>
+           ))}
+        </div>
+
       </div>
     </div>
   )
