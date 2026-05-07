@@ -71,10 +71,10 @@ export default function SessionModePage() {
         .from('enseignants_classes')
         .select('matiere_id, matiere:matieres(id, nom)')
         .eq('classe_id', classeId)
-        .eq('enseignant_id', profile?.id)
+        .eq('enseignant_id', profile?.id) as { data: any[] }
       
       if (aff && aff.length > 0) {
-        setMatieres(aff.map(a => a.matiere))
+        setMatieres(aff.map((a: any) => a.matiere))
         setSelectedMatiereId(aff[0].matiere_id)
       }
 
