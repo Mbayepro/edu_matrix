@@ -30,7 +30,7 @@
   body {
     font-family: var(--font-sans);
     color: #f8fafc;
-    min-h-screen;
+    min-height: 100vh;
   }
 
   /* Scrollbar Ultra Fine */
