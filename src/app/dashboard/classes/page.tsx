@@ -185,30 +185,30 @@ export default function ClassesPage() {
     <div className="space-y-8 pb-10">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-2xl bg-blue-500/10 flex items-center justify-center">
-              <BookOpen className="w-5 h-5 text-blue-600" />
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+              <BookOpen className="w-5 h-5 text-blue-400" />
             </div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none">Divisions Académiques</h1>
+            <h1 className="text-3xl font-black text-white tracking-tight leading-none">Divisions Académiques</h1>
           </div>
-          <p className="text-sm text-slate-500 font-medium max-w-2xl tracking-tight leading-relaxed">
+          <p className="text-sm text-slate-400 font-medium max-w-2xl tracking-tight leading-relaxed">
             Gérez les structures pédagogiques de votre établissement. Suivez les effectifs et les niveaux d&apos;enseignement.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="bg-white rounded-[1.5rem] border border-slate-200/60 shadow-sm p-4 flex items-center gap-6 group hover:border-blue-200 transition-all duration-500">
+          <div className="premium-glass rounded-[1.5rem] p-4 flex items-center gap-6 group hover:border-blue-500/30 transition-all duration-500">
             <div className="flex flex-col">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Classes</span>
-              <span className="text-2xl font-black text-slate-900 leading-tight group-hover:text-blue-600 transition-colors">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Total Classes</span>
+              <span className="text-2xl font-black text-white leading-tight group-hover:text-blue-400 transition-colors">
                 {classes.length}
               </span>
             </div>
-            <div className="w-px h-10 bg-slate-100" />
+            <div className="w-px h-10 bg-white/10" />
             <div className="flex flex-col">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Capacité Staff</span>
-              <span className="text-2xl font-black text-emerald-600 leading-tight">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Capacité Staff</span>
+              <span className="text-2xl font-black text-emerald-400 leading-tight">
                 OK
               </span>
             </div>
@@ -218,45 +218,45 @@ export default function ClassesPage() {
 
       {/* Create form — directors only */}
       {isDirector && (
-        <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-8 group overflow-hidden relative">
+        <div className="premium-glass rounded-[2rem] p-8 group overflow-hidden relative border border-emerald-500/10">
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-500" />
           
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+          <div className="flex items-center gap-3 mb-6 relative z-10">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
               <Plus className="w-5 h-5" />
             </div>
-            <h2 className="text-base font-black uppercase tracking-widest text-slate-900">Nouvelle Division</h2>
+            <h2 className="text-base font-black uppercase tracking-widest text-white">Nouvelle Division</h2>
           </div>
 
-          <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end relative z-10">
             <div className="md:col-span-2">
-              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Nom de la Classe</label>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 ml-1">Nom de la Classe</label>
               <input
                 type="text"
                 value={form.nom_classe}
                 onChange={e => setForm(f => ({ ...f, nom_classe: e.target.value }))}
                 placeholder="Ex: 6ème A, Terminale S1…"
-                className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all shadow-sm"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all shadow-sm placeholder:text-slate-600"
                 required
               />
             </div>
             <div className="md:col-span-1">
-              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Niveau</label>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 ml-1">Niveau</label>
               <select
                 value={form.niveau}
                 onChange={e => setForm(f => ({ ...f, niveau: e.target.value }))}
-                className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all shadow-sm cursor-pointer"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all shadow-sm cursor-pointer appearance-none"
                 required
               >
-                <option value="">Sélectionner…</option>
-                {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
+                <option value="" className="bg-slate-900">Sélectionner…</option>
+                {NIVEAUX.map(n => <option key={n} value={n} className="bg-slate-900">{n}</option>)}
               </select>
             </div>
             <div className="md:col-span-1">
               <button
                 type="submit"
                 disabled={saving}
-                className="w-full inline-flex items-center justify-center gap-3 px-6 py-3.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-sm font-black transition-all shadow-xl shadow-slate-900/10 disabled:opacity-60"
+                className="w-full inline-flex items-center justify-center gap-3 px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-black transition-all shadow-xl shadow-emerald-900/20 disabled:opacity-60 active:scale-95"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                 Créer
@@ -267,52 +267,52 @@ export default function ClassesPage() {
       )}
 
       {/* Classes list */}
-      <div className="bg-white rounded-[2.5rem] border border-slate-200/50 shadow-sm overflow-hidden min-h-[400px]">
-        <div className="px-6 md:px-10 py-6 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
-          <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Cartographie des Classes</h2>
-          <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)] animate-pulse" />
+      <div className="premium-glass rounded-[2.5rem] overflow-hidden min-h-[400px]">
+        <div className="px-6 md:px-10 py-6 border-b border-white/5 bg-white/5 flex items-center justify-between">
+          <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Cartographie des Classes</h2>
+          <div className="w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.5)] animate-pulse" />
         </div>
         
         {classes.length === 0 ? (
           <div className="py-24 text-center animate-in fade-in duration-700">
-            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <BookOpen className="w-10 h-10 text-slate-200" />
+            <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6">
+              <BookOpen className="w-10 h-10 text-slate-600" />
             </div>
-            <h3 className="text-lg font-black uppercase tracking-widest text-slate-400">Aucune structure créée</h3>
+            <h3 className="text-lg font-black uppercase tracking-widest text-slate-500">Aucune structure créée</h3>
           </div>
         ) : (
           <>
             {/* Desktop View: Table */}
-            <div className="hidden md:block overflow-x-auto">
+            <div className="hidden md:block overflow-x-auto scrollbar-thin scrollbar-thumb-white/10">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/10">
-                    <th className="text-left px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Désignation</th>
-                    <th className="text-left px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Niveau Académique</th>
-                    <th className="text-center px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Effectif Actuel</th>
-                    {isDirector && <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Options</th>}
+                  <tr className="border-b border-white/5 bg-white/5">
+                    <th className="text-left px-10 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Désignation</th>
+                    <th className="text-left px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Niveau Académique</th>
+                    <th className="text-center px-6 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Effectif Actuel</th>
+                    {isDirector && <th className="px-10 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Options</th>}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-white/5">
                   {classes.map(c => (
-                    <tr key={c.id} className="group hover:bg-slate-50/80 transition-all duration-300">
+                    <tr key={c.id} className="group hover:bg-white/5 transition-all duration-300">
                       <td className="px-10 py-5">
                         {editId === c.id ? (
                           <input
                             type="text"
                             value={editForm.nom_classe}
                             onChange={e => setEditForm(f => ({ ...f, nom_classe: e.target.value }))}
-                            className="bg-white border-2 border-emerald-500 rounded-2xl px-5 py-3 text-sm font-black focus:ring-4 focus:ring-emerald-500/10 transition-all w-full max-w-[250px]"
+                            className="bg-slate-900 border-2 border-emerald-500/50 rounded-2xl px-5 py-3 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 transition-all w-full max-w-[250px]"
                             autoFocus
                           />
                         ) : (
                           <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center group-hover:bg-blue-600 group-hover:rotate-3 transition-all duration-500 shadow-sm">
+                            <div className="w-12 h-12 rounded-2xl bg-white/5 text-white flex items-center justify-center group-hover:bg-blue-600/80 group-hover:rotate-3 transition-all duration-500 shadow-sm border border-white/10">
                               <GraduationCap className="w-6 h-6" />
                             </div>
                             <div>
-                              <span className="text-base font-black text-slate-900 uppercase tracking-tight group-hover:text-blue-700 transition-colors">{c.nom_classe}</span>
-                              <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-0.5">Section Scolaire</p>
+                              <span className="text-base font-black text-white uppercase tracking-tight group-hover:text-blue-400 transition-colors">{c.nom_classe}</span>
+                              <p className="text-[10px] text-slate-500 font-bold tracking-widest uppercase mt-0.5">Section Scolaire</p>
                             </div>
                           </div>
                         )}
@@ -322,20 +322,20 @@ export default function ClassesPage() {
                           <select
                             value={editForm.niveau}
                             onChange={e => setEditForm(f => ({ ...f, niveau: e.target.value }))}
-                            className="bg-white border-2 border-emerald-500 rounded-2xl px-4 py-3 text-sm font-black focus:ring-4 focus:ring-emerald-500/10 transition-all appearance-none"
+                            className="bg-slate-900 border-2 border-emerald-500/50 rounded-2xl px-4 py-3 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 transition-all appearance-none"
                           >
-                            {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
+                            {NIVEAUX.map(n => <option key={n} value={n} className="bg-slate-900">{n}</option>)}
                           </select>
                         ) : (
-                          <span className="inline-flex items-center px-4 py-1.5 rounded-xl bg-blue-50 text-blue-700 text-[10px] font-black uppercase tracking-widest border border-blue-100 group-hover:bg-white group-hover:shadow-sm transition-all">
+                          <span className="inline-flex items-center px-4 py-1.5 rounded-xl bg-blue-500/10 text-blue-400 text-[10px] font-black uppercase tracking-widest border border-blue-500/20 group-hover:bg-white/5 transition-all">
                             {c.niveau}
                           </span>
                         )}
                       </td>
                       <td className="px-6 py-5 text-center">
-                        <div className="inline-flex items-center gap-2.5 px-4 py-2 bg-slate-50 rounded-2xl border border-slate-100 group-hover:bg-emerald-50 group-hover:border-emerald-100 transition-all">
-                          <Users className="w-4 h-4 text-slate-400 group-hover:text-emerald-500 transition-colors" />
-                          <span className="text-sm font-black text-slate-700 group-hover:text-emerald-700">{c.nb_eleves} élèves</span>
+                        <div className="inline-flex items-center gap-2.5 px-4 py-2 bg-white/5 rounded-2xl border border-white/5 group-hover:bg-emerald-500/10 group-hover:border-emerald-500/20 transition-all">
+                          <Users className="w-4 h-4 text-slate-500 group-hover:text-emerald-400 transition-colors" />
+                          <span className="text-sm font-black text-slate-300 group-hover:text-emerald-400">{c.nb_eleves} élèves</span>
                         </div>
                       </td>
                       {isDirector && (
@@ -346,14 +346,14 @@ export default function ClassesPage() {
                                 <button
                                   onClick={() => handleUpdate(c.id)}
                                   disabled={saving}
-                                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-emerald-600 text-white hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/20"
+                                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-emerald-600 text-white hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
                                   title="Sauvegarder"
                                 >
                                   <Check className="w-5 h-5" />
                                 </button>
                                 <button
                                   onClick={() => setEditId(null)}
-                                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:bg-slate-50 transition-all shadow-sm"
+                                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-500 hover:text-white hover:bg-white/10 transition-all shadow-sm"
                                   title="Annuler"
                                 >
                                   <X className="w-5 h-5" />
@@ -363,14 +363,14 @@ export default function ClassesPage() {
                               <>
                                 <button
                                   onClick={() => startEdit(c)}
-                                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all shadow-sm"
+                                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-500 hover:text-blue-400 hover:border-blue-500/30 hover:bg-white/10 transition-all shadow-sm"
                                   title="Modifier"
                                 >
                                   <Edit2 className="w-4 h-4" />
                                 </button>
                                 <button
                                   onClick={() => handleDelete(c.id, c.nb_eleves ?? 0)}
-                                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all shadow-sm"
+                                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-500 hover:text-rose-400 hover:border-rose-500/30 hover:bg-white/10 transition-all shadow-sm"
                                   title="Supprimer"
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -387,12 +387,12 @@ export default function ClassesPage() {
             </div>
 
             {/* Mobile View: Cards */}
-            <div className="md:hidden divide-y divide-slate-100">
+            <div className="md:hidden divide-y divide-white/5">
               {classes.map(c => (
-                <div key={c.id} className="p-6 space-y-4 hover:bg-slate-50 transition-all duration-300">
+                <div key={c.id} className="p-6 space-y-4 hover:bg-white/5 transition-all duration-300">
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-sm shrink-0">
+                      <div className="w-12 h-12 rounded-2xl bg-white/5 text-white flex items-center justify-center shadow-sm shrink-0 border border-white/10">
                         <GraduationCap className="w-6 h-6" />
                       </div>
                       <div>
@@ -401,13 +401,13 @@ export default function ClassesPage() {
                             type="text"
                             value={editForm.nom_classe}
                             onChange={e => setEditForm(f => ({ ...f, nom_classe: e.target.value }))}
-                            className="bg-white border-2 border-emerald-500 rounded-xl px-3 py-2 text-sm font-black w-full"
+                            className="bg-slate-900 border-2 border-emerald-500/50 rounded-xl px-3 py-2 text-sm font-black text-white w-full"
                             autoFocus
                           />
                         ) : (
-                          <h3 className="text-base font-black text-slate-900 uppercase tracking-tight">{c.nom_classe}</h3>
+                          <h3 className="text-base font-black text-white uppercase tracking-tight">{c.nom_classe}</h3>
                         )}
-                        <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-0.5">Section Scolaire</p>
+                        <p className="text-[10px] text-slate-500 font-bold tracking-widest uppercase mt-0.5">Section Scolaire</p>
                       </div>
                     </div>
                     
@@ -424,7 +424,7 @@ export default function ClassesPage() {
                             </button>
                             <button
                               onClick={() => setEditId(null)}
-                              className="w-9 h-9 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400"
+                              className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-500"
                             >
                               <X className="w-4 h-4" />
                             </button>
@@ -433,13 +433,13 @@ export default function ClassesPage() {
                           <>
                             <button
                               onClick={() => startEdit(c)}
-                              className="w-9 h-9 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400"
+                              className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-500"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => handleDelete(c.id, c.nb_eleves ?? 0)}
-                              className="w-9 h-9 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400"
+                              className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-500"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -455,19 +455,19 @@ export default function ClassesPage() {
                         <select
                           value={editForm.niveau}
                           onChange={e => setEditForm(f => ({ ...f, niveau: e.target.value }))}
-                          className="w-full bg-white border-2 border-emerald-500 rounded-xl px-3 py-2 text-xs font-black"
+                          className="w-full bg-slate-900 border-2 border-emerald-500/50 rounded-xl px-3 py-2 text-xs font-black text-white appearance-none"
                         >
-                          {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
+                          {NIVEAUX.map(n => <option key={n} value={n} className="bg-slate-900">{n}</option>)}
                         </select>
                       ) : (
-                        <span className="inline-flex items-center px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 text-[10px] font-black uppercase tracking-widest border border-blue-100">
+                        <span className="inline-flex items-center px-3 py-1.5 rounded-xl bg-blue-500/10 text-blue-400 text-[10px] font-black uppercase tracking-widest border border-blue-500/20">
                           {c.niveau}
                         </span>
                       )}
                     </div>
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100">
-                      <Users className="w-3.5 h-3.5 text-slate-400" />
-                      <span className="text-xs font-black text-slate-700">{c.nb_eleves} élèves</span>
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-xl border border-white/5">
+                      <Users className="w-3.5 h-3.5 text-slate-500" />
+                      <span className="text-xs font-black text-slate-300">{c.nb_eleves} élèves</span>
                     </div>
                   </div>
                 </div>

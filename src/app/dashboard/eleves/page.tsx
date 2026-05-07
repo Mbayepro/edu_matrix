@@ -265,23 +265,23 @@ export default function ElevesPage() {
   return (
     <div className="space-y-8 pb-10">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-600/10 flex items-center justify-center">
-              <Users className="w-4 h-4 text-emerald-600" />
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+              <Users className="w-5 h-5 text-emerald-400" />
             </div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Gestion des Élèves</h1>
+            <h1 className="text-3xl font-black text-white tracking-tight">Gestion des Élèves</h1>
           </div>
-          <div className="text-sm font-medium flex items-center gap-2">
+          <div className="text-sm font-medium">
             {loading || profileLoading ? (
-               <div className="flex items-center gap-2">
-                  <div className="w-24 h-4 bg-slate-100 rounded animate-pulse" />
-                  <span className="text-slate-300 italic text-[10px] font-black uppercase tracking-widest">(Synchronisation…)</span>
+               <div className="flex items-center gap-3">
+                  <div className="w-32 h-4 bg-white/5 rounded animate-pulse" />
+                  <span className="text-slate-500 italic text-[10px] font-black uppercase tracking-widest">(Synchronisation…)</span>
                </div>
             ) : (
-                <span className="text-slate-500">
-                  Pilotez les inscriptions, les présences et les documents de vos <span className="text-emerald-600 font-black">{total.toLocaleString('fr-FR')}</span> élèves.
+                <span className="text-slate-400">
+                  Pilotez les inscriptions et les documents de vos <span className="text-emerald-400 font-black">{total.toLocaleString('fr-FR')}</span> élèves.
                 </span>
             )}
           </div>
@@ -290,17 +290,18 @@ export default function ElevesPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowImportModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-sm font-bold hover:bg-slate-50 transition-all shadow-sm"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-300 text-sm font-bold hover:bg-white/10 transition-all shadow-sm"
           >
-            <UploadCloud className="w-4 h-4 text-emerald-600" />
-            Importer Excel
+            <UploadCloud className="w-4 h-4 text-emerald-400" />
+            Importer
           </button>
           <Link
             href="/dashboard/eleves/nouveau"
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
           >
             <Plus className="w-4 h-4 text-amber-400" />
-            Nouvelle Inscription
+            <span className="hidden sm:inline">Nouvelle Inscription</span>
+            <span className="sm:hidden">Inscrire</span>
           </Link>
         </div>
       </div>
@@ -315,63 +316,63 @@ export default function ElevesPage() {
       />
 
       {/* Modern Filter Bar */}
-      <div className="bg-white p-4 rounded-[2rem] border border-slate-200/60 shadow-sm flex flex-col gap-4">
+      <div className="premium-glass p-4 rounded-[2rem] flex flex-col gap-4">
         <div className="relative group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
           <input
             type="text"
-            placeholder="Rechercher par nom, prénom ou matricule…"
+            placeholder="Rechercher un élève…"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0) }}
-            className="w-full pl-12 pr-12 py-3.5 bg-slate-50/50 border-none rounded-2xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all placeholder:text-slate-400"
+            className="w-full pl-12 pr-12 py-3.5 bg-white/5 border-none rounded-2xl text-sm font-bold text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all placeholder:text-slate-500"
           />
           {search && (
             <button onClick={() => { setSearch(''); setPage(0) }}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition-colors">
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors">
               <X className="w-4 h-4" />
             </button>
           )}
         </div>
 
         <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3">
-          <div className="flex items-center gap-3 px-4 py-2 bg-slate-50/50 rounded-2xl border border-slate-100/50 w-full sm:w-auto">
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Classe</span>
+          <div className="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-2xl border border-white/5 w-full sm:w-auto">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Classe</span>
             <select
               value={filterClasse}
               onChange={(e) => { setFilterClasse(e.target.value); setPage(0) }}
-              className="bg-transparent border-none p-0 pr-8 text-sm font-black text-slate-900 focus:ring-0 cursor-pointer appearance-none flex-1 sm:flex-none"
+              className="bg-transparent border-none p-0 pr-8 text-sm font-black text-white focus:ring-0 cursor-pointer appearance-none flex-1 sm:flex-none"
             >
-              <option value="">Toutes les classes</option>
+              <option value="" className="bg-slate-900">Toutes les classes</option>
               {classes.map((c) => (
-                <option key={c.id} value={c.id}>{c.nom_classe}</option>
+                <option key={c.id} value={c.id} className="bg-slate-900">{c.nom_classe}</option>
               ))}
             </select>
           </div>
 
-          <div className="flex items-center gap-3 px-4 py-2 bg-slate-50/50 rounded-2xl border border-slate-100/50 w-full sm:w-auto">
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Paiement</span>
+          <div className="flex items-center gap-3 px-4 py-2 bg-white/5 rounded-2xl border border-white/5 w-full sm:w-auto">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Paiement</span>
             <select
               value={filterStatut}
               onChange={(e) => { setFilterStatut(e.target.value as StatutPaiement); setPage(0) }}
-              className="bg-transparent border-none p-0 pr-8 text-sm font-black text-slate-900 focus:ring-0 cursor-pointer appearance-none flex-1 sm:flex-none"
+              className="bg-transparent border-none p-0 pr-8 text-sm font-black text-white focus:ring-0 cursor-pointer appearance-none flex-1 sm:flex-none"
             >
-              <option value="tous">Tous les statuts</option>
-              <option value="payé">Payé</option>
-              <option value="impayé">Impayé</option>
-              <option value="partiel">Partiel</option>
+              <option value="tous" className="bg-slate-900">Tous les statuts</option>
+              <option value="payé" className="bg-slate-900">Payé</option>
+              <option value="impayé" className="bg-slate-900">Impayé</option>
+              <option value="partiel" className="bg-slate-900">Partiel</option>
             </select>
           </div>
 
           {filterClasse && (
-            <div className="flex items-center gap-2 w-full sm:w-auto sm:pl-4 sm:ml-2 sm:border-l sm:border-slate-200">
+            <div className="flex items-center gap-2 w-full sm:w-auto sm:pl-4 sm:ml-2 sm:border-l sm:border-white/10">
               <button
                 onClick={handleExportPDF}
                 disabled={generatingPDF}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-emerald-600 transition-all shadow-lg shadow-slate-900/10 disabled:opacity-50"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white text-slate-900 text-sm font-bold hover:bg-emerald-400 transition-all shadow-lg disabled:opacity-50"
                 title="Exporter liste PDF"
               >
                 {generatingPDF ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-                <span>Liste PDF</span>
+                <span>PDF</span>
               </button>
               <a
                 href={`/dashboard/eleves/print-cartes?classeId=${filterClasse}`}
@@ -381,8 +382,7 @@ export default function ElevesPage() {
                 title="Imprimer les cartes QR"
               >
                 <Printer className="w-4 h-4" />
-                <span className="hidden sm:inline">Cartes QR</span>
-                <span className="sm:hidden">Cartes</span>
+                <span>Cartes QR</span>
               </a>
             </div>
           )}
@@ -391,41 +391,41 @@ export default function ElevesPage() {
 
 
       {/* Table Section */}
-      <div className="bg-white rounded-[2rem] border border-slate-200/50 shadow-sm overflow-hidden">
+      <div className="premium-glass rounded-[2rem] overflow-hidden border border-white/5">
         {loading || profileLoading ? (
           <SkeletonTable rows={PAGE_SIZE} columns={5} />
         ) : eleves.length === 0 ? (
           <div className="py-24 text-center animate-in fade-in duration-500">
-            <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-8 relative">
+            <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-8 relative">
               <div className="absolute inset-0 bg-emerald-500/10 rounded-full animate-pulse" />
-              <Users className="w-10 h-10 text-slate-300 relative z-10" />
+              <Users className="w-10 h-10 text-slate-500 relative z-10" />
             </div>
-            <h3 className="text-xl font-black text-slate-900 mb-2 tracking-tight">Aucun résultat trouvé</h3>
-            <p className="text-base text-slate-400 font-medium max-w-sm mx-auto">
+            <h3 className="text-xl font-black text-white mb-2 tracking-tight">Aucun résultat trouvé</h3>
+            <p className="text-base text-slate-500 font-medium max-w-sm mx-auto">
               Nous n&apos;avons trouvé aucun élève correspondant à vos critères de recherche. Essayez de modifier vos filtres.
             </p>
           </div>
         ) : (
           <>
             {/* Desktop table */}
-            <div className="hidden md:block overflow-x-auto max-h-[600px] overflow-y-auto" ref={tableContainerRef}>
+            <div className="hidden md:block overflow-x-auto max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-white/10" ref={tableContainerRef}>
               <table className="w-full text-sm relative">
-                <thead className="sticky top-0 z-10 bg-slate-50/90 backdrop-blur-sm">
-                  <tr className="border-b border-slate-100">
-                    <th className="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Informations Élève</th>
-                    <th className="text-left px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Matricule</th>
-                    <th className="text-left px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Classe</th>
-                    <th className="text-left px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Scolarité</th>
-                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Options</th>
+                <thead className="sticky top-0 z-10 bg-slate-950/50 backdrop-blur-xl">
+                  <tr className="border-b border-white/5">
+                    <th className="text-left px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Informations Élève</th>
+                    <th className="text-left px-4 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Matricule</th>
+                    <th className="text-left px-4 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Classe</th>
+                    <th className="text-left px-4 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Scolarité</th>
+                    <th className="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Options</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50" style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}>
+                <tbody className="divide-y divide-white/5" style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}>
                   {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                     const e = eleves[virtualRow.index]
                     return (
                     <tr 
                       key={e.id} 
-                      className="group hover:bg-slate-50/80 transition-all duration-300 absolute w-full"
+                      className="group hover:bg-white/5 transition-all duration-300 absolute w-full"
                       style={{
                         height: `${virtualRow.size}px`,
                         transform: `translateY(${virtualRow.start}px)`
@@ -435,12 +435,12 @@ export default function ElevesPage() {
                         <div className="flex items-center gap-5">
                           <button
                             onClick={() => triggerUpload(e.id)}
-                            className="relative w-14 h-14 rounded-2xl overflow-hidden border border-slate-200/60 shadow-sm group/photo transition-all duration-500 hover:border-emerald-200 hover:scale-105 shrink-0"
+                            className="relative w-14 h-14 rounded-2xl overflow-hidden border border-white/10 shadow-sm group/photo transition-all duration-500 hover:border-emerald-500/30 hover:scale-105 shrink-0"
                             title="Changer la photo"
                           >
                             {uploading === e.id ? (
-                              <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center">
-                                <Loader2 className="w-5 h-5 animate-spin text-emerald-600" />
+                              <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center">
+                                <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
                               </div>
                             ) : e.photo_url ? (
                               <>
@@ -450,59 +450,59 @@ export default function ElevesPage() {
                                 </div>
                               </>
                             ) : (
-                              <div className="absolute inset-0 bg-slate-900 flex items-center justify-center group-hover/photo:bg-emerald-600 transition-colors">
+                              <div className="absolute inset-0 bg-slate-800 flex items-center justify-center group-hover/photo:bg-emerald-600 transition-colors">
                                 <span className="text-white text-lg font-black">{e.prenom[0]?.toUpperCase()}</span>
                               </div>
                             )}
                           </button>
                           <div>
-                            <p className="text-base font-black text-slate-900 leading-tight group-hover:text-emerald-600 transition-colors uppercase">
+                            <p className="text-base font-black text-white leading-tight group-hover:text-emerald-400 transition-colors uppercase">
                               {e.prenom} {e.nom}
                             </p>
-                            <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase mt-1">
+                            <p className="text-[10px] font-black text-slate-500 tracking-widest uppercase mt-1">
                               {e.date_naissance ? new Date(e.date_naissance).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Date de naissance non définie'}
                             </p>
                           </div>
                         </div>
                       </td>
                       <td className="px-4 py-5">
-                        <span className="text-[10px] font-black text-slate-400 tracking-widest uppercase bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
+                        <span className="text-[10px] font-black text-slate-500 tracking-widest uppercase bg-white/5 px-2 py-0.5 rounded-md border border-white/5">
                           {e.matricule}
                         </span>
                       </td>
                       <td className="px-4 py-5">
-                        <span className="inline-flex items-center px-3 py-1.5 rounded-xl bg-slate-100/50 text-slate-700 text-[10px] font-black uppercase tracking-widest border border-slate-200/50 shadow-sm">
+                        <span className="inline-flex items-center px-3 py-1.5 rounded-xl bg-white/5 text-slate-300 text-[10px] font-black uppercase tracking-widest border border-white/5 shadow-sm">
                           {(e.classe as any)?.nom_classe ?? 'NON ASSIGNÉ'}
                         </span>
                       </td>
                       <td className="px-4 py-5">
                         <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-[0.15em] shadow-sm border ${
-                          e.statut_paiement === 'payé' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                          e.statut_paiement === 'impayé' ? 'bg-red-50 text-red-600 border-red-100' :
-                          'bg-amber-50 text-amber-600 border-amber-100'
+                          e.statut_paiement === 'payé' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                          e.statut_paiement === 'impayé' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                          'bg-amber-500/10 text-amber-400 border-amber-500/20'
                         }`}>
                           {e.statut_paiement}
                         </span>
                       </td>
-                      <td className="px-8 py-5">
-                        <div className="flex items-center justify-end gap-2 transition-all duration-300">
+                      <td className="px-8 py-5 text-right">
+                        <div className="flex items-center justify-end gap-2">
                           <Link
                             href={`/dashboard/eleves/${e.id}/modifier`}
-                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-200 text-slate-500 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 transition-all shadow-sm group/btn"
+                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-500 hover:text-emerald-400 hover:border-emerald-500/30 hover:bg-white/10 transition-all group/btn"
                             title="Modifier"
                           >
                             <Edit className="w-4 h-4" />
                           </Link>
                           <button
                             onClick={() => setViewing(e.id)}
-                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all shadow-sm group/btn"
+                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-500 hover:text-blue-400 hover:border-blue-500/30 hover:bg-white/10 transition-all group/btn"
                             title="Profil Complet"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => setViewingQR(e.id)}
-                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-200 text-slate-500 hover:text-amber-600 hover:border-amber-200 hover:bg-amber-50 transition-all shadow-sm group/btn"
+                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-500 hover:text-amber-400 hover:border-amber-500/30 hover:bg-white/10 transition-all group/btn"
                             title="QR ID Card"
                           >
                             <QrCode className="w-4 h-4" />
@@ -516,32 +516,32 @@ export default function ElevesPage() {
             </div>
 
             {/* Mobile cards */}
-            <div className="md:hidden divide-y divide-slate-100">
+            <div className="md:hidden divide-y divide-white/5">
               {eleves.map((e) => (
-                <div key={e.id} className="p-4 space-y-4 hover:bg-slate-50 transition-all duration-300">
+                <div key={e.id} className="p-5 space-y-4 hover:bg-white/5 transition-all duration-300">
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-4">
                       <button
                         onClick={() => triggerUpload(e.id)}
-                        className="relative w-12 h-12 rounded-xl overflow-hidden border border-slate-200 shadow-sm shrink-0"
+                        className="relative w-12 h-12 rounded-xl overflow-hidden border border-white/10 shadow-sm shrink-0"
                       >
                         {uploading === e.id ? (
-                          <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
-                            <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+                          <div className="absolute inset-0 bg-slate-900/80 flex items-center justify-center">
+                            <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
                           </div>
                         ) : e.photo_url ? (
                           <Image src={e.photo_url} alt="" fill sizes="48px" className="object-cover" />
                         ) : (
-                          <div className="w-full h-full bg-slate-900 flex items-center justify-center text-white text-sm font-black">
+                          <div className="w-full h-full bg-slate-800 flex items-center justify-center text-white text-sm font-black">
                             {e.prenom[0]?.toUpperCase()}
                           </div>
                         )}
                       </button>
                       <div className="min-w-0">
-                        <h3 className="text-sm font-black text-slate-900 uppercase truncate">
+                        <h3 className="text-sm font-black text-white uppercase truncate">
                           {e.prenom} {e.nom}
                         </h3>
-                        <p className="text-[10px] font-black text-slate-400 tracking-widest uppercase">
+                        <p className="text-[10px] font-black text-slate-500 tracking-widest uppercase mt-0.5">
                           {e.matricule || 'Sans matricule'}
                         </p>
                       </div>
@@ -550,13 +550,13 @@ export default function ElevesPage() {
                     <div className="flex items-center gap-2">
                       <Link
                         href={`/dashboard/eleves/${e.id}/modifier`}
-                        className="p-2 rounded-lg bg-white border border-slate-200 text-slate-400"
+                        className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-500"
                       >
                         <Edit className="w-4 h-4" />
                       </Link>
                       <button
                         onClick={() => setViewing(e.id)}
-                        className="p-2 rounded-lg bg-white border border-slate-200 text-slate-400"
+                        className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-500"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
@@ -564,13 +564,13 @@ export default function ElevesPage() {
                   </div>
 
                   <div className="flex items-center justify-between gap-4 pt-1">
-                    <span className="inline-flex items-center px-3 py-1.5 rounded-xl bg-slate-100/50 text-slate-700 text-[10px] font-black uppercase tracking-widest border border-slate-200/50 shadow-sm">
+                    <span className="inline-flex items-center px-3 py-1.5 rounded-xl bg-white/5 text-slate-400 text-[10px] font-black uppercase tracking-widest border border-white/5 shadow-sm">
                       {(e.classe as any)?.nom_classe ?? '—'}
                     </span>
                     <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-[0.15em] border ${
-                      e.statut_paiement === 'payé' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                      e.statut_paiement === 'impayé' ? 'bg-red-50 text-red-600 border-red-100' :
-                      'bg-amber-50 text-amber-600 border-amber-100'
+                      e.statut_paiement === 'payé' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                      e.statut_paiement === 'impayé' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                      'bg-amber-500/10 text-amber-400 border-amber-500/20'
                     }`}>
                       {e.statut_paiement}
                     </span>
@@ -585,14 +585,14 @@ export default function ElevesPage() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-            Page <span className="text-slate-900">{page + 1}</span> sur <span className="text-slate-900">{totalPages}</span>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+            Page <span className="text-white">{page + 1}</span> sur <span className="text-white">{totalPages}</span>
           </p>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={page === 0}
-              className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-500 hover:text-emerald-400 hover:border-emerald-500/30 hover:bg-white/10 disabled:opacity-10 disabled:cursor-not-allowed transition-all shadow-sm"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -606,8 +606,8 @@ export default function ElevesPage() {
                     onClick={() => setPage(p)}
                     className={`w-10 h-10 rounded-xl text-[10px] font-black tracking-widest transition-all ${
                       p === page
-                        ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
-                        : 'bg-white border border-slate-200 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'
+                        ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20'
+                        : 'bg-white/5 border border-white/10 text-slate-500 hover:text-emerald-400 hover:bg-white/10'
                     }`}
                   >
                     {p + 1}
@@ -618,7 +618,7 @@ export default function ElevesPage() {
             <button
               onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
               disabled={page >= totalPages - 1}
-              className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-500 hover:text-emerald-400 hover:border-emerald-500/30 hover:bg-white/10 disabled:opacity-10 disabled:cursor-not-allowed transition-all shadow-sm"
             >
               <ChevronRight className="w-5 h-5" />
             </button>

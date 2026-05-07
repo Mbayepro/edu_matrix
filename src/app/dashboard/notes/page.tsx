@@ -449,111 +449,111 @@ export default function NotesPage() {
   return (
     <div className="space-y-8 pb-10">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-600/10 flex items-center justify-center">
-              <BookOpen className="w-4 h-4 text-emerald-600" />
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+              <BookOpen className="w-5 h-5 text-emerald-400" />
             </div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Gestion des Notes</h1>
+            <h1 className="text-3xl font-black text-white tracking-tight">Gestion des Notes</h1>
           </div>
-          <p className="text-sm text-slate-500 font-medium tracking-tight">
+          <p className="text-sm text-slate-400 font-medium tracking-tight">
             Saisissez les évaluations et suivez les performances académiques des élèves.
           </p>
         </div>
 
         {selectedEvaluationData && (
-          <div className="flex items-center gap-4 px-4 py-2 bg-emerald-50 rounded-2xl border border-emerald-100 shadow-sm">
-            <div className="text-center px-4 border-r border-emerald-100">
-              <div className="text-[10px] font-black uppercase tracking-widest text-emerald-600/60">Type</div>
-              <div className="text-sm font-black text-emerald-700 leading-tight uppercase">{selectedEvaluationData.type}</div>
+          <div className="flex items-center gap-4 px-4 py-2 bg-white/5 rounded-2xl border border-white/10 shadow-sm">
+            <div className="text-center px-4 border-r border-white/10">
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Type</div>
+              <div className="text-sm font-black text-white leading-tight uppercase">{selectedEvaluationData.type}</div>
             </div>
             <div className="text-center px-4">
-              <div className="text-[10px] font-black uppercase tracking-widest text-emerald-600/60">Barème</div>
-              <div className="text-sm font-black text-emerald-700 leading-tight">/{selectedEvaluationData.bareme}</div>
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Barème</div>
+              <div className="text-sm font-black text-emerald-400 leading-tight">/{selectedEvaluationData.bareme}</div>
             </div>
           </div>
         )}
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-8">
+      <div className="premium-glass rounded-[2rem] p-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
           <div className="space-y-2 min-w-0">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Structure / Classe</label>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Structure / Classe</label>
             <select
               value={selectedClasse}
               onChange={(e) => setSelectedClasse(e.target.value)}
-              className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all"
+              className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3.5 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all appearance-none"
             >
-              <option value="">Sélectionner une classe</option>
+              <option value="" className="bg-slate-900">Sélectionner une classe</option>
               {classes.map(cls => (
-                <option key={cls.id} value={cls.id}>{cls.nom_classe}</option>
+                <option key={cls.id} value={cls.id} className="bg-slate-900">{cls.nom_classe}</option>
               ))}
             </select>
           </div>
 
           <div className="space-y-2 min-w-0">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Discipline / Matière</label>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Discipline / Matière</label>
             <select
               value={selectedMatiere}
               onChange={(e) => setSelectedMatiere(e.target.value)}
-              className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all"
+              className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3.5 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all appearance-none"
             >
-              <option value="">Sélectionner une matière</option>
+              <option value="" className="bg-slate-900">Sélectionner une matière</option>
               {matieres.map(mat => (
-                <option key={mat.id} value={mat.id}>{mat.nom}</option>
+                <option key={mat.id} value={mat.id} className="bg-slate-900">{mat.nom}</option>
               ))}
             </select>
           </div>
 
           <div className="space-y-2 min-w-0">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Période scolaire</label>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Période scolaire</label>
             <select
               value={selectedTrimestre}
               onChange={(e) => setSelectedTrimestre(Number(e.target.value) as 1 | 2 | 3)}
-              className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all"
+              className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3.5 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all appearance-none"
             >
               {typePeriode === 'semestre' ? (
                 <>
-                  <option value={1}>1er Semestre</option>
-                  <option value={2}>2ème Semestre</option>
+                  <option value={1} className="bg-slate-900">1er Semestre</option>
+                  <option value={2} className="bg-slate-900">2ème Semestre</option>
                 </>
               ) : (
                 <>
-                  <option value={1}>1er Trimestre</option>
-                  <option value={2}>2ème Trimestre</option>
-                  <option value={3}>3ème Trimestre</option>
+                  <option value={1} className="bg-slate-900">1er Trimestre</option>
+                  <option value={2} className="bg-slate-900">2ème Trimestre</option>
+                  <option value={3} className="bg-slate-900">3ème Trimestre</option>
                 </>
               )}
             </select>
           </div>
 
           <div className="space-y-2 min-w-0">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Année Scolaire</label>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Année Scolaire</label>
             <div className="relative group">
-              <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-600 transition-transform group-hover:scale-110" />
+              <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-400 transition-transform group-hover:scale-110" />
               <input
                 type="text"
                 value={anneeScolaire}
                 onChange={(e) => setAnneeScolaire(e.target.value)}
-                className="w-full bg-slate-50 border-none rounded-xl pl-11 pr-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all"
+                className="w-full bg-white/5 border border-white/5 rounded-xl pl-11 pr-4 py-3.5 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all placeholder:text-slate-600"
                 placeholder="2024-2025"
               />
             </div>
           </div>
 
           <div className="space-y-2 min-w-0">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Séance d&apos;Évaluation</label>
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Séance d&apos;Évaluation</label>
             <div className="flex gap-2">
               <select
                 value={selectedEvaluation}
                 onChange={(e) => setSelectedEvaluation(e.target.value)}
-                className="flex-1 bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all min-w-0 truncate"
+                className="flex-1 bg-white/5 border border-white/5 rounded-xl px-4 py-3.5 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all min-w-0 truncate appearance-none"
               >
-                <option value="">Choisir</option>
+                <option value="" className="bg-slate-900">Choisir</option>
                 {evaluations.map(evaluation => (
-                  <option key={evaluation.id} value={evaluation.id}>
+                  <option key={evaluation.id} value={evaluation.id} className="bg-slate-900">
                     {evaluation.type.toUpperCase()} - {new Date(evaluation.date).toLocaleDateString('fr-FR')}
                   </option>
                 ))}
@@ -575,18 +575,18 @@ export default function NotesPage() {
         </div>
 
         {selectedEvaluationData && (
-          <div className="mt-8 p-6 bg-slate-900 rounded-2xl relative overflow-hidden group">
+          <div className="mt-8 p-6 bg-slate-950/50 backdrop-blur-xl border border-white/5 rounded-2xl relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500 opacity-5 blur-[80px] -mr-32 -mt-32" />
             <div className="relative z-10 flex flex-wrap items-center justify-between gap-6">
               <div className="flex items-center gap-6">
-                <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-sm border border-white/10 text-white">
-                  <Calendar className="w-6 h-6" />
+                <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center backdrop-blur-sm border border-white/10 text-white">
+                  <Calendar className="w-6 h-6 text-emerald-400" />
                 </div>
                 <div>
                   <div className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-1">Détails de l&apos;évaluation</div>
                   <div className="flex items-center gap-3">
                     <h3 className="text-lg font-black text-white capitalize">{selectedEvaluationData.type} de {selectedMatiereData?.nom}</h3>
-                    <span className="px-2 py-0.5 rounded-md bg-white/10 text-white text-[10px] font-black uppercase tracking-widest">
+                    <span className="px-2 py-0.5 rounded-md bg-white/10 text-white text-[10px] font-black uppercase tracking-widest border border-white/10">
                       Coef. {selectedEvaluationData.coef}
                     </span>
                   </div>
@@ -594,24 +594,24 @@ export default function NotesPage() {
               </div>
               <div className="flex items-center gap-4 text-right">
                 <div className="px-4 py-2 border-r border-white/10">
-                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Classe</div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Classe</div>
                   <div className="text-sm font-black text-white">{selectedClasseData?.nom_classe}</div>
                 </div>
                 <div className="px-4 py-2 border-r border-white/10">
-                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Date</div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Date</div>
                   <div className="text-sm font-black text-white uppercase">{new Date(selectedEvaluationData.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</div>
                 </div>
                 <div className="flex items-center gap-2 pl-4">
                   <button 
                     onClick={() => updateEvaluation(selectedEvaluationData)}
-                    className="p-2 rounded-lg bg-white/10 text-white hover:bg-emerald-500 transition-colors"
+                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-500 hover:text-emerald-400 hover:border-emerald-500/30 hover:bg-white/10 transition-all"
                     title="Modifier le barème"
                   >
                     <Edit className="w-4 h-4" />
                   </button>
                   <button 
                     onClick={() => deleteEvaluation(selectedEvaluationData.id)}
-                    className="p-2 rounded-lg bg-white/10 text-white hover:bg-red-500 transition-colors"
+                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-500 hover:text-rose-400 hover:border-rose-500/30 hover:bg-white/10 transition-all"
                     title="Supprimer l'évaluation"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -626,20 +626,20 @@ export default function NotesPage() {
       {/* Notes Section with Save Button Fixed/Scrolling */}
       {selectedEvaluation && eleves.length > 0 && (
         <div className="space-y-6">
-          <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="premium-glass rounded-[2rem] overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="px-8 py-6 border-b border-white/5 bg-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-1">Tableau de Saisie</h2>
+                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 mb-1">Tableau de Saisie</h2>
                 <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-emerald-600" />
-                  <span className="text-base font-black text-slate-900">{eleves.length} élèves inscrits</span>
+                  <Users className="w-4 h-4 text-emerald-400" />
+                  <span className="text-base font-black text-white">{eleves.length} élèves inscrits</span>
                 </div>
               </div>
               
               <button
                 onClick={saveNotes}
                 disabled={saving}
-                className="flex items-center justify-center gap-3 px-8 py-3.5 bg-slate-900 hover:bg-emerald-600 text-white text-sm font-black rounded-xl transition-all shadow-xl shadow-slate-900/10 disabled:opacity-50"
+                className="flex items-center justify-center gap-3 px-8 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-black rounded-xl transition-all shadow-xl shadow-emerald-900/20 disabled:opacity-50 active:scale-95"
               >
                 {saving ? (
                   <>
@@ -656,30 +656,30 @@ export default function NotesPage() {
             </div>
 
             {/* DESKTOP TABLE VIEW */}
-            <div className="hidden md:block overflow-x-auto">
+            <div className="hidden md:block overflow-x-auto scrollbar-thin scrollbar-thumb-white/10">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/30">
-                    <th className="text-left px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Élève</th>
-                    <th className="text-center px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest w-40">Note / {selectedEvaluationData?.bareme || 20}</th>
-                    <th className="text-center px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest w-32">Évaluation</th>
-                    <th className="text-center px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest w-40 bg-slate-50/50">Moyenne Générale</th>
+                  <tr className="border-b border-white/5 bg-white/5">
+                    <th className="text-left px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Élève</th>
+                    <th className="text-center px-4 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest w-40">Note / {selectedEvaluationData?.bareme || 20}</th>
+                    <th className="text-center px-4 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest w-32">Évaluation</th>
+                    <th className="text-center px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest w-40 bg-white/5">Moyenne Générale</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-white/5">
                   {eleves.map((eleve) => {
                     const note = notes[eleve.id]
                     const moyenneEleve = moyennesGenerales[eleve.id]
                     return (
-                      <tr key={eleve.id} className="group hover:bg-slate-50/80 transition-all duration-300">
+                      <tr key={eleve.id} className="group hover:bg-white/5 transition-all duration-300">
                         <td className="px-8 py-5">
                           <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 text-xs font-black uppercase transition-transform group-hover:scale-110">
+                            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-slate-500 text-xs font-black uppercase transition-transform group-hover:scale-110 border border-white/10">
                               {eleve.prenom[0]}{eleve.nom[0]}
                             </div>
                             <div>
-                              <p className="text-base font-black text-slate-900 leading-tight">{eleve.prenom} {eleve.nom}</p>
-                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{eleve.matricule}</p>
+                              <p className="text-base font-black text-white leading-tight">{eleve.prenom} {eleve.nom}</p>
+                              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{eleve.matricule}</p>
                             </div>
                           </div>
                         </td>
@@ -698,31 +698,33 @@ export default function NotesPage() {
                               }))}
                               className={`w-full px-4 py-3 text-center rounded-[1rem] text-base font-black transition-all border-2 focus:outline-none focus:ring-4 ${
                                 note !== undefined 
-                                  ? 'bg-white border-emerald-500/20 text-emerald-700' 
-                                  : 'bg-slate-50 border-transparent text-slate-400 focus:bg-white focus:border-emerald-500'
+                                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                                  : 'bg-white/5 border-transparent text-slate-600 focus:bg-white/10 focus:border-emerald-500/30'
                               }`}
                             />
                           </div>
                         </td>
                         <td className="px-4 py-5 text-center">
-                          <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider ${getNoteColor(note, selectedEvaluationData?.bareme)}`}>
+                          <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider ${
+                             getNoteColor(note, selectedEvaluationData?.bareme).replace('bg-', 'bg-opacity-20 bg-')
+                          }`}>
                             {getMention(note, selectedEvaluationData?.bareme)}
                           </span>
                         </td>
-                        <td className="px-8 py-5 text-center bg-slate-50/30">
+                        <td className="px-8 py-5 text-center bg-white/5">
                           {moyenneEleve !== undefined ? (
                             <div className="flex flex-col items-center">
-                              <span className="text-lg font-black text-slate-900">
+                              <span className="text-lg font-black text-white">
                                 {(selectedClasseData?.niveau_info?.cycle === 'primaire' ? moyenneEleve / 2 : moyenneEleve).toFixed(2)}
                               </span>
-                              <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest">
+                              <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest">
                                 {typePeriode === 'semestre' ? 'Sem.' : 'Trim.'} {selectedTrimestre}
                               </span>
                             </div>
                           ) : (
                             <div className="flex flex-col items-center opacity-30">
-                              <span className="text-sm font-black text-slate-300">—</span>
-                              <span className="text-[9px] text-slate-300 font-black uppercase">N/A</span>
+                              <span className="text-sm font-black text-slate-500">—</span>
+                              <span className="text-[9px] text-slate-500 font-black uppercase">N/A</span>
                             </div>
                           )}
                         </td>
@@ -734,27 +736,27 @@ export default function NotesPage() {
             </div>
 
             {/* MOBILE CARD VIEW */}
-            <div className="md:hidden divide-y divide-slate-100">
+            <div className="md:hidden divide-y divide-white/5">
               {eleves.map((eleve) => {
                 const note = notes[eleve.id]
                 const moyenneEleve = moyennesGenerales[eleve.id]
                 return (
-                  <div key={eleve.id} className="p-6 space-y-4">
+                  <div key={eleve.id} className="p-6 space-y-4 hover:bg-white/5 transition-all duration-300">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black text-sm uppercase">
+                      <div className="w-12 h-12 rounded-2xl bg-white/5 text-white flex items-center justify-center font-black text-sm uppercase border border-white/10">
                         {eleve.prenom[0]}{eleve.nom[0]}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-base font-black text-slate-900 truncate">
+                        <p className="text-base font-black text-white truncate">
                           {eleve.prenom} {eleve.nom}
                         </p>
-                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
+                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">
                           {eleve.matricule}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Moyenne Générale</p>
-                        <p className="text-base font-black text-slate-900">
+                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Moyenne Générale</p>
+                        <p className="text-base font-black text-white">
                           {moyenneEleve !== undefined 
                             ? (selectedClasseData?.niveau_info?.cycle === 'primaire' ? moyenneEleve / 2 : moyenneEleve).toFixed(2)
                             : '—'}
@@ -764,7 +766,7 @@ export default function NotesPage() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">
-                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Note / {selectedEvaluationData?.bareme || 20}</label>
+                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Note / {selectedEvaluationData?.bareme || 20}</label>
                         <input
                           type="number"
                           min="0"
@@ -778,13 +780,15 @@ export default function NotesPage() {
                           }))}
                           className={`w-full px-4 py-3 rounded-xl text-lg font-black transition-all border-2 focus:outline-none ${
                             note !== undefined 
-                              ? 'bg-emerald-50 border-emerald-500/20 text-emerald-700' 
-                              : 'bg-slate-50 border-transparent text-slate-400 focus:bg-white focus:border-emerald-500'
+                              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                              : 'bg-white/5 border-transparent text-slate-600 focus:bg-white/10 focus:border-emerald-500/30'
                           }`}
                         />
                       </div>
                       <div className="flex flex-col justify-end">
-                         <div className={`h-12 flex items-center justify-center rounded-xl text-[10px] font-black uppercase tracking-widest border border-current opacity-70 ${getNoteColor(note, selectedEvaluationData?.bareme)}`}>
+                         <div className={`h-12 flex items-center justify-center rounded-xl text-[10px] font-black uppercase tracking-widest border border-current opacity-70 ${
+                            getNoteColor(note, selectedEvaluationData?.bareme).replace('bg-', 'bg-opacity-20 bg-')
+                         }`}>
                             {getMention(note, selectedEvaluationData?.bareme)}
                          </div>
                       </div>
