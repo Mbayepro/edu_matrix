@@ -53,35 +53,35 @@ function StatCard({
   trend?: { val: string, positive: boolean }
 }) {
   const c = {
-    emerald: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20',
-    blue:    'text-blue-500 bg-blue-500/10 border-blue-500/20',
-    amber:   'text-amber-500 bg-amber-500/10 border-amber-500/20',
-    violet:  'text-violet-500 bg-violet-500/10 border-violet-500/20',
+    emerald: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20 shadow-emerald-500/10',
+    blue:    'text-blue-400 bg-blue-500/10 border-blue-500/20 shadow-blue-500/10',
+    amber:   'text-amber-400 bg-amber-500/10 border-amber-500/20 shadow-amber-500/10',
+    violet:  'text-violet-400 bg-violet-500/10 border-violet-500/20 shadow-violet-500/10',
   }[color]
 
   return (
-    <div className="premium-glass rounded-[2.5rem] p-7 transition-all duration-500 group relative overflow-hidden premium-glass-hover">
-      <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-110" />
+    <div className="premium-glass rounded-[3rem] p-8 transition-all duration-500 group relative overflow-hidden premium-glass-hover">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700" />
       
-      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 border transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 ${c}`}>
-        <Icon className="w-6 h-6" />
+      <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center mb-6 transition-all duration-700 group-hover:scale-110 group-hover:rotate-6 shadow-2xl ${c}`}>
+        <Icon className="w-8 h-8" />
       </div>
 
-      <div className="space-y-1 relative z-10">
+      <div className="space-y-2 relative z-10">
         <div className="flex items-center justify-between">
-          <h3 className="text-3xl font-black text-white tracking-tight">{value.toLocaleString('fr-FR')}</h3>
+          <h3 className="text-4xl font-black text-white tracking-tighter">{value.toLocaleString('fr-FR')}</h3>
           {trend && (
-            <div className={`flex items-center gap-0.5 text-[10px] font-black px-2 py-1 rounded-lg ${trend.positive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
-              {trend.positive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+            <div className={`flex items-center gap-1 text-[10px] font-black px-2.5 py-1.5 rounded-xl border ${trend.positive ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'}`}>
+              {trend.positive ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
               {trend.val}
             </div>
           )}
         </div>
-        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{label}</p>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{label}</p>
         {subtitle && (
-          <div className="flex items-center gap-1.5 mt-3">
-            <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse" />
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">{subtitle}</p>
+          <div className="flex items-center gap-2 mt-4">
+            <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(251,191,36,0.5)]" />
+            <p className="text-[10px] text-slate-400 font-black uppercase tracking-tight">{subtitle}</p>
           </div>
         )}
       </div>
@@ -274,49 +274,58 @@ export default function DashboardPage() {
     <div className="space-y-8 max-w-7xl mx-auto pb-20 animate-in fade-in duration-700">
 
       {/* ── Visual Command Center ── */}
-      <div className="relative premium-glass rounded-[3rem] p-10 lg:p-14 text-white overflow-hidden shadow-2xl border border-white/5 group">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-600/5 rounded-full blur-[120px] -mr-48 -mt-48 transition-all group-hover:bg-emerald-600/10" />
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-amber-400/5 rounded-full blur-[100px] -ml-32 -mb-32" />
+      <div className="relative premium-glass rounded-[4rem] p-10 lg:p-16 text-white overflow-hidden shadow-2xl border border-white/5 group">
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-[120px] -mr-48 -mt-48 transition-all duration-1000 group-hover:bg-emerald-500/20" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-amber-400/5 rounded-full blur-[100px] -ml-32 -mb-32" />
         
-        <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-12">
-          <div className="flex-1 text-center lg:text-left space-y-6">
-            <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">
-              <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-              Direction Académique
+        <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-16">
+          <div className="flex-1 text-center lg:text-left space-y-8">
+            <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400 shadow-xl">
+              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-ping" />
+              EduMatrix Intelligence v1.0
             </div>
-            <h1 className="text-4xl lg:text-6xl font-black tracking-tight leading-none">
-              Bonjour, <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-amber-200">{profile?.prenom}!</span>
+            <h1 className="text-5xl lg:text-7xl font-black tracking-tighter leading-[0.9]">
+              Bonjour, <br/>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-amber-200 animate-gradient">
+                {profile?.prenom || 'Directeur'}!
+              </span>
             </h1>
-            <p className="text-slate-400 text-lg font-medium max-w-xl mx-auto lg:mx-0 leading-relaxed">
-              Votre établissement <span className="text-white font-bold">{ecole?.nom}</span> est sous contrôle. Voici les indicateurs clés de ce matin.
+            <p className="text-slate-300 text-xl font-medium max-w-xl mx-auto lg:mx-0 leading-relaxed">
+              L&apos;établissement <span className="text-white font-black border-b-2 border-emerald-500/30 pb-1">{ecole?.nom}</span> est piloté avec succès. Voici vos priorités stratégiques.
             </p>
             
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-4">
-               <div className="flex items-center gap-2 bg-white/5 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Système Sécurisé</span>
+            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-6">
+               <div className="flex items-center gap-3 bg-white/5 backdrop-blur-2xl px-6 py-3 rounded-2xl border border-white/10 transition-all hover:bg-white/10 hover:border-emerald-500/30">
+                  <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                  <span className="text-[11px] font-black uppercase tracking-widest text-emerald-400">Sécurité Active</span>
                </div>
-               <div className="flex items-center gap-2 bg-white/5 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/10">
-                  <Clock className="w-4 h-4 text-amber-400" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Sync. Temps Réel</span>
+               <div className="flex items-center gap-3 bg-white/5 backdrop-blur-2xl px-6 py-3 rounded-2xl border border-white/10 transition-all hover:bg-white/10 hover:border-amber-500/30">
+                  <Clock className="w-5 h-5 text-amber-400" />
+                  <span className="text-[11px] font-black uppercase tracking-widest text-amber-400">Sync. 20ms</span>
                </div>
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-6">
-            <div className="bg-white/5 backdrop-blur-3xl rounded-[2.5rem] p-10 border border-white/10 text-center min-w-[180px] shadow-2xl transition-transform hover:scale-105">
-              <p className="text-5xl font-black text-emerald-400 mb-2 emerald-glow-text">{stats?.presencesAujourd ?? 0}</p>
-              <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Présences du jour</p>
-              <div className="mt-4 flex items-center justify-center gap-1.5">
-                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
-                 <span className="text-[9px] font-bold text-emerald-500/80 uppercase">En direct</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 w-full lg:w-auto">
+            <div className="bg-white/5 backdrop-blur-3xl rounded-[3rem] p-12 border text-center shadow-2xl transition-all hover:scale-105 hover:bg-white/10 group/card relative overflow-hidden border-emerald-500/10">
+              <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover/card:opacity-100 transition-opacity" />
+              <p className="text-7xl font-black text-emerald-400 mb-2 emerald-glow-text leading-none tracking-tighter">
+                {stats?.presencesAujourd ?? 0}
+              </p>
+              <p className="text-[11px] text-slate-400 font-black uppercase tracking-[0.3em] relative z-10">Présences</p>
+              <div className="mt-6 flex items-center justify-center gap-2 relative z-10">
+                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
+                 <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">En direct</span>
               </div>
             </div>
-            <div className="bg-white/5 backdrop-blur-3xl rounded-[2.5rem] p-10 border border-white/10 text-center min-w-[180px] shadow-2xl transition-transform hover:scale-105">
-              <p className="text-5xl font-black text-amber-400 mb-2">{stats?.elevesImpayes ?? 0}</p>
-              <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Paiements dus</p>
-              <div className="mt-4 flex items-center justify-center gap-1.5">
-                 <span className="text-[9px] font-bold text-amber-500/80 uppercase tracking-tighter">Relances suggérées</span>
+            <div className="bg-white/5 backdrop-blur-3xl rounded-[3rem] p-12 border text-center shadow-2xl transition-all hover:scale-105 hover:bg-white/10 group/card relative overflow-hidden border-rose-500/10">
+              <div className="absolute inset-0 bg-rose-500/5 opacity-0 group-hover/card:opacity-100 transition-opacity" />
+              <p className="text-7xl font-black text-rose-400 mb-2 leading-none tracking-tighter shadow-rose-500/20 drop-shadow-xl">
+                {stats?.elevesImpayes ?? 0}
+              </p>
+              <p className="text-[11px] text-slate-400 font-black uppercase tracking-[0.3em] relative z-10">Impayés</p>
+              <div className="mt-6 flex items-center justify-center gap-2 relative z-10">
+                 <span className="text-[10px] font-black text-rose-400 uppercase tracking-widest bg-rose-500/10 px-3 py-1 rounded-lg border border-rose-500/20">Alerte Seuil</span>
               </div>
             </div>
           </div>
@@ -341,7 +350,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <h2 className="font-black text-white text-base uppercase tracking-wider">Activité Présences</h2>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Derniers 7 jours d&apos;appel</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Derniers 7 jours d&apos;appel</p>
               </div>
             </div>
           </div>
@@ -371,7 +380,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <h2 className="font-black text-white text-base uppercase tracking-wider">Performance Globale</h2>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Moyennes par classe</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Moyennes par classe</p>
               </div>
             </div>
           </div>
@@ -400,20 +409,24 @@ export default function DashboardPage() {
          <DailyReport ecoleId={ecoleId || ''} />
          <AtRiskPanel ecoleId={ecoleId || ''} />
          
-         <div className="bg-slate-900 rounded-[3rem] p-10 text-white relative overflow-hidden flex flex-col justify-center shadow-2xl shadow-slate-900/20">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-32 -mt-32" />
+         <div className="bg-slate-900 rounded-[3rem] p-10 text-white relative overflow-hidden flex flex-col justify-center shadow-2xl shadow-slate-900/40 border border-white/5 group">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl -mr-32 -mt-32 transition-all group-hover:scale-150 duration-1000" />
             <h2 className="text-xl font-black mb-3 tracking-tight uppercase">Vision Stratégique</h2>
-            <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest leading-relaxed mb-6">
+            <p className="text-slate-400 text-[11px] font-black uppercase tracking-[0.2em] leading-relaxed mb-8">
               Objectif du mois : <span className="text-emerald-400">95%</span> d&apos;assiduité.
             </p>
-            <div className="space-y-3">
-               <Link href="/dashboard/presences" className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-2xl group hover:bg-white/10 transition-all">
-                  <span className="text-[10px] font-black uppercase tracking-widest">Gérer Présences</span>
-                  <ChevronRight className="w-4 h-4 text-emerald-400 transition-transform group-hover:translate-x-1" />
+            <div className="space-y-4">
+               <Link href="/dashboard/presences" className="flex items-center justify-between p-5 bg-white/5 border border-white/10 rounded-2xl group/link hover:bg-white/10 transition-all hover:border-emerald-500/30">
+                  <span className="text-[11px] font-black uppercase tracking-widest">Gérer Présences</span>
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-400 transition-transform group-hover/link:translate-x-1">
+                    <ChevronRight className="w-5 h-5" />
+                  </div>
                </Link>
-               <Link href="/dashboard/notes" className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-2xl group hover:bg-white/10 transition-all">
-                  <span className="text-[10px] font-black uppercase tracking-widest">Saisir Notes</span>
-                  <ChevronRight className="w-4 h-4 text-emerald-400 transition-transform group-hover:translate-x-1" />
+               <Link href="/dashboard/notes" className="flex items-center justify-between p-5 bg-white/5 border border-white/10 rounded-2xl group/link hover:bg-white/10 transition-all hover:border-blue-500/30">
+                  <span className="text-[11px] font-black uppercase tracking-widest">Saisir Notes</span>
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 transition-transform group-hover/link:translate-x-1">
+                    <ChevronRight className="w-5 h-5" />
+                  </div>
                </Link>
             </div>
          </div>
@@ -448,12 +461,12 @@ export default function DashboardPage() {
                           </div>
                           <div>
                             <p className="text-sm font-black text-white truncate group-hover:text-emerald-400 transition-colors uppercase">{e.prenom} {e.nom}</p>
-                            <p className="text-[10px] text-slate-500 font-black uppercase tracking-tighter mt-0.5">{(e.classe as any)?.nom_classe}</p>
+                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-tighter mt-0.5">{(e.classe as any)?.nom_classe}</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-8 py-5 text-right">
-                        <p className="text-[10px] font-mono font-black text-slate-500 bg-white/5 px-2 py-1 rounded-lg inline-block">{e.matricule}</p>
+                        <p className="text-[10px] font-mono font-black text-slate-400 bg-white/5 px-2 py-1 rounded-lg inline-block border border-white/5">{e.matricule}</p>
                       </td>
                     </tr>
                   ))}
@@ -483,7 +496,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-black text-white truncate uppercase group-hover:text-amber-400 transition-colors">{a.eleve_nom}</p>
-                      <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-0.5">{a.classe_nom} • {a.statut}</p>
+                      <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-0.5">{a.classe_nom} • {a.statut}</p>
                     </div>
                     {a.telephone && (
                       <button
@@ -512,11 +525,11 @@ export default function DashboardPage() {
              { label: 'Feuille d\'Appel',   href: '/dashboard/presences',     icon: UserCheck, color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
              { label: 'Configuration',      href: '/dashboard/parametres',    icon: BookOpen, color: 'text-violet-400 bg-violet-500/10 border-violet-500/20' },
            ].map((a) => (
-             <Link key={a.label} href={a.href} className="group premium-glass rounded-[2.5rem] p-6 transition-all duration-500 flex flex-col items-center text-center gap-4 premium-glass-hover">
-                <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-500 group-hover:scale-110 group-hover:rotate-6 ${a.color} border shadow-lg`}>
-                   <a.icon className="w-8 h-8" />
+             <Link key={a.label} href={a.href} className="group premium-glass rounded-[3rem] p-8 transition-all duration-700 flex flex-col items-center text-center gap-5 premium-glass-hover border-white/5">
+                <div className={`w-20 h-20 rounded-[2rem] flex items-center justify-center transition-all duration-700 group-hover:scale-110 group-hover:rotate-6 ${a.color} shadow-2xl`}>
+                   <a.icon className="w-10 h-10" />
                 </div>
-                <span className="text-xs font-black text-slate-500 group-hover:text-white uppercase tracking-widest">{a.label}</span>
+                <span className="text-[11px] font-black text-slate-400 group-hover:text-emerald-400 uppercase tracking-[0.2em] transition-colors">{a.label}</span>
              </Link>
            ))}
         </div>
