@@ -98,13 +98,13 @@ export default function DailyReport({ ecoleId }: { ecoleId: string }) {
            </div>
            <div>
               <h2 className="font-black text-white text-base uppercase tracking-wider">Bilan du Jour</h2>
-              <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Temps réel — {new Date().toLocaleDateString('fr-FR')}</p>
+              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Temps réel — {new Date().toLocaleDateString('fr-FR')}</p>
            </div>
         </div>
         <button 
           onClick={archiveReport}
           disabled={saving}
-          className="p-3 rounded-xl bg-white/5 text-slate-500 hover:text-emerald-400 hover:bg-white/10 transition-all disabled:opacity-50 border border-white/10"
+          className="p-3 rounded-xl bg-white/5 text-slate-400 hover:text-emerald-400 hover:bg-white/10 transition-all disabled:opacity-50 border border-white/10"
           title="Archiver le rapport"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -115,14 +115,14 @@ export default function DailyReport({ ecoleId }: { ecoleId: string }) {
          {/* Stats Grid */}
          <div className="grid grid-cols-2 gap-4">
             <div className="bg-white/5 rounded-3xl p-5 border border-white/5">
-               <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Présence</p>
+               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Présence</p>
                <div className="flex items-center gap-2">
                   <span className="text-xl font-black text-white">{stats.presence_rate.toFixed(0)}%</span>
                   {stats.presence_rate >= 90 ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <AlertCircle className="w-4 h-4 text-amber-500" />}
                </div>
             </div>
             <div className="bg-white/5 rounded-3xl p-5 border border-white/5">
-               <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Cours donnés</p>
+               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Cours donnés</p>
                <div className="flex items-center gap-2">
                   <span className="text-xl font-black text-white">{stats.nb_emargements}</span>
                   <TrendingUp className="w-4 h-4 text-blue-500" />
@@ -145,17 +145,17 @@ export default function DailyReport({ ecoleId }: { ecoleId: string }) {
 
          {/* Today's Context */}
          <div className="space-y-3">
-            <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-500 px-1">
+            <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">
                <span>Détails</span>
                <History className="w-3.5 h-3.5" />
             </div>
             <div className="space-y-2">
                <div className="flex justify-between items-center p-3 bg-white/5 rounded-xl border border-white/5">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase">Élèves présents</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Élèves présents</span>
                   <span className="text-xs font-black text-white">{stats.presents}</span>
                </div>
                <div className="flex justify-between items-center p-3 bg-white/5 rounded-xl border border-white/5">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase">Absences signalées</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase">Absences signalées</span>
                   <span className="text-xs font-black text-rose-500">{stats.absents}</span>
                </div>
             </div>

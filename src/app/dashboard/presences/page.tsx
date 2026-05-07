@@ -208,7 +208,7 @@ export default function PresencesPage() {
             </div>
             <h1 className="text-3xl font-black text-white tracking-tight">Feuille de Présence</h1>
           </div>
-          <p className="text-sm text-slate-400 font-medium uppercase tracking-[0.1em]">
+          <p className="text-sm text-slate-300 font-medium uppercase tracking-[0.1em]">
             {formatDateLong(new Date())}
           </p>
         </div>
@@ -245,7 +245,7 @@ export default function PresencesPage() {
             <button
               onClick={() => setActiveTab('scanner')}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                activeTab === 'scanner' ? 'bg-white/10 text-emerald-400 shadow-sm' : 'text-slate-500'
+                activeTab === 'scanner' ? 'bg-white/10 text-emerald-400 shadow-sm' : 'text-slate-400'
               }`}
             >
               <QrCode className="w-4 h-4" />
@@ -254,7 +254,7 @@ export default function PresencesPage() {
             <button
               onClick={() => setActiveTab('list')}
               className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                activeTab === 'list' ? 'bg-white/10 text-emerald-400 shadow-sm' : 'text-slate-500'
+                activeTab === 'list' ? 'bg-white/10 text-emerald-400 shadow-sm' : 'text-slate-400'
               }`}
             >
               <UserCheck className="w-4 h-4" />
@@ -317,8 +317,8 @@ export default function PresencesPage() {
 
                 <div className="p-0 flex-1 overflow-y-auto max-h-[600px] scrollbar-thin scrollbar-thumb-white/10">
                   {eleves.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-48 text-slate-500">
-                      <AlertCircle className="w-8 h-8 mb-2 text-slate-700" />
+                    <div className="flex flex-col items-center justify-center h-48 text-slate-400">
+                      <AlertCircle className="w-8 h-8 mb-2 text-slate-600" />
                       <p className="text-sm font-black uppercase tracking-widest">Aucun élève dans cette classe.</p>
                     </div>
                   ) : (
@@ -326,7 +326,7 @@ export default function PresencesPage() {
                       {filteredEleves.map((eleve) => (
                         <li key={eleve.id} className="px-6 py-4 hover:bg-white/5 transition-all duration-300 group flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                           <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-white/5 text-slate-500 rounded-xl flex items-center justify-center font-black text-[11px] shrink-0 uppercase border border-white/10 group-hover:scale-110 transition-transform duration-500 group-hover:border-emerald-500/30 group-hover:text-emerald-400">
+                            <div className="w-12 h-12 bg-white/5 text-slate-400 rounded-xl flex items-center justify-center font-black text-[11px] shrink-0 uppercase border border-white/10 group-hover:scale-110 transition-transform duration-500 group-hover:border-emerald-500/30 group-hover:text-emerald-400">
                               {eleve.prenom[0]}{eleve.nom[0]}
                             </div>
                             <div className="min-w-0">
@@ -335,7 +335,7 @@ export default function PresencesPage() {
                               </p>
                               <div className="flex items-center gap-2 mt-1.5">
                                 {eleve.matricule && (
-                                  <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest bg-white/5 px-2 py-0.5 rounded border border-white/5">
+                                  <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest bg-white/5 px-2 py-0.5 rounded border border-white/5">
                                     {eleve.matricule}
                                   </span>
                                 )}
@@ -367,7 +367,7 @@ export default function PresencesPage() {
                                   className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                                     eleve.statut === 'présent' 
                                       ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20 active:scale-95' 
-                                      : 'text-slate-500 hover:text-emerald-400 hover:bg-white/5'
+                                      : 'text-slate-400 hover:text-emerald-400 hover:bg-white/5'
                                   }`}
                                 >
                                   P

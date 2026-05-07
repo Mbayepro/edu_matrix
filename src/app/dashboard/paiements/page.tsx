@@ -538,7 +538,7 @@ export default function PaiementsPage() {
             </div>
             <h1 className="text-3xl font-black text-white tracking-tight leading-none">Paiements Scolaires</h1>
           </div>
-          <p className="text-sm text-slate-400 font-medium max-w-2xl tracking-tight">
+          <p className="text-sm text-slate-300 font-medium max-w-2xl tracking-tight">
             Pilotez les encaissements et le recouvrement. Le statut est synchronisé automatiquement.
           </p>
         </div>
@@ -569,7 +569,7 @@ export default function PaiementsPage() {
               <Users className="w-7 h-7" />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Total élèves</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Total élèves</p>
               <div className="text-2xl font-black text-white leading-none">{totalEleves}</div>
             </div>
           </div>
@@ -582,9 +582,9 @@ export default function PaiementsPage() {
               <TrendingDown className="w-7 h-7" />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Reste à recouvrer</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Reste à recouvrer</p>
               <div className="text-2xl font-black text-white leading-none">
-                {loading ? '...' : totalRestant.toLocaleString('fr-FR')} <span className="text-[10px] font-black ml-1 uppercase text-slate-500">F</span>
+                {loading ? '...' : totalRestant.toLocaleString('fr-FR')} <span className="text-[10px] font-black ml-1 uppercase text-slate-400">F</span>
               </div>
             </div>
           </div>
@@ -597,7 +597,7 @@ export default function PaiementsPage() {
               <TrendingUp className="w-7 h-7" />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Encaissé</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Encaissé</p>
               <div className="text-2xl font-black text-emerald-400 leading-none">
                 {loading ? '...' : totalEncaisse.toLocaleString('fr-FR')} <span className="text-[10px] font-black ml-1 uppercase opacity-60">F</span>
               </div>
@@ -612,9 +612,9 @@ export default function PaiementsPage() {
               <DollarSign className="w-7 h-7" />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Recouvrement</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Recouvrement</p>
               <div className="text-2xl font-black text-white leading-none">
-                {tauxRecouvrement.toFixed(1)} <span className="text-[10px] font-black ml-1 uppercase text-slate-500">%</span>
+                {tauxRecouvrement.toFixed(1)} <span className="text-[10px] font-black ml-1 uppercase text-slate-400">%</span>
               </div>
             </div>
           </div>
@@ -625,16 +625,16 @@ export default function PaiementsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="premium-glass p-8 transition-all duration-500">
           <div className="flex items-center justify-between mb-8">
-            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-3">
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-3">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               Répartition des statuts
             </h3>
-            <PieChart className="w-5 h-5 text-slate-600 group-hover:text-emerald-400 transition-colors" />
+            <PieChart className="w-5 h-5 text-slate-500 group-hover:text-emerald-400 transition-colors" />
           </div>
           <div className="space-y-6">
             <div className="space-y-2">
               <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-widest">
-                <span className="text-slate-500">Dossiers soldés</span>
+                <span className="text-slate-400">Dossiers soldés</span>
                 <span className="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">{elevesParStatut.payé} élèves</span>
               </div>
               <div className="w-full bg-white/5 rounded-full h-3.5 p-1 border border-white/5 shadow-inner">
@@ -647,7 +647,7 @@ export default function PaiementsPage() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-widest">
-                <span className="text-slate-500">Paiements partiels</span>
+                <span className="text-slate-400">Paiements partiels</span>
                 <span className="text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">{elevesParStatut.partiel} élèves</span>
               </div>
               <div className="w-full bg-white/5 rounded-full h-3.5 p-1 border border-white/5 shadow-inner">
@@ -660,7 +660,7 @@ export default function PaiementsPage() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-widest">
-                <span className="text-slate-500">Dossiers en attente</span>
+                <span className="text-slate-400">Dossiers en attente</span>
                 <span className="text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-500/20">{elevesParStatut.impayé} élèves</span>
               </div>
               <div className="w-full bg-white/5 rounded-full h-3.5 p-1 border border-white/5 shadow-inner">
@@ -675,18 +675,18 @@ export default function PaiementsPage() {
 
         <div className="premium-glass p-8 transition-all duration-500">
           <div className="flex items-center justify-between mb-8">
-            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-3">
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-3">
               <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
               Recettes Mensuelles
             </h3>
-            <BarChart3 className="w-5 h-5 text-slate-600 group-hover:text-amber-400 transition-colors" />
+            <BarChart3 className="w-5 h-5 text-slate-400 group-hover:text-amber-400 transition-colors" />
           </div>
           <div className="space-y-3">
             {Object.entries(paiementsParMois).slice(0, 5).map(([mois, montant]) => (
               <div key={mois} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 shadow-sm hover:translate-x-1 transition-transform cursor-default">
-                <span className="text-[11px] font-black uppercase tracking-[0.1em] text-slate-500">{mois}</span>
+                <span className="text-[11px] font-black uppercase tracking-[0.1em] text-slate-400">{mois}</span>
                 <span className="text-sm font-black text-white">
-                  {montant.toLocaleString('fr-FR')} <span className="text-[10px] text-slate-500">F</span>
+                  {montant.toLocaleString('fr-FR')} <span className="text-[10px] text-slate-400">F</span>
                 </span>
               </div>
             ))}
@@ -706,7 +706,7 @@ export default function PaiementsPage() {
             <button
               onClick={() => setActiveTab('tous')}
               className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                activeTab === 'tous' ? 'bg-white/10 text-white shadow-sm' : 'text-slate-500 hover:text-white'
+                activeTab === 'tous' ? 'bg-white/10 text-white shadow-sm' : 'text-slate-400 hover:text-white'
               }`}
             >
               Tous les dossiers
@@ -714,10 +714,10 @@ export default function PaiementsPage() {
             <button
               onClick={() => setActiveTab('impayes')}
               className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
-                activeTab === 'impayes' ? 'bg-white/10 text-rose-400 shadow-sm' : 'text-slate-500 hover:text-rose-400'
+                activeTab === 'impayes' ? 'bg-white/10 text-rose-400 shadow-sm' : 'text-slate-400 hover:text-rose-400'
               }`}
             >
-              <div className={`w-1.5 h-1.5 rounded-full ${activeTab === 'impayes' ? 'bg-rose-500 animate-pulse' : 'bg-slate-700'}`} />
+              <div className={`w-1.5 h-1.5 rounded-full ${activeTab === 'impayes' ? 'bg-rose-500 animate-pulse' : 'bg-slate-500'}`} />
               Retardataires ({eleves.filter(e => {
                 const { reste } = getEleveBalance(e.id);
                 return reste > 0 || e.statut_paiement === 'impayé' || e.statut_paiement === 'partiel';
@@ -726,13 +726,13 @@ export default function PaiementsPage() {
           </div>
 
           <div className="relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-400 transition-colors" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher un dossier élève…"
-              className="w-full pl-12 pr-6 py-4.5 bg-white/5 border border-white/10 rounded-[2rem] text-sm font-bold text-white outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500/30 transition-all shadow-sm placeholder:text-slate-600"
+              className="w-full pl-12 pr-6 py-4.5 bg-white/5 border border-white/10 rounded-[2rem] text-sm font-bold text-white outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500/30 transition-all shadow-sm placeholder:text-slate-400"
             />
           </div>
 
@@ -752,10 +752,10 @@ export default function PaiementsPage() {
             ) : filteredEleves.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center py-24 px-10 text-center animate-in fade-in duration-500">
                 <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6">
-                  <Users className="w-10 h-10 text-slate-600" />
+                  <Users className="w-10 h-10 text-slate-500" />
                 </div>
                 <h3 className="text-lg font-black text-white mb-1 tracking-tight">Aucun résultat</h3>
-                <p className="text-sm font-medium text-slate-500 max-w-xs mx-auto">
+                <p className="text-sm font-medium text-slate-400 max-w-xs mx-auto">
                   Aucun élève ne correspond à votre recherche pour le moment.
                 </p>
               </div>
@@ -782,8 +782,8 @@ export default function PaiementsPage() {
                         {e.prenom} {e.nom}
                       </p>
                       <div className="flex items-center gap-2">
-                        <p className="text-[10px] text-slate-500 font-bold tracking-[0.1em] uppercase mt-0.5">
-                          {(e.classe as any)?.nom_classe ?? 'NON ASSIGNÉ'} · <span className="text-slate-600 font-black">{e.matricule}</span>
+                        <p className="text-[10px] text-slate-400 font-bold tracking-[0.1em] uppercase mt-0.5">
+                          {(e.classe as any)?.nom_classe ?? 'NON ASSIGNÉ'} · <span className="text-slate-400 font-black">{e.matricule}</span>
                         </p>
                         {getEleveBalance(e.id).reste > 0 && (
                           <span className="text-[10px] font-black text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded-md border border-rose-500/20">
@@ -846,7 +846,7 @@ export default function PaiementsPage() {
                                      value={tempPhone}
                                      onChange={(ev) => setTempPhone(ev.target.value)}
                                      placeholder="+221..."
-                                     className="w-24 px-2 py-1.5 bg-white/10 border border-white/10 rounded-lg text-[10px] font-bold outline-none text-white placeholder:text-slate-600"
+                                     className="w-24 px-2 py-1.5 bg-white/10 border border-white/10 rounded-lg text-[10px] font-bold outline-none text-white placeholder:text-slate-500"
                                      onKeyDown={(ev) => ev.key === 'Enter' && handleUpdatePhone(e.id)}
                                    />
                                    <button onClick={() => handleUpdatePhone(e.id)} className="p-1.5 bg-emerald-500 text-white rounded-lg"><CheckCircle2 className="w-3 h-3"/></button>
@@ -865,7 +865,7 @@ export default function PaiementsPage() {
                       )}
                       
                       {activeTab === 'impayes' && elevesFrais.find(ef => ef.eleve_id === e.id)?.derniere_relance_le && (
-                        <p className="text-[8px] font-bold text-slate-600 uppercase italic">Relancé le {elevesFrais.find(ef => ef.eleve_id === e.id)?.derniere_relance_le}</p>
+                        <p className="text-[8px] font-bold text-slate-500 uppercase italic">Relancé le {elevesFrais.find(ef => ef.eleve_id === e.id)?.derniere_relance_le}</p>
                       )}
                     </div>
                   </li>
@@ -880,7 +880,7 @@ export default function PaiementsPage() {
           <div className="premium-glass p-8 space-y-8 relative overflow-hidden group">
             <div className="absolute top-0 left-0 w-2 h-full bg-emerald-500/20 group-focus-within:bg-emerald-500 transition-all" />
             
-            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-3">
+            <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-3">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               Nouveau Versement
             </h2>
@@ -888,7 +888,7 @@ export default function PaiementsPage() {
             {!selectedEleve ? (
               <div className="py-12 text-center bg-white/5 rounded-3xl border border-dashed border-white/10 animate-in zoom-in-95 duration-500">
                 <CreditCard className="w-10 h-10 text-slate-700 mx-auto mb-4" />
-                <p className="text-[11px] font-black uppercase tracking-widest text-slate-500 px-8 leading-relaxed">
+                <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 px-8 leading-relaxed">
                   Veuillez d&apos;abord sélectionner un élève dans la liste de gauche.
                 </p>
               </div>
@@ -896,7 +896,7 @@ export default function PaiementsPage() {
               <form onSubmit={enregistrerPaiement} className="space-y-6 animate-in slide-in-from-right-4 duration-500">
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Type de Frais</label>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Type de Frais</label>
                     <select
                       value={selectedFraisId}
                       onChange={(e) => setSelectedFraisId(e.target.value)}
@@ -914,7 +914,7 @@ export default function PaiementsPage() {
 
                   {isMensuel && (
                     <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Mois concerné</label>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Mois concerné</label>
                       <select
                         value={selectedMonth}
                         onChange={(e) => setSelectedMonth(e.target.value)}
@@ -930,7 +930,7 @@ export default function PaiementsPage() {
                   )}
                   
                   <div className="space-y-2">
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Montant versé (F CFA)</label>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Montant versé (F CFA)</label>
                     <input
                       type="text"
                       value={montant}
@@ -943,7 +943,7 @@ export default function PaiementsPage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Mode</label>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Mode</label>
                       <input
                         type="text"
                         value={mode}
@@ -953,7 +953,7 @@ export default function PaiementsPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Réf. Transaction</label>
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Réf. Transaction</label>
                       <input
                         type="text"
                         value={reference}
@@ -983,7 +983,7 @@ export default function PaiementsPage() {
           {/* History Section */}
           <div className="premium-glass overflow-hidden group">
             <div className="p-8 border-b border-white/5 bg-white/5">
-              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-3">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-3">
                 <BarChart3 className="w-4 h-4 text-amber-500" />
                 Derniers règlements
               </h3>
@@ -992,7 +992,7 @@ export default function PaiementsPage() {
               {!selectedEleve ? (
                 <div className="py-12 text-center opacity-30">
                   <Printer className="w-10 h-10 mx-auto mb-4 text-slate-700" />
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Aucune donnée</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Aucune donnée</p>
                 </div>
               ) : (
                 paiements
@@ -1004,7 +1004,7 @@ export default function PaiementsPage() {
                         <div className="flex items-center justify-between mb-2">
                           <div>
                             <p className="text-lg font-black text-white leading-none">
-                              {p.montant.toLocaleString('fr-FR')} <span className="text-xs uppercase text-slate-500">F</span>
+                              {p.montant.toLocaleString('fr-FR')} <span className="text-xs uppercase text-slate-400">F</span>
                             </p>
                             <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mt-1">
                               {fLibelle} {(p as any).mois ? `— ${(p as any).mois}` : ''}
@@ -1013,14 +1013,14 @@ export default function PaiementsPage() {
                           <div className="flex gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
                             <button 
                               onClick={() => handleDownloadReceipt(p)}
-                              className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 text-slate-500 border border-white/10 hover:bg-emerald-600 hover:text-white transition-all shadow-sm"
+                              className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 text-slate-400 border border-white/10 hover:bg-emerald-600 hover:text-white transition-all shadow-sm"
                               title="Télécharger Reçu PDF"
                             >
                               <Download className="w-4 h-4" />
                             </button>
                             <button 
                               onClick={() => handlePrintReceipt(p)}
-                              className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 text-slate-500 border border-white/10 hover:bg-amber-500 hover:text-white transition-all shadow-sm"
+                              className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 text-slate-400 border border-white/10 hover:bg-amber-500 hover:text-white transition-all shadow-sm"
                               title="Imprimer"
                             >
                               <Printer className="w-4 h-4" />
@@ -1028,10 +1028,10 @@ export default function PaiementsPage() {
                           </div>
                         </div>
                         <div className="pt-3 border-t border-white/5 mt-1 flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                             {formatDateTime(p.date_paiement)}
                           </span>
-                          <span className="text-[10px] font-black text-slate-500 uppercase italic">
+                          <span className="text-[10px] font-black text-slate-400 uppercase italic">
                             {p.reference || p.mode || 'N/A'}
                           </span>
                         </div>
@@ -1055,16 +1055,16 @@ export default function PaiementsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-black text-white tracking-tight leading-none">Affectation collective</h2>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mt-3">Attribuer un frais à plusieurs élèves</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-3">Attribuer un frais à plusieurs élèves</p>
                 </div>
-                <button onClick={() => setIsAssigning(false)} className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-500 hover:bg-rose-500/20 hover:text-rose-400 transition-all">
+                <button onClick={() => setIsAssigning(false)} className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:bg-rose-500/20 hover:text-rose-400 transition-all">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Type de Frais</label>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Type de Frais</label>
                   <select
                     value={assignFeeId}
                     onChange={(e) => setAssignFeeId(e.target.value)}
@@ -1078,14 +1078,14 @@ export default function PaiementsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Cible</label>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Cible</label>
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       onClick={() => setAssignClasseId('all')}
                       className={`p-4 rounded-2xl border-2 transition-all flex flex-col gap-2 ${
                         assignClasseId === 'all' 
                           ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-lg shadow-emerald-900/20' 
-                          : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'
+                          : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10'
                       }`}
                     >
                       <LayoutGrid className="w-5 h-5" />
@@ -1098,7 +1098,7 @@ export default function PaiementsPage() {
                         className={`w-full h-full p-4 rounded-2xl border-2 transition-all appearance-none cursor-pointer text-[10px] font-black uppercase tracking-widest ${
                           assignClasseId !== 'all'
                             ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-lg shadow-emerald-900/20'
-                            : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'
+                            : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10'
                         }`}
                       >
                         <option value="" className="bg-slate-900 text-white">Par classe…</option>
@@ -1134,7 +1134,7 @@ export default function PaiementsPage() {
               <div className="flex gap-4">
                 <button
                   onClick={() => setIsAssigning(false)}
-                  className="flex-1 py-5 rounded-2xl bg-white/5 border border-white/10 text-slate-500 text-[11px] font-black uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all"
+                  className="flex-1 py-5 rounded-2xl bg-white/5 border border-white/10 text-slate-400 text-[11px] font-black uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all"
                 >
                   Annuler
                 </button>
