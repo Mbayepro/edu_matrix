@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import {
   Users, BookOpen, ClipboardType, UserCheck, Edit3, ChevronRight, Loader2,
-  Clock, Calendar, AlertCircle, ArrowRight, BookMarked
+  Clock, Calendar, AlertCircle, ArrowRight, BookMarked, Sparkles
 } from 'lucide-react'
 import Link from 'next/link'
 import { getTodayDate } from '@/lib/dateUtils'
@@ -195,19 +195,27 @@ export default function ProfDashboard() {
                     {aff.matiere?.nom || 'Enseignant Titulaire'}
                   </p>
 
-                  <div className="mt-8 grid grid-cols-2 gap-3">
-                    <Link href={`/dashboard/presences?classeId=${aff.classe_id}`} className="flex-1">
-                      <button className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-600/20 active:scale-95 flex items-center justify-center gap-2">
-                        <UserCheck className="w-3.5 h-3.5" />
-                        Appel
+                  <div className="mt-8 flex flex-col gap-3">
+                    <Link href={`/dashboard/prof/session/${aff.classe_id}`} className="w-full">
+                      <button className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-600/20 active:scale-95 flex items-center justify-center gap-2">
+                        <Sparkles className="w-4 h-4" />
+                        Démarrer le cours
                       </button>
                     </Link>
-                    <Link href={`/dashboard/notes?classeId=${aff.classe_id}`} className="flex-1">
-                      <button className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-slate-900/20 active:scale-95 flex items-center justify-center gap-2">
-                        <Edit3 className="w-3.5 h-3.5" />
-                        Notes
-                      </button>
-                    </Link>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Link href={`/dashboard/presences?classeId=${aff.classe_id}`} className="flex-1">
+                        <button className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2">
+                          <UserCheck className="w-3.5 h-3.5" />
+                          Appel seul
+                        </button>
+                      </Link>
+                      <Link href={`/dashboard/notes?classeId=${aff.classe_id}`} className="flex-1">
+                        <button className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg shadow-slate-900/20 active:scale-95 flex items-center justify-center gap-2">
+                          <Edit3 className="w-3.5 h-3.5" />
+                          Notes
+                        </button>
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>

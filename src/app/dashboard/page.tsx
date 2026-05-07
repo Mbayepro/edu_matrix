@@ -18,6 +18,8 @@ import {
 import { Skeleton, SkeletonCard } from '@/components/Skeleton'
 import { useToast } from '@/contexts/ToastContext'
 import { RefreshCw } from 'lucide-react'
+import DailyReport from '@/components/DailyReport'
+import AtRiskPanel from '@/components/AtRiskPanel'
 import { CalculateurMoyennes } from '@/lib/calculMoyennes'
 import { db } from '@/lib/db'
 import { syncFromSupabase, flushSyncQueue } from '@/lib/syncService'
@@ -391,6 +393,30 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* ── High-Level Command Center ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+         <DailyReport ecoleId={ecoleId || ''} />
+         <AtRiskPanel ecoleId={ecoleId || ''} />
+         
+         <div className="bg-slate-900 rounded-[3rem] p-10 text-white relative overflow-hidden flex flex-col justify-center shadow-2xl shadow-slate-900/20">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-32 -mt-32" />
+            <h2 className="text-xl font-black mb-3 tracking-tight uppercase">Vision Stratégique</h2>
+            <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest leading-relaxed mb-6">
+              Objectif du mois : <span className="text-emerald-400">95%</span> d&apos;assiduité.
+            </p>
+            <div className="space-y-3">
+               <Link href="/dashboard/presences" className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-2xl group hover:bg-white/10 transition-all">
+                  <span className="text-[10px] font-black uppercase tracking-widest">Gérer Présences</span>
+                  <ChevronRight className="w-4 h-4 text-emerald-400 transition-transform group-hover:translate-x-1" />
+               </Link>
+               <Link href="/dashboard/notes" className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-2xl group hover:bg-white/10 transition-all">
+                  <span className="text-[10px] font-black uppercase tracking-widest">Saisir Notes</span>
+                  <ChevronRight className="w-4 h-4 text-emerald-400 transition-transform group-hover:translate-x-1" />
+               </Link>
+            </div>
+         </div>
       </div>
 
       {/* ── Operational Grid ── */}

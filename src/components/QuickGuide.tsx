@@ -18,10 +18,10 @@ export default function QuickGuide() {
   }
 
   const steps = [
-    { title: 'Présences', desc: 'Marquez les absences en un clic ou scannez les QR codes des élèves.' },
+    { title: 'Mode Enseignement', desc: 'Démarrer une session immersive pour faire l\'appel, noter le sujet du cours et encourager les élèves avec des points.' },
     { title: 'Notes & Bulletins', desc: 'Saisissez les notes par matière. Les moyennes et bulletins se calculent tout seuls.' },
-    { title: 'Synchronisation', desc: 'EduMatrix fonctionne sans internet. Vos données se synchronisent dès que vous captez du réseau.' },
-    { title: 'Paiements', desc: 'Suivez qui a payé les frais de scolarité directement sur le tableau de bord.' },
+    { title: 'Dossier 360°', desc: 'Cliquez sur un élève pour voir toute sa timeline (notes, présences, comportement).' },
+    { title: 'Offline-First', desc: 'EduMatrix fonctionne sans internet. Vos données se synchronisent dès que vous captez du réseau.' },
   ]
 
   return (

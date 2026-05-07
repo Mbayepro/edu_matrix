@@ -22,12 +22,16 @@ import type {
 
 // ─── Types locaux ─────────────────────────────────────────────────────────────
 
-export interface LocalEleve extends Eleve {}
+export interface LocalEleve extends Eleve {
+  points_merite?: number
+}
 export interface LocalClasse extends Classe {}
 export interface LocalMatiere extends Matiere {}
 export interface LocalNote extends Note {}
 export interface LocalEvaluation extends Evaluation {}
-export interface LocalPresence extends Presence {}
+export interface LocalPresence extends Presence {
+  observation?: string
+}
 export interface LocalNiveau extends Niveau {}
 export interface LocalSerie extends Serie {}
 export interface LocalProfile extends Profile {}
@@ -36,6 +40,14 @@ export interface LocalFraisScolaire extends FraisScolaire {}
 export interface LocalEleveFrais extends EleveFrais {}
 export interface LocalPaiement extends Paiement {
   mois?: string | null
+}
+
+export interface LocalRapportJournalier {
+  id: string
+  ecole_id: string
+  date: string
+  stats: any
+  created_at: string
 }
 
 /**
@@ -71,6 +83,7 @@ export class EduMatrixDB extends Dexie {
   paiements!:   Table<LocalPaiement,   string>
   sync_queue!:  Table<SyncAction,      number>
   sync_metadata!: Table<{ id: string, table_name: string, last_synced_at: string, ecole_id: string }, string>
+  rapports_journaliers!: Table<LocalRapportJournalier, string>
 
   constructor() {
     super('EduMatrixDB')
@@ -90,7 +103,8 @@ export class EduMatrixDB extends Dexie {
       eleves_frais: 'id, eleve_id, ecole_id, updated_at',
       paiements:   'id, eleve_id, ecole_id, date_paiement, mois, updated_at',
       sync_queue:  '++id, table, ecole_id, createdAt',
-      sync_metadata: 'id, table_name, ecole_id'
+      sync_metadata: 'id, table_name, ecole_id',
+      rapports_journaliers: 'id, date, ecole_id'
     })
 
     // Explicit table assignments to ensure properties are ALWAYS defined on the instance
@@ -109,6 +123,7 @@ export class EduMatrixDB extends Dexie {
     this.paiements       = this.table('paiements') as any
     this.sync_queue      = this.table('sync_queue') as any
     this.sync_metadata   = this.table('sync_metadata') as any
+    this.rapports_journaliers = this.table('rapports_journaliers') as any
   }
 
   // ─── Helpers Métier ────────────────────────────────────────────────────────
