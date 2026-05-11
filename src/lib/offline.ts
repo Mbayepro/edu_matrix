@@ -93,21 +93,21 @@ export async function syncOfflinePresences(): Promise<{ synced: number; errors: 
 
   for (const p of queue) {
     try {
-      const { data: existing } = await supabase
+      const { data: existing } = await (supabase
         .from('presences')
         .select('id')
         .eq('eleve_id', p.eleve_id)
         .eq('date', p.date)
-        .single()
+        .single() as any)
 
       if (!existing) {
-        const { error } = await supabase.from('presences').insert({
+        const { error } = await (supabase.from('presences' as any) as any).insert({
           eleve_id:  p.eleve_id,
           classe_id: p.classe_id,
           date:      p.date,
           heure:     p.heure,
           statut:    p.statut,
-        })
+        } as any)
         if (error) throw error
       }
       synced++
