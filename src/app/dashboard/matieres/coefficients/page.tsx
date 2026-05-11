@@ -93,19 +93,19 @@ export default function CoefficientsPage() {
     setSaving(true)
     try {
       const standardNiveaux = [
-        { nom: 'CI', cycle: 'primaire', ordre: 1 },
-        { nom: 'CP', cycle: 'primaire', ordre: 2 },
-        { nom: 'CE1', cycle: 'primaire', ordre: 3 },
-        { nom: 'CE2', cycle: 'primaire', ordre: 4 },
-        { nom: 'CM1', cycle: 'primaire', ordre: 5 },
-        { nom: 'CM2', cycle: 'primaire', ordre: 6 },
-        { nom: '6ème', cycle: 'moyen', ordre: 7 },
-        { nom: '5ème', cycle: 'moyen', ordre: 8 },
-        { nom: '4ème', cycle: 'moyen', ordre: 9 },
-        { nom: '3ème', cycle: 'moyen', ordre: 10 },
-        { nom: '2nde', cycle: 'secondaire', ordre: 11 },
-        { nom: '1ère', cycle: 'secondaire', ordre: 12 },
-        { nom: 'Terminale', cycle: 'secondaire', ordre: 13 },
+        { nom: 'CI', code: 'CI', cycle: 'primaire', ordre: 1 },
+        { nom: 'CP', code: 'CP', cycle: 'primaire', ordre: 2 },
+        { nom: 'CE1', code: 'CE1', cycle: 'primaire', ordre: 3 },
+        { nom: 'CE2', code: 'CE2', cycle: 'primaire', ordre: 4 },
+        { nom: 'CM1', code: 'CM1', cycle: 'primaire', ordre: 5 },
+        { nom: 'CM2', code: 'CM2', cycle: 'primaire', ordre: 6 },
+        { nom: '6ème', code: '6EME', cycle: 'moyen', ordre: 7 },
+        { nom: '5ème', code: '5EME', cycle: 'moyen', ordre: 8 },
+        { nom: '4ème', code: '4EME', cycle: 'moyen', ordre: 9 },
+        { nom: '3ème', code: '3EME', cycle: 'moyen', ordre: 10 },
+        { nom: '2nde', code: '2NDE', cycle: 'secondaire', ordre: 11 },
+        { nom: '1ère', code: '1ERE', cycle: 'secondaire', ordre: 12 },
+        { nom: 'Terminale', code: 'TERM', cycle: 'secondaire', ordre: 13 },
       ].map(n => ({ ...n, ecole_id: ecoleId }))
 
       const { error } = await (supabase.from('niveaux' as any) as any).insert(standardNiveaux)
