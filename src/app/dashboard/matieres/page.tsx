@@ -52,7 +52,7 @@ export default function MatieresPage() {
     if (!ecoleId || !form.nom) return
     setSaving(true)
     try {
-      const { error } = await supabase.from('matieres').insert({
+      const { error } = await (supabase.from('matieres' as any) as any).insert({
         ecole_id: ecoleId,
         nom: form.nom.trim(),
         code: form.code.trim() || null,
@@ -71,7 +71,7 @@ export default function MatieresPage() {
     if (!ecoleId) return
     setSaving(true)
     try {
-      const { error } = await supabase.from('matieres').update({
+      const { error } = await (supabase.from('matieres' as any) as any).update({
         nom: editForm.nom.trim(),
         code: editForm.code.trim() || null,
         coefficient: editForm.coefficient,
@@ -85,7 +85,7 @@ export default function MatieresPage() {
   }
 
   async function handleToggleActive(m: Matiere) {
-    await supabase.from('matieres').update({ is_active: !m.is_active }).eq('id', m.id)
+    await (supabase.from('matieres' as any) as any).update({ is_active: !m.is_active } as any).eq('id', m.id)
     showToast(m.is_active ? 'Matière désactivée.' : 'Matière activée.', 'success')
     if (ecoleId) await loadMatieres(ecoleId)
   }

@@ -40,8 +40,8 @@ export default function EnseignantsAdminPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
 
-      const { data: prof } = await supabase
-        .from('profiles').select('*').eq('user_id', user.id).single()
+      const { data: prof, error: profError } = await (supabase
+        .from('profiles').select('*').eq('user_id', user.id).single() as any) as any
       if (!prof || (prof.role !== 'director' && prof.role !== 'admin')) {
         router.push('/dashboard')
         return
@@ -100,7 +100,7 @@ export default function EnseignantsAdminPage() {
     if (!ecoleId || !form.enseignant_id || !form.classe_id) return
     setSaving(true)
     try {
-      const { error } = await supabase.from('enseignants_classes').insert({
+      const { error } = await (supabase.from('enseignants_classes' as any) as any).insert({
         ecole_id: ecoleId,
         enseignant_id: form.enseignant_id,
         classe_id: form.classe_id,

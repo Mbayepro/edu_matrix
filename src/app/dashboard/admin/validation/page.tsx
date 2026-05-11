@@ -30,11 +30,11 @@ export default function ValidationAdminPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
 
-      const { data: prof } = await supabase
+      const { data: prof } = await (supabase
         .from('profiles')
         .select('role')
         .eq('user_id', user.id)
-        .single()
+        .single() as any)
       
       if (prof?.role !== 'superadmin') {
         router.push('/dashboard')
@@ -79,9 +79,8 @@ export default function ValidationAdminPage() {
     setValidatingId(ecoleId)
     setErrorBtn(null)
     try {
-      const { error } = await supabase
-        .from('ecoles')
-        .update({ statut: 'actif' })
+      const { error } = await (supabase.from('ecoles' as any) as any)
+        .update({ statut: 'actif' } as any)
         .eq('id', ecoleId)
 
       if (error) throw error

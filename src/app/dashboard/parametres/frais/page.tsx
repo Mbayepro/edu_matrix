@@ -109,10 +109,7 @@ export default function FraisManagementPage() {
 
       if (editingFrais) {
         // Update existing frais
-        const { error } = await supabase
-          .from('frais_scolaires')
-          .update(fraisData)
-          .eq('id', editingFrais.id)
+        const { error } = await (supabase.from('frais_scolaires' as any) as any).update(fraisData as any).eq('id', editingFrais.id)
         
         if (error) {
           console.error('Error updating frais:', error)
@@ -122,9 +119,7 @@ export default function FraisManagementPage() {
         showToast('Frais mis à jour avec succès.', 'success')
       } else {
         // Create new frais
-        const { error } = await supabase
-          .from('frais_scolaires')
-          .insert(fraisData)
+        const { error } = await (supabase.from('frais_scolaires' as any) as any).insert(fraisData as any)
         
         if (error) {
           console.error('Error creating frais:', error)
@@ -144,9 +139,8 @@ export default function FraisManagementPage() {
   async function toggleActive(frais: FraisScolaire) {
     if (!ecoleId) return
     
-    const { error } = await supabase
-      .from('frais_scolaires')
-      .update({ is_active: !frais.is_active })
+    const { error } = await (supabase.from('frais_scolaires' as any) as any)
+      .update({ is_active: !frais.is_active } as any)
       .eq('id', frais.id)
     
     if (!error) {
@@ -161,8 +155,7 @@ export default function FraisManagementPage() {
     
     if (!ecoleId) return
     
-    const { error } = await supabase
-      .from('frais_scolaires')
+    const { error } = await (supabase.from('frais_scolaires' as any) as any)
       .delete()
       .eq('id', frais.id)
     
@@ -263,7 +256,7 @@ export default function FraisManagementPage() {
                 <th className="text-left px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Montant</th>
                 <th className="text-left px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Fréquence</th>
                 <th className="text-left px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Cible</th>
-                <th className="text-left px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Statut</th>
+                <th className="px-4 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Statut</th>
                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
               </tr>
             </thead>

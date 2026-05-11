@@ -83,9 +83,8 @@ export default function EquipeManagementPage() {
     
     // Dans une vraie app, on supprimerait aussi l'accès Auth. 
     // Ici on vide juste l'ecole_id du profil.
-    const { error } = await supabase
-      .from('profiles')
-      .update({ ecole_id: null })
+    const { error } = await (supabase.from('profiles' as any) as any)
+      .update({ ecole_id: null } as any)
       .eq('id', id)
       
     if (!error) {

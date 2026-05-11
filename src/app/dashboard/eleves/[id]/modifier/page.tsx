@@ -73,15 +73,14 @@ export default function ModifierElevePage() {
     if (!ecoleId || !id) { setError("Erreur : Données manquantes."); setSaving(false); return }
 
     try {
-      const { error: updateError } = await supabase
-        .from('eleves')
+      const { error: updateError } = await (supabase.from('eleves') as any)
         .update({
           classe_id: classeId,
           prenom, nom,
           matricule: matricule || null,
           date_naissance: dateNaissance || null,
           photo_url: photoUrl || null,
-        })
+        } as any)
         .eq('id', id)
 
       if (updateError) throw updateError

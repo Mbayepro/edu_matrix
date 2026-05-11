@@ -111,9 +111,8 @@ export default function SuperAdminDashboard() {
     if (!confirm(`Voulez-vous vraiment ${nouveauStatut === 'suspendu' ? 'suspendre' : 'activer'} l'école ${ecole.nom} ?`)) return
     
     try {
-      const { error } = await supabase
-        .from('ecoles')
-        .update({ statut: nouveauStatut })
+      const { error } = await (supabase.from('ecoles' as any) as any)
+        .update({ statut: nouveauStatut } as any)
         .eq('id', ecole.id)
 
       if (error) throw error
@@ -142,8 +141,7 @@ export default function SuperAdminDashboard() {
     }
 
     try {
-      const { error } = await supabase
-        .from('ecoles')
+      const { error } = await (supabase.from('ecoles' as any) as any)
         .delete()
         .eq('id', ecole.id)
 
@@ -167,12 +165,11 @@ export default function SuperAdminDashboard() {
     
     setIsSaving(true)
     try {
-      const { error } = await supabase
-        .from('ecoles')
+      const { error } = await (supabase.from('ecoles' as any) as any)
         .update({ 
           nom: editModal.ecole.nom,
           ville: editModal.ecole.ville
-        })
+        } as any)
         .eq('id', editModal.ecole.id)
 
       if (error) throw error
@@ -711,7 +708,7 @@ export default function SuperAdminDashboard() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1.5 flex items-center gap-2">
+                  <label className="text-sm font-medium text-slate-300 mb-1.5 flex items-center gap-2">
                     <Mail className="w-4 h-4 text-slate-400" /> Email système principal
                   </label>
                   <input 
@@ -724,7 +721,7 @@ export default function SuperAdminDashboard() {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1.5 flex items-center gap-2">
+                  <label className="text-sm font-medium text-slate-300 mb-1.5 flex items-center gap-2">
                     <Globe className="w-4 h-4 text-slate-400" /> Limite d'écoles (Quota)
                   </label>
                   <input 

@@ -59,7 +59,7 @@ export default function ConseilClassePage() {
     const { data } = await supabase
       .from('classes')
       .select('*, niveaux(nom, cycle)')
-      .eq('ecole_id', ecoleId)
+      .eq('ecole_id', ecoleId as any)
       .order('nom_classe')
     setClasses(data ?? [])
   }
@@ -104,8 +104,7 @@ export default function ConseilClassePage() {
     if (!editingEleve || !ecoleId) return
     setSaving(true)
     try {
-      const { error } = await supabase
-        .from('eleves')
+      const { error } = await (supabase.from('eleves') as any)
         .update({
           appreciation_trimestre: decision.appreciation,
           decision_conseil: decision.decision

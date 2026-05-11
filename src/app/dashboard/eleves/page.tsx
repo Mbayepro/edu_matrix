@@ -209,9 +209,8 @@ export default function ElevesPage() {
         .from('eleves-photos')
         .getPublicUrl(path)
 
-      const { error: updateError } = await supabase
-        .from('eleves')
-        .update({ photo_url: publicUrl })
+      const { error: updateError } = await (supabase.from('eleves' as any) as any)
+        .update({ photo_url: publicUrl } as any)
         .eq('id', eleveId)
       await loadEleves()
     } catch (err) {

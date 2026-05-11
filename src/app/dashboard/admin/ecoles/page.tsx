@@ -71,12 +71,16 @@ export default function AdminEcolesPage() {
 
   async function updateStatut(ecoleId: string, newStatut: 'actif' | 'suspendu' | 'en_attente') {
     setUpdating(ecoleId)
-    const { error } = await (supabase.from('ecoles') as any)
-      .update({ statut: newStatut })
-      .eq('id', ecoleId)
+    try {
+      const { error } = await (supabase.from('ecoles' as any) as any)
+        .update({ statut: newStatut } as any)
+        .eq('id', ecoleId)
 
-    if (!error) {
-      setEcoles(prev => prev.map(e => e.id === ecoleId ? { ...e, statut: newStatut } : e))
+      if (!error) {
+        setEcoles(prev => prev.map(e => e.id === ecoleId ? { ...e, statut: newStatut } : e))
+      }
+    } catch (e) {
+      console.error(e)
     }
     setUpdating(null)
   }

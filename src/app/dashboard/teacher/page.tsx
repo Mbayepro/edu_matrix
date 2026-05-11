@@ -56,8 +56,8 @@ export default function TeacherDashboard() {
       const { data: { user }, error: userError } = await supabase.auth.getUser()
       if (userError || !user) throw new Error('Auth required')
 
-      const { data: prof, error: profError } = await supabase
-        .from('profiles').select('*').eq('user_id', user.id).single()
+      const { data: prof, error: profError } = await (supabase
+        .from('profiles').select('*').eq('user_id', user.id).single() as any)
       if (profError || !prof) throw new Error('Profile not found')
       setProfile(prof)
 

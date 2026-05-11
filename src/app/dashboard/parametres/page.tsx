@@ -53,11 +53,11 @@ export default function SchoolSettingsPage() {
   async function load(schoolId: string) {
     try {
       setLoading(true)
-      const { data: ec } = await supabase
+      const { data: ec } = await (supabase
         .from('ecoles')
         .select('*')
         .eq('id', schoolId)
-        .single()
+        .single() as any)
 
       if (ec) {
         setEcole(ec as Ecole)
@@ -85,8 +85,7 @@ export default function SchoolSettingsPage() {
     if (!ecole) return
     setSaving(true)
     try {
-      const { error } = await supabase
-        .from('ecoles')
+      const { error } = await (supabase.from('ecoles' as any) as any)
         .update({
           nom: form.nom,
           ville: form.ville,
@@ -97,7 +96,7 @@ export default function SchoolSettingsPage() {
           signature_url: form.signature_url || null,
           calculation_method: form.calculation_method,
           type_periode: form.type_periode,
-        })
+        } as any)
         .eq('id', ecole.id)
 
       if (!error) {
