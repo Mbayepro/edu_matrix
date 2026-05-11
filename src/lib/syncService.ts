@@ -28,21 +28,21 @@ export async function syncFromSupabase(ecoleId: string): Promise<void> {
   const currentYear = new Date().getFullYear().toString() + '-' + (new Date().getFullYear() + 1).toString()
 
   const tables = [
-    { name: 'ecoles', query: supabase.from('ecoles').select('*').eq('id', ecoleId) },
-    { name: 'niveaux', query: supabase.from('niveaux').select('*').eq('ecole_id', ecoleId) },
-    { name: 'series', query: supabase.from('series').select('*').eq('ecole_id', ecoleId) },
-    { name: 'classes', query: supabase.from('classes').select('*').eq('ecole_id', ecoleId) },
-    { name: 'matieres', query: supabase.from('matieres').select('*').eq('ecole_id', ecoleId) },
-    { name: 'coefficients_matieres', query: supabase.from('coefficients_matieres').select('*').eq('ecole_id', ecoleId) },
-    { name: 'evaluations', query: supabase.from('evaluations').select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) },
-    { name: 'eleves', query: supabase.from('eleves').select('*').eq('ecole_id', ecoleId) }, // Les élèves restent tous chargés pour le moment
-    { name: 'notes', query: supabase.from('notes').select('*').eq('ecole_id', ecoleId) }, // TODO: Ajouter colonne annee_scolaire dans notes
-    { name: 'presences', query: supabase.from('presences').select('*').eq('ecole_id', ecoleId) }, 
-    { name: 'profiles', query: supabase.from('profiles').select('*').eq('ecole_id', ecoleId) },
-    { name: 'frais_scolaires', query: supabase.from('frais_scolaires').select('*').eq('ecole_id', ecoleId) },
-    { name: 'eleves_frais', query: supabase.from('eleves_frais').select('*').eq('ecole_id', ecoleId) },
-    { name: 'paiements', query: supabase.from('paiements').select('*').eq('ecole_id', ecoleId) },
-    { name: 'emargements', query: supabase.from('emargements').select('*').eq('ecole_id', ecoleId) }
+    { name: 'ecoles', query: (supabase.from('ecoles' as any) as any).select('*').eq('id', ecoleId) },
+    { name: 'niveaux', query: (supabase.from('niveaux' as any) as any).select('*').eq('ecole_id', ecoleId) },
+    { name: 'series', query: (supabase.from('series' as any) as any).select('*').eq('ecole_id', ecoleId) },
+    { name: 'classes', query: (supabase.from('classes' as any) as any).select('*').eq('ecole_id', ecoleId) },
+    { name: 'matieres', query: (supabase.from('matieres' as any) as any).select('*').eq('ecole_id', ecoleId) },
+    { name: 'coefficients_matieres', query: (supabase.from('coefficients_matieres' as any) as any).select('*').eq('ecole_id', ecoleId) },
+    { name: 'evaluations', query: (supabase.from('evaluations' as any) as any).select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) },
+    { name: 'eleves', query: (supabase.from('eleves' as any) as any).select('*').eq('ecole_id', ecoleId) }, // Les élèves restent tous chargés pour le moment
+    { name: 'notes', query: (supabase.from('notes' as any) as any).select('*').eq('ecole_id', ecoleId) }, // TODO: Ajouter colonne annee_scolaire dans notes
+    { name: 'presences', query: (supabase.from('presences' as any) as any).select('*').eq('ecole_id', ecoleId) }, 
+    { name: 'profiles', query: (supabase.from('profiles' as any) as any).select('*').eq('ecole_id', ecoleId) },
+    { name: 'frais_scolaires', query: (supabase.from('frais_scolaires' as any) as any).select('*').eq('ecole_id', ecoleId) },
+    { name: 'eleves_frais', query: (supabase.from('eleves_frais' as any) as any).select('*').eq('ecole_id', ecoleId) },
+    { name: 'paiements', query: (supabase.from('paiements' as any) as any).select('*').eq('ecole_id', ecoleId) },
+    { name: 'emargements', query: (supabase.from('emargements' as any) as any).select('*').eq('ecole_id', ecoleId) }
   ]
 
   for (const t of tables) {
@@ -170,7 +170,7 @@ async function executeAction(action: SyncAction): Promise<void> {
           .from(table)
           .select('updated_at')
           .eq('id', id)
-          .single()
+          .single() as any)
           
         if (serverData && serverData.updated_at) {
           const serverTime = new Date(serverData.updated_at).getTime()

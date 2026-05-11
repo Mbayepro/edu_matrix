@@ -33,11 +33,11 @@ export default function LoginForm() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { setError('Erreur d\'authentification.'); return }
 
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile, error: profileError } = await (supabase
         .from('profiles')
         .select('role, ecole_id')
         .eq('user_id', user.id)
-        .single()
+        .single() as any)
 
       if (profileError || !profile) {
         setError('Profil introuvable. Contactez l\'administrateur.')
@@ -59,11 +59,11 @@ export default function LoginForm() {
           return
         }
         // Check school status
-        const { data: ecole } = await supabase
+        const { data: ecole } = await (supabase
           .from('ecoles')
           .select('statut')
           .eq('id', profile.ecole_id)
-          .single()
+          .single() as any)
 
         if (ecole?.statut === 'en_attente') {
           router.refresh()
