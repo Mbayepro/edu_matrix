@@ -29,10 +29,10 @@ export default function BulletinGenerator({ eleveId, classeId, trimestre, pinCod
 
         if (pinCode) {
           // Utilisation de l'accès public sécurisé
-          const { data, error } = await supabase.rpc('get_bulletin_by_pin', { 
+          const { data, error } = await (supabase.rpc('get_bulletin_by_pin', { 
             p_pin: pinCode, 
             p_trimestre: trimestre 
-          });
+          } as any) as any);
           
           if (error) throw error;
           rows = data;

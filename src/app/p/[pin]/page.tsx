@@ -25,7 +25,7 @@ export default function EspaceParentPage() {
     try {
       setLoading(true)
       // Chercher l'élève par son code PIN via RPC sécurisé
-      const { data: eleveData, error: err } = await supabase.rpc('get_eleve_by_pin', { p_pin: pinCode })
+      const { data: eleveData, error: err } = await (supabase.rpc('get_eleve_by_pin', { p_pin: pinCode } as any) as any)
 
       if (err) throw err
       if (!eleveData) {
@@ -37,7 +37,7 @@ export default function EspaceParentPage() {
       setEleve(eleveData)
 
       // Charger les absences via RPC sécurisé
-      const { data: absencesData, error: absErr } = await supabase.rpc('get_absences_by_pin', { p_pin: pinCode })
+      const { data: absencesData, error: absErr } = await (supabase.rpc('get_absences_by_pin', { p_pin: pinCode } as any) as any)
 
       if (absencesData && !absErr) {
         setAbsences(absencesData)
