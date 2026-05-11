@@ -195,6 +195,9 @@ export default function DashboardPage() {
       }
 
       if (db) {
+        const ecoleData = await db.ecoles.get(schoolId) as any
+        const calculationMethod = ecoleData?.calculation_method || 'BLOCKS'
+
         const recents = await db.eleves.where('ecole_id').equals(schoolId).limit(6).toArray()
         const classesMap = new Map((await db.classes.where('ecole_id').equals(schoolId).toArray()).map(c => [c.id, c.nom_classe]))
         setRecentEleves(recents.map(e => ({ ...e, classe: { nom_classe: classesMap.get(e.classe_id) || 'N/A' } })) as unknown as RecentEleve[])
@@ -270,13 +273,23 @@ export default function DashboardPage() {
     )
   }
 
-  // Activity feed items (mock logic for demo if no real logs yet)
+  // Activity feed items (dynamic derivation)
   const activityLogs = [
-    { time: '15:42', event: 'Émargement validé', details: 'Maths - 3ème B', icon: Activity, color: 'text-emerald-400' },
-    { time: '15:30', event: 'Nouveau paiement', details: 'Frais inscription - Diop M.', icon: Sparkles, color: 'text-amber-400' },
-    { time: '14:15', event: 'Alerte Absence', details: '5 élèves non signalés', icon: AlertCircle, color: 'text-rose-400' },
-    { time: '11:00', event: 'Note saisie', details: 'Français - Terminale S', icon: TrendingUp, color: 'text-blue-400' },
-  ]
+    ...recentEmargements.map(e => ({
+      time: e.created_at ? new Date(e.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '--:--',
+      event: 'Émargement validé',
+      details: `${e.matiere_nom} - ${e.classe_nom}`,
+      icon: Activity,
+      color: 'text-emerald-400'
+    })),
+    ...absencesJour.slice(0, 5).map(a => ({
+      time: 'Aujourd\'hui',
+      event: 'Absence signalée',
+      details: `${a.eleve_nom} (${a.classe_nom})`,
+      icon: AlertCircle,
+      color: 'text-rose-400'
+    }))
+  ].sort((a, b) => (a.time < b.time ? 1 : -1)).slice(0, 5)
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-20 animate-in fade-in duration-700">
@@ -358,10 +371,10 @@ export default function DashboardPage() {
 
       {/* ── Core Statistics ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        <StatCard icon={Users}       label="Élèves inscrits"  value={stats?.totalEleves      ?? 0} color="emerald" trend={{ val: '+12%', positive: true }} />
+        <StatCard icon={Users}       label="Élèves inscrits"  value={stats?.totalEleves      ?? 0} color="emerald" />
         <StatCard icon={BookOpen}    label="Enseignants"      value={stats?.totalEnseignants ?? 0} color="blue"    subtitle="Personnel actif" />
         <StatCard icon={LayoutGrid}  label="Classes"          value={stats?.totalClasses     ?? 0} color="violet"  subtitle="Salles occupées" />
-        <StatCard icon={AlertCircle} label="Alertes Frais"    value={stats?.elevesImpayes    ?? 0} color="amber"   trend={{ val: '-4%', positive: true }} />
+        <StatCard icon={AlertCircle} label="Alertes Frais"    value={stats?.elevesImpayes    ?? 0} color="amber" />
       </div>
 
       {/* ── Analytics & Insights ── */}

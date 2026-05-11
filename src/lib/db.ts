@@ -14,6 +14,7 @@ import type {
   Niveau,
   Serie,
   Profile,
+  Ecole,
   Emargement,
   FraisScolaire,
   EleveFrais,
@@ -68,6 +69,7 @@ export interface SyncAction {
 // ─── Classe de la base de données ─────────────────────────────────────────────
 
 export class EduMatrixDB extends Dexie {
+  ecoles!:      Table<Ecole,           string>
   eleves!:      Table<LocalEleve,      string>
   classes!:     Table<LocalClasse,     string>
   matieres!:    Table<LocalMatiere,    string>
@@ -89,6 +91,7 @@ export class EduMatrixDB extends Dexie {
     super('EduMatrixDB')
 
     this.version(16).stores({
+      ecoles:      'id, updated_at',
       eleves:      'id, ecole_id, classe_id, matricule, telephone_parent, updated_at, [ecole_id+statut_paiement]',
       classes:     'id, ecole_id, updated_at',
       matieres:    'id, ecole_id, updated_at',
@@ -108,6 +111,7 @@ export class EduMatrixDB extends Dexie {
     })
 
     // Explicit table assignments to ensure properties are ALWAYS defined on the instance
+    this.ecoles      = this.table('ecoles') as any
     this.eleves      = this.table('eleves') as any
     this.classes     = this.table('classes') as any
     this.matieres    = this.table('matieres') as any

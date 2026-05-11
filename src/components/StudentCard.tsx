@@ -155,26 +155,26 @@ export default function StudentCard({ eleveId, onClose, defaultTab }: StudentCar
     try {
       const [{ data: eleveData }, { data: notesData }, { data: presData }] = await Promise.all([
         supabase
-          .from('eleves')
+          .from('eleves' as any)
           .select('*, classe:classes(nom_classe, niveau, niveau_info:niveaux(cycle))')
           .eq('id', eleveId)
-          .single(),
+          .single() as any,
         supabase
-          .from('notes')
+          .from('notes' as any)
           .select(`*, evaluation:evaluations(trimestre, coef, bareme, matiere:matieres(nom))`)
-          .eq('eleve_id', eleveId),
+          .eq('eleve_id', eleveId) as any,
         supabase
-          .from('presences')
+          .from('presences' as any)
           .select('*')
           .eq('eleve_id', eleveId)
           .order('date', { ascending: false })
-          .limit(20)
+          .limit(20) as any
       ])
 
       if (eleveData) {
         setEleve(eleveData as Eleve)
         if (eleveData.ecole_id) {
-          const { data: ecoleData } = await supabase.from('ecoles').select('*').eq('id', eleveData.ecole_id).single()
+          const { data: ecoleData } = await supabase.from('ecoles' as any).select('*').eq('id', eleveData.ecole_id).single() as { data: Ecole | null; error: any }
           setEcole((ecoleData ?? null) as Ecole | null)
         }
       }

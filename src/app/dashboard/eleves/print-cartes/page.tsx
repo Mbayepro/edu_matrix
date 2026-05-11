@@ -24,20 +24,20 @@ function PrintCartesContent() {
   async function loadData() {
     setLoading(true)
     try {
-      const { data: cls } = await supabase.from('classes').select('*').eq('id', classeId).single()
+      const { data: cls } = await supabase.from('classes' as any).select('*').eq('id', classeId as any).single() as { data: Classe | null; error: any }
       if (cls) {
         setClasse(cls)
-        const { data: ec } = await supabase.from('ecoles').select('*').eq('id', cls.ecole_id).single()
+        const { data: ec } = await supabase.from('ecoles' as any).select('*').eq('id', cls.ecole_id).single() as { data: Ecole | null; error: any }
         if (ec) setEcole(ec)
       }
 
       const { data: elv } = await supabase
-        .from('eleves')
+        .from('eleves' as any)
         .select('*')
-        .eq('classe_id', classeId)
+        .eq('classe_id', classeId as any)
         .order('nom')
       
-      setEleves(elv || [])
+      setEleves(elv as any || [])
     } finally {
       setLoading(false)
     }

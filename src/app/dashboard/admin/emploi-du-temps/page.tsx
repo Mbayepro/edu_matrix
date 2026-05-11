@@ -72,20 +72,20 @@ export default function EmploiDuTempsPage() {
       setLoading(true)
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
-      const { data: prof } = await supabase.from('profiles').select('*').eq('user_id', user.id).single()
+      const { data: prof } = await supabase.from('profiles').select('*').eq('user_id', user.id).single() as any
       if (!prof || (prof.role !== 'director' && prof.role !== 'admin')) { router.push('/dashboard'); return }
       setEcoleId(prof.ecole_id)
 
       const [{ data: tch }, { data: cls }, { data: mat }] = await Promise.all([
-        supabase.from('profiles').select('*').eq('ecole_id', prof.ecole_id).eq('role', 'teacher').order('nom'),
-        supabase.from('classes').select('*').eq('ecole_id', prof.ecole_id).order('nom_classe'),
-        supabase.from('matieres').select('*').eq('ecole_id', prof.ecole_id).order('nom'),
+        supabase.from('profiles' as any).select('*').eq('ecole_id', prof.ecole_id).eq('role', 'teacher').order('nom'),
+        supabase.from('classes' as any).select('*').eq('ecole_id', prof.ecole_id).order('nom_classe'),
+        supabase.from('matieres' as any).select('*').eq('ecole_id', prof.ecole_id).order('nom'),
       ])
       setTeachers((tch ?? []) as Profile[])
       setClasses(cls ?? [])
       setMatieres((mat ?? []) as Matiere[])
-      if (tch?.length) setSelectedTeacher(tch[0].id)
-      if (cls?.length) setSelectedClasse(cls[0].id)
+      if ((tch as any)?.length) setSelectedTeacher((tch as any)[0].id)
+      if ((cls as any)?.length) setSelectedClasse((cls as any)[0].id)
       
     } finally { setLoading(false) }
   }
@@ -146,7 +146,7 @@ export default function EmploiDuTempsPage() {
 
     setSaving(true)
     try {
-      const { error } = await supabase.from('emploi_du_temps').insert({
+      const { error } = await (supabase.from('emploi_du_temps' as any) as any).insert({
         ecole_id: ecoleId,
         enseignant_id: selectedTeacher,
         classe_id: form.classe_id,

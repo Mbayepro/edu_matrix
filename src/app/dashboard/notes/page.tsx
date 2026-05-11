@@ -82,7 +82,7 @@ export default function NotesPage() {
         .from('ecoles')
         .select('type_periode')
         .eq('id', schoolId)
-        .single()
+        .single() as { data: { type_periode: 'trimestre' | 'semestre' } | null; error: any }
         
       if (ecole?.type_periode) {
         setTypePeriode(ecole.type_periode)
@@ -157,7 +157,7 @@ export default function NotesPage() {
       .from('classes')
       .select('niveau_id, serie_id, niveau_info:niveaux(cycle)')
       .eq('id', selectedClasse)
-      .single()
+      .single() as { data: any; error: any }
 
     try {
       let matieresList: Matiere[] = []
@@ -228,9 +228,9 @@ export default function NotesPage() {
       .eq('annee_scolaire', anneeScolaire)
       .order('date', { ascending: false })
     
-    setEvaluations(data ?? [])
-    if (data && data.length > 0) {
-      setSelectedEvaluation(data[0].id)
+    setEvaluations(data as any ?? [])
+    if ((data as any) && (data as any).length > 0) {
+      setSelectedEvaluation((data as any)[0].id)
     } else {
       setSelectedEvaluation('')
       setNotes({})
@@ -287,8 +287,7 @@ export default function NotesPage() {
     
     setSaving(true)
     try {
-      const { data, error } = await supabase
-        .from('evaluations')
+      const { data, error } = await (supabase.from('evaluations' as any) as any)
         .insert({
           ecole_id: ecoleId,
           classe_id: selectedClasse,
@@ -301,7 +300,7 @@ export default function NotesPage() {
           bareme: newEval.bareme,
         })
         .select()
-        .single()
+        .single() as any
 
       if (!error && data) {
         setShowNewEvalModal(false)
@@ -339,9 +338,9 @@ export default function NotesPage() {
         return
       }
 
-      const { error } = await supabase
-        .from('notes')
-        .upsert(notesToInsert, {
+      const { error } = await (supabase
+        .from('notes' as any) as any)
+        .upsert(notesToInsert as any, {
           onConflict: 'eleve_id,evaluation_id',
           ignoreDuplicates: false,
         })
@@ -379,7 +378,7 @@ export default function NotesPage() {
 
     setSaving(true)
     try {
-      const { error } = await supabase.from('evaluations').update({ bareme: Number(newBareme) }).eq('id', ev.id)
+      const { error } = await (supabase.from('evaluations' as any) as any).update({ bareme: Number(newBareme) } as any).eq('id', ev.id)
       if (!error) {
         showToast('Barème mis à jour', 'success')
         await loadEvaluations()

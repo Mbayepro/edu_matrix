@@ -28,7 +28,7 @@ export function useProfile() {
         .from('profiles')
         .select('*')
         .eq('user_id', supabaseUser.id)
-        .single()
+        .single() as { data: Profile | null; error: any }
 
       if (profError) throw profError
       if (prof) {
@@ -38,7 +38,7 @@ export function useProfile() {
             .from('ecoles')
             .select('*')
             .eq('id', prof.ecole_id)
-            .single()
+            .single() as { data: Ecole | null; error: any }
             
           if (ecError) throw ecError
           setEcole(ec as Ecole)

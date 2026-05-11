@@ -318,17 +318,17 @@ export class CalculateurMoyennes {
       { data: allNotes, error: ntErr },
       { data: allPresences, error: prErr }
     ] = await Promise.all([
-      supabase.from('classes').select('*, serie:series(*)').eq('id', classe_id).single(),
-      supabase.from('ecoles').select('*').eq('id', ecoleId).single(),
-      supabase.from('eleves').select('*, classe:classes(*)').eq('classe_id', classe_id).order('nom, prenom'),
-      supabase.from('notes')
+      supabase.from('classes' as any).select('*, serie:series(*)').eq('id', classe_id).single() as any,
+      supabase.from('ecoles' as any).select('*').eq('id', ecoleId).single() as any,
+      supabase.from('eleves' as any).select('*, classe:classes(*)').eq('classe_id', classe_id).order('nom, prenom') as any,
+      supabase.from('notes' as any)
         .select('*, evaluation:evaluations!inner(*)')
         .eq('evaluation.classe_id', classe_id)
         .eq('evaluation.trimestre', trimestre)
-        .eq('evaluation.annee_scolaire', annee_scolaire),
-      supabase.from('presences')
+        .eq('evaluation.annee_scolaire', annee_scolaire) as any,
+      supabase.from('presences' as any)
         .select('*')
-        .eq('classe_id', classe_id)
+        .eq('classe_id', classe_id) as any
     ])
 
     if (clErr || ecErr || elErr || ntErr || prErr) throw new Error("Erreur lors de la récupération groupée des données.")
