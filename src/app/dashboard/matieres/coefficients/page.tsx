@@ -7,7 +7,7 @@ import { useToast } from '@/contexts/ToastContext'
 import { 
   Settings2, Loader2, Save, ChevronLeft, 
   BookOpen, Layers, Info, CheckCircle2,
-  AlertCircle
+  AlertCircle, Plus
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -86,6 +86,38 @@ export default function CoefficientsPage() {
     })
 
     setGrid(newGrid)
+  }
+
+  async function initStandardLevels() {
+    if (!ecoleId) return
+    setSaving(true)
+    try {
+      const standardNiveaux = [
+        { nom: 'CI', cycle: 'primaire', ordre: 1 },
+        { nom: 'CP', cycle: 'primaire', ordre: 2 },
+        { nom: 'CE1', cycle: 'primaire', ordre: 3 },
+        { nom: 'CE2', cycle: 'primaire', ordre: 4 },
+        { nom: 'CM1', cycle: 'primaire', ordre: 5 },
+        { nom: 'CM2', cycle: 'primaire', ordre: 6 },
+        { nom: '6ème', cycle: 'moyen', ordre: 7 },
+        { nom: '5ème', cycle: 'moyen', ordre: 8 },
+        { nom: '4ème', cycle: 'moyen', ordre: 9 },
+        { nom: '3ème', cycle: 'moyen', ordre: 10 },
+        { nom: '2nde', cycle: 'secondaire', ordre: 11 },
+        { nom: '1ère', cycle: 'secondaire', ordre: 12 },
+        { nom: 'Terminale', cycle: 'secondaire', ordre: 13 },
+      ].map(n => ({ ...n, ecole_id: ecoleId }))
+
+      const { error } = await (supabase.from('niveaux' as any) as any).insert(standardNiveaux)
+      if (error) throw error
+
+      showToast('Niveaux initialisés avec succès !', 'success')
+      await loadData(ecoleId)
+    } catch (err: any) {
+      showToast('Erreur : ' + err.message, 'error')
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleSave() {
@@ -238,12 +270,22 @@ export default function CoefficientsPage() {
           </div>
         ) : niveaux.length === 0 ? (
           <div className="py-32 text-center space-y-6">
-            <AlertCircle className="w-16 h-16 text-amber-400 mx-auto" />
+            <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto border-2 border-amber-200">
+              <AlertCircle className="w-10 h-10 text-amber-500" />
+            </div>
             <div className="space-y-2">
               <p className="text-slate-800 font-black uppercase text-sm">Aucun niveau configuré</p>
-              <p className="text-slate-400 text-xs max-w-sm mx-auto leading-relaxed">
-                Vous devez d&apos;abord définir les niveaux de votre école (6ème, 5ème, etc.) dans les paramètres pour configurer les coefficients.
+              <p className="text-slate-400 text-xs max-w-sm mx-auto leading-relaxed mb-6">
+                Pour définir des coefficients spécifiques, vous devez d&apos;abord initialiser les niveaux académiques de votre école.
               </p>
+              <button
+                onClick={initStandardLevels}
+                disabled={saving}
+                className="inline-flex items-center gap-3 px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all shadow-xl shadow-emerald-500/20"
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Initialiser les niveaux standards
+              </button>
             </div>
           </div>
         ) : (
