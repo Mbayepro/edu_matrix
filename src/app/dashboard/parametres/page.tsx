@@ -117,22 +117,22 @@ export default function SchoolSettingsPage() {
     setUploading(type)
     try {
       const ext = file.name.split('.').pop()
-      const path = `branding/${ecole.id}_${type}_${Date.now()}.${ext}`
+      // Utilisation du dossier 'photos/' qui est déjà autorisé par les politiques RLS
+      const path = `photos/branding_${ecole.id}_${type}_${Date.now()}.${ext}`
       
-      const { error: uploadErr } = await supabase.storage
-        .from('eleves-photos') // Reuse existing bucket to avoid missing bucket errors
+      const { error: uploadErr } = await (supabase.storage.from('eleves-photos' as any) as any)
         .upload(path, file, { upsert: true })
         
       if (uploadErr) throw uploadErr
       
-      const { data: { publicUrl } } = supabase.storage
-        .from('eleves-photos')
+      const { data: { publicUrl } } = (supabase.storage.from('eleves-photos' as any) as any)
         .getPublicUrl(path)
         
       setForm(prev => ({ ...prev, [`${type}_url`]: publicUrl }))
-    } catch (err) {
+      showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} mis à jour dans l'aperçu.`, 'success')
+    } catch (err: any) {
       console.error('Upload error:', err)
-      showToast("Erreur lors de l'upload de l'image.", 'error')
+      showToast(`Erreur d'upload : ${err.message || "Problème de connexion"}`, 'error')
     } finally {
       setUploading(null)
     }
