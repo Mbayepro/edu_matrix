@@ -9,7 +9,7 @@ import { useProfile } from '@/hooks/useProfile'
 import { useToast } from '@/contexts/ToastContext'
 import type { Matiere } from '@/lib/supabase'
 import {
-  BookOpen, Plus, Trash2, Loader2, Edit2, Check, X, BookMarked
+  BookOpen, Plus, Trash2, Loader2, Edit2, Check, X, BookMarked, Settings2
 } from 'lucide-react'
 
 export default function MatieresPage() {
@@ -128,7 +128,15 @@ export default function MatieresPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-4">
+          <Link 
+            href="/dashboard/matieres/coefficients"
+            className="flex items-center gap-3 px-6 py-4 bg-white border border-slate-200 rounded-2xl text-slate-600 hover:text-emerald-600 hover:border-emerald-200 hover:shadow-lg hover:shadow-emerald-500/5 transition-all duration-300 group"
+          >
+            <Settings2 className="w-4 h-4 text-slate-400 group-hover:text-emerald-500 transition-colors" />
+            <span className="text-xs font-black uppercase tracking-widest">Coefficients par Niveau</span>
+          </Link>
+
           <div className="bg-white rounded-[1.5rem] border border-slate-200/60 shadow-sm p-4 flex items-center gap-6 group hover:border-emerald-200 transition-all duration-500">
             <div className="flex flex-col">
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Matières</span>
