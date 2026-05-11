@@ -46,7 +46,7 @@ export default function AdminEcolesPage() {
       .from('profiles')
       .select('role')
       .eq('user_id', user.id)
-      .single()
+      .single() as { data: { role: string } | null; error: unknown }
 
     if (profile?.role !== 'superadmin') {
       router.push('/dashboard')
@@ -71,8 +71,7 @@ export default function AdminEcolesPage() {
 
   async function updateStatut(ecoleId: string, newStatut: 'actif' | 'suspendu' | 'en_attente') {
     setUpdating(ecoleId)
-    const { error } = await supabase
-      .from('ecoles')
+    const { error } = await (supabase.from('ecoles') as any)
       .update({ statut: newStatut })
       .eq('id', ecoleId)
 
