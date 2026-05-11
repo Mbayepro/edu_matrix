@@ -170,7 +170,7 @@ async function executeAction(action: SyncAction): Promise<void> {
           .from(table)
           .select('updated_at')
           .eq('id', id)
-          .single() as any)
+          .single() as any
           
         if (serverData && serverData.updated_at) {
           const serverTime = new Date(serverData.updated_at).getTime()
