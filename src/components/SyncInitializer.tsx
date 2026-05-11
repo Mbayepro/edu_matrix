@@ -18,11 +18,11 @@ export default function SyncInitializer() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const { data: profile } = await supabase
+      const { data: profile } = await (supabase
         .from('profiles')
         .select('ecole_id')
         .eq('user_id', user.id)
-        .single()
+        .single() as any)
 
       if (!profile?.ecole_id) return
 
