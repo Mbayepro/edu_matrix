@@ -124,7 +124,7 @@ export default function ExcelImportModal({ ecoleId, classes, onClose, onSuccess 
       const chunkSize = 100
       for (let i = 0; i < recordsToInsert.length; i += chunkSize) {
         const chunk = recordsToInsert.slice(i, i + chunkSize)
-        const { error: insertErr } = await supabase.from('eleves').insert(chunk)
+        const { error: insertErr } = await (supabase.from('eleves' as any) as any).insert(chunk as any)
         if (insertErr) throw insertErr
       }
 
