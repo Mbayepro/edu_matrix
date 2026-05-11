@@ -92,7 +92,7 @@ export default function MatieresPage() {
 
   async function handleDelete(id: string) {
     if (!confirm('Supprimer cette matière ? Les évaluations associées seront aussi supprimées.')) return
-    const { error } = await supabase.from('matieres').delete().eq('id', id)
+    const { error } = await (supabase.from('matieres' as any) as any).delete().eq('id', id)
     if (error) { showToast('Impossible de supprimer : ' + error.message, 'error'); return }
     showToast('Matière supprimée.', 'success')
     if (ecoleId) await loadMatieres(ecoleId)

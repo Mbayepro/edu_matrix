@@ -54,13 +54,13 @@ export default function ValidationAdminPage() {
       if (enAttente && enAttente.length > 0) {
         const enriched = await Promise.all(
           enAttente.map(async (ec: Ecole) => {
-            const { data: dir } = await supabase
+            const { data: dir } = await (supabase
               .from('profiles')
               .select('*')
               .eq('ecole_id', ec.id)
               .eq('role', 'director')
               .limit(1)
-              .single()
+              .single() as any)
             return { ...ec, directeur: dir || undefined }
           })
         )

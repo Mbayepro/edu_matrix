@@ -72,7 +72,7 @@ export default function EmploiDuTempsPage() {
       setLoading(true)
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
-      const { data: prof } = await supabase.from('profiles').select('*').eq('user_id', user.id).single() as any
+      const { data: prof } = await (supabase.from('profiles').select('*').eq('user_id', user.id).single() as any)
       if (!prof || (prof.role !== 'director' && prof.role !== 'admin')) { router.push('/dashboard'); return }
       setEcoleId(prof.ecole_id)
 
@@ -172,7 +172,7 @@ export default function EmploiDuTempsPage() {
   }
 
   async function handleDelete(id: string) {
-    await supabase.from('emploi_du_temps').delete().eq('id', id)
+    await (supabase.from('emploi_du_temps' as any) as any).delete().eq('id', id)
     showToast('Créneau supprimé.', 'success')
     await loadAllSlots()
   }

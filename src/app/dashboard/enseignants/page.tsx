@@ -40,14 +40,14 @@ export default function EnseignantsPage() {
     setLoading(true)
     try {
       const [{ data: ens }, { data: cls }, { data: mat }, { data: asgn }] = await Promise.all([
-        supabase.from('profiles').select('*').eq('ecole_id', eid).eq('role', 'teacher').order('nom'),
-        supabase.from('classes').select('*').eq('ecole_id', eid).order('nom_classe'),
-        supabase.from('matieres').select('*').eq('ecole_id', eid).eq('is_active', true).order('nom'),
+        supabase.from('profiles' as any).select('*').eq('ecole_id', eid).eq('role', 'teacher').order('nom'),
+        supabase.from('classes' as any).select('*').eq('ecole_id', eid).order('nom_classe'),
+        supabase.from('matieres' as any).select('*').eq('ecole_id', eid).eq('is_active', true).order('nom'),
         supabase
-          .from('enseignants_classes')
+          .from('enseignants_classes' as any)
           .select('*, enseignant:profiles(nom, prenom), classe:classes(nom_classe), matiere:matieres(nom)')
           .eq('ecole_id', eid),
-      ])
+      ] as any[])
       setEnseignants(ens ?? [])
       setClasses(cls ?? [])
       setMatieres(mat ?? [])
@@ -77,12 +77,12 @@ export default function EnseignantsPage() {
         return
       }
 
-      const { error } = await supabase.from('enseignants_classes').insert({
+      const { error } = await (supabase.from('enseignants_classes' as any) as any).insert({
         ecole_id: ecoleId,
         enseignant_id: form.enseignant_id,
         classe_id: form.classe_id,
         matiere_id: form.matiere_id || null,
-      })
+      } as any)
       if (error) { showToast('Erreur : ' + error.message, 'error'); return }
       showToast('Enseignant affecté avec succès !', 'success')
       await loadAll(ecoleId)
@@ -91,7 +91,7 @@ export default function EnseignantsPage() {
 
   async function handleRemove(id: string) {
     if (!confirm('Retirer cette affectation ?')) return
-    await supabase.from('enseignants_classes').delete().eq('id', id)
+    await (supabase.from('enseignants_classes' as any) as any).delete().eq('id', id)
     showToast('Affectation retirée.', 'success')
     if (ecoleId) await loadAll(ecoleId)
   }

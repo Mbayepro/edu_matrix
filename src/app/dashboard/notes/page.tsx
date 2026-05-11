@@ -361,7 +361,7 @@ export default function NotesPage() {
     if (!confirm('Voulez-vous vraiment supprimer cette évaluation et toutes ses notes ?')) return
     setSaving(true)
     try {
-      const { error } = await supabase.from('evaluations').delete().eq('id', id)
+      const { error } = await (supabase.from('evaluations' as any) as any).delete().eq('id', id)
       if (!error) {
         showToast('Évaluation supprimée avec succès', 'success')
         setSelectedEvaluation('')

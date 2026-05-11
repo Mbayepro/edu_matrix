@@ -22,21 +22,17 @@ export default function PendingDirectorPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
 
-      const { data: prof } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
+      const { data: prof } = await (supabase.from('profiles').select('*').eq('user_id', user.id).single() as any)
       
       if (!prof) { router.push('/login'); return }
       setProfile(prof)
 
       if (prof.ecole_id) {
-        const { data: ec } = await supabase
+        const { data: ec } = await (supabase
           .from('ecoles')
           .select('*')
           .eq('id', prof.ecole_id)
-          .single()
+          .single() as any)
         
         setEcole(ec)
         

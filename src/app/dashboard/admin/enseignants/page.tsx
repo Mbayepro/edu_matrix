@@ -124,7 +124,7 @@ export default function EnseignantsAdminPage() {
 
   async function handleDelete(id: string) {
     if (!ecoleId) return
-    await supabase.from('enseignants_classes').delete().eq('id', id)
+    await (supabase.from('enseignants_classes' as any) as any).delete().eq('id', id)
     showToast('Assignation supprimée.', 'success')
     await loadAssignments(ecoleId)
   }

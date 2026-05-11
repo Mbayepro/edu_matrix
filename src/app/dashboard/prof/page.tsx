@@ -66,11 +66,11 @@ export default function ProfDashboard() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: prof } = await supabase
+      const { data: prof } = await (supabase
         .from('profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .single() as any);
 
       if (!prof) return;
       setProfile(prof);

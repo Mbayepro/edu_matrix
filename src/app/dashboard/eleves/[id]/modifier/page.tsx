@@ -45,7 +45,7 @@ export default function ModifierElevePage() {
       setLoading(true)
       const [{ data: cls }, { data: eleveData, error: eleveError }] = await Promise.all([
         supabase.from('classes').select('*').eq('ecole_id', schoolId).order('nom_classe'),
-        supabase.from('eleves').select('*').eq('id', eleveId).single(),
+        (supabase.from('eleves').select('*').eq('id', eleveId).single() as any),
       ])
       setClasses(cls || [])
 
