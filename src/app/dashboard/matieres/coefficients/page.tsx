@@ -261,14 +261,7 @@ export default function CoefficientsPage() {
           </div>
         </div>
 
-        {!selectedNiveau ? (
-          <div className="py-32 text-center space-y-4">
-            <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto border-2 border-dashed border-slate-200">
-              <Info className="w-10 h-10 text-slate-300" />
-            </div>
-            <p className="text-slate-400 font-bold uppercase tracking-[0.2em] text-[10px]">Veuillez sélectionner un niveau académique</p>
-          </div>
-        ) : niveaux.length === 0 ? (
+        {niveaux.length === 0 ? (
           <div className="py-32 text-center space-y-6">
             <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto border-2 border-amber-200">
               <AlertCircle className="w-10 h-10 text-amber-500" />
@@ -287,6 +280,13 @@ export default function CoefficientsPage() {
                 Initialiser les niveaux standards
               </button>
             </div>
+          </div>
+        ) : !selectedNiveau ? (
+          <div className="py-32 text-center space-y-4">
+            <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto border-2 border-dashed border-slate-200">
+              <Info className="w-10 h-10 text-slate-300" />
+            </div>
+            <p className="text-slate-400 font-bold uppercase tracking-[0.2em] text-[10px]">Veuillez sélectionner un niveau académique</p>
           </div>
         ) : (
           <div className="p-10">
