@@ -60,8 +60,8 @@ export default function CoefficientsPage() {
       setSeries(sRes.data || [])
       setCoefficients(cRes.data || [])
       
-      if (nRes.data && nRes.data.length > 0) {
-        setSelectedNiveau(nRes.data[0].id)
+      if (nRes.data && (nRes.data as any).length > 0) {
+        setSelectedNiveau((nRes.data[0] as any).id)
       }
     } catch (err) {
       console.error(err)

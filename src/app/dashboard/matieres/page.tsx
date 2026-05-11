@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useProfile } from '@/hooks/useProfile'
 import { useToast } from '@/contexts/ToastContext'
+import Link from 'next/link'
 import type { Matiere } from '@/lib/supabase'
 import {
   BookOpen, Plus, Trash2, Loader2, Edit2, Check, X, BookMarked, Settings2
@@ -36,8 +37,7 @@ export default function MatieresPage() {
   async function loadMatieres(eid: string) {
     setLoading(true)
     try {
-      const { data } = await supabase
-        .from('matieres')
+      const { data } = await (supabase.from('matieres' as any) as any)
         .select('*')
         .eq('ecole_id', eid)
         .order('nom')
