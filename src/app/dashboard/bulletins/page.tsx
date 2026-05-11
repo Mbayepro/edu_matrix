@@ -1,22 +1,22 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { CalculateurMoyennes } from '@/lib/calculMoyennes'
 import type { BulletinData } from '@/lib/calculMoyennes'
-import type { Classe, Eleve, Ecole, Niveau, Serie } from '@/lib/supabase'
+import type { Classe, Ecole } from '@/lib/supabase'
+import {
+  generateSingleBulletinPDF,
+  generateAllBulletinsPDF as generateAllPDF,
+} from '@/lib/bulletinPdfGenerator'
 import {
   Loader2,
   Download,
   FileText,
-  Users,
-  Calendar,
-  TrendingUp,
-  Award,
-  Eye,
   AlertCircle,
   Cloud,
+  KeyRound,
 } from 'lucide-react'
 import { useToast } from '@/contexts/ToastContext'
 import { useTeacherClasses } from '@/hooks/useTeacherClasses'
@@ -38,6 +38,7 @@ export default function BulletinsPage() {
   const [loadingBulletins, setLoadingBulletins] = useState(false)
   const [generating, setGenerating] = useState<string | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [includePIN, setIncludePIN] = useState(false)
   const { showToast } = useToast()
   
   const { isOnline } = useNetwork()
@@ -67,7 +68,8 @@ export default function BulletinsPage() {
         setLoading(false)
       })
     }
-  }, [ecoleId, isTeacher, teacherLoading, teacherClasseIds.join(',')])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ecoleId, isTeacher, teacherLoading, useMemo(() => teacherClasseIds.join(','), [teacherClasseIds])])
 
   useEffect(() => {
     if (selectedClasse && selectedTrimestre && anneeScolaire) {
@@ -86,7 +88,7 @@ export default function BulletinsPage() {
       .from('profiles')
       .select('id, ecole_id, role')
       .eq('user_id', user.id)
-      .single()
+      .single() as { data: { id: string; ecole_id: string | null; role: string } | null; error: unknown }
     
     if (prof?.ecole_id) {
       setEcoleId(prof.ecole_id)
@@ -99,7 +101,7 @@ export default function BulletinsPage() {
 
   async function loadEcole() {
     if (!ecoleId) return
-    const { data } = await supabase.from('ecoles').select('*').eq('id', ecoleId).single()
+    const { data } = await supabase.from('ecoles').select('*').eq('id', ecoleId).single() as { data: import('@/lib/supabase').Ecole | null; error: unknown }
     setEcole(data)
     if (data?.type_periode) {
       setTypePeriode(data.type_periode)
@@ -158,244 +160,31 @@ export default function BulletinsPage() {
   }
 
   async function generateBulletinPDF(bulletin: BulletinData) {
-    if (!isOnline) {
-      showToast("Connexion internet requise pour générer le PDF officiel.", "error")
-      return
-    }
     setGenerating(bulletin.eleve.id)
     try {
-      const html = generateBulletinHTML(bulletin)
-      const printWindow = window.open('', '_blank')
-      if (printWindow) {
-        printWindow.document.write(html)
-        printWindow.document.close()
-        printWindow.focus()
-      }
+      generateSingleBulletinPDF(bulletin, ecole, typePeriode, includePIN)
+      showToast('PDF téléchargé avec succès !', 'success')
+    } catch (e) {
+      showToast('Erreur lors de la génération du PDF.', 'error')
     } finally {
       setGenerating(null)
     }
   }
 
-  async function generateAllBulletinsPDF() {
-    if (!isOnline) {
-      showToast("Connexion internet requise pour imprimer tous les bulletins.", "error")
-      return
-    }
+  async function handleGenerateAll() {
     if (bulletins.length === 0) return
     setGenerating('all')
-// ... (rest of the combinedHtml logic remains same but checking for online)
     try {
-      let combinedHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-          <meta charset="UTF-8">
-          <title>Bulletins de la classe ${classes.find(c => c.id === selectedClasse)?.nom_classe}</title>
-          <style>
-              @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Inter:wght@400;700;900&display=swap');
-              body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; background: #fff; }
-              @media print {
-                  body { background: white; padding: 0; }
-                  .bulletin-page { page-break-after: always; padding: 0; }
-                  .bulletin-page:last-child { page-break-after: auto; }
-              }
-              .bulletin-page { padding: 40px; margin: 0 auto; }
-              .bulletin { max-width: 850px; margin: 0 auto; background: white; padding: 40px; border: 1.5px solid #000; position: relative; color: #000; }
-              .header-section { display: flex; align-items: flex-start; margin-bottom: 25px; gap: 20px; }
-              .logo { max-width: 90px; height: auto; }
-              .header-center { flex: 1; text-align: center; }
-              .school-name { font-size: 18px; font-weight: 900; text-transform: uppercase; color: #000; }
-              .header-line { height: 2px; background: #000; width: 60%; margin: 8px auto; }
-              .bulletin-title { font-family: 'Dancing Script', cursive; font-size: 32px; color: #000; margin: 10px 0; }
-              .info-boxes { display: flex; gap: 20px; margin-bottom: 30px; }
-              .info-box { flex: 1; border: 1.5px solid #000; border-radius: 8px; padding: 12px 15px; }
-              .info-box p { margin: 4px 0; font-size: 12px; }
-              .grades-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1.5px solid #000; }
-              .grades-table th { background: #f8fafc; border: 1.5px solid #000; padding: 8px; font-size: 11px; text-transform: uppercase; font-weight: 900; }
-              .grades-table td { border: 1.5px solid #000; padding: 6px 10px; font-size: 12px; }
-              .text-center { text-align: center; }
-              .text-right { text-align: right; }
-              .final-average-box { display: flex; align-items: center; gap: 15px; padding: 10px 20px; border: 2.5px solid #000; border-radius: 4px; float: right; }
-              .avg-label { font-size: 14px; font-weight: 800; }
-              .avg-value { font-size: 20px; font-weight: 900; }
-              .appreciation-footer { display: flex; gap: 20px; clear: both; margin-top: 30px; }
-              .app-box { flex: 1; border: 1.5px solid #000; border-radius: 8px; padding: 15px; font-size: 11px; }
-              .footer-right { width: 220px; text-align: center; }
-              .signer-title { font-weight: 900; text-decoration: underline; margin-bottom: 10px; }
-              .stamp-area { height: 100px; position: relative; display: flex; align-items: center; justify-content: center; }
-              .stamp { max-height: 90px; opacity: 0.8; transform: rotate(-5deg); position: absolute; }
-              .signature { max-height: 50px; position: absolute; z-index: 2; }
-          </style>
-      </head>
-      <body>
-      `;
-      for (const bulletin of bulletins) {
-        const bodyContent = generateBulletinHTML(bulletin, true)
-        combinedHtml += `<div class="bulletin-page">${bodyContent}</div>`
-      }
-      combinedHtml += `</body></html>`
-      const printWindow = window.open('', '_blank')
-      if (printWindow) {
-        printWindow.document.write(combinedHtml)
-        printWindow.document.close()
-        printWindow.focus()
-      }
+      const classeNom = classes.find(c => c.id === selectedClasse)?.nom_classe || 'Classe'
+      generateAllPDF(bulletins, ecole, typePeriode, classeNom, includePIN)
+      showToast(`${bulletins.length} bulletins exportés en PDF !`, 'success')
+    } catch (e) {
+      showToast('Erreur lors de la génération des PDFs.', 'error')
     } finally {
       setGenerating(null)
     }
   }
 
-  function generateBulletinHTML(bulletin: BulletinData, insideCombined: boolean = false): string {
-    const displayMoyenneTotal = bulletin.moyenne_generale;
-
-    const content = `
-    <div class="bulletin">
-        <div class="header-section">
-            <div class="header-left">
-                ${ecole?.logo_url ? `<img src="${ecole.logo_url}" alt="Logo" class="logo">` : '<div class="logo-placeholder">LOGO</div>'}
-            </div>
-            <div class="header-center">
-                <h1 class="school-name">${ecole?.nom || 'Établissement Scolaire'}</h1>
-                <div class="header-line"></div>
-                ${ecole?.id ? `<div style="font-size:10px; font-weight:700;">Agréé par l'État - Plateforme EduMatrix</div>` : ''}
-                <h2 class="bulletin-title">Bulletin du ${bulletin.trimestre === 1 ? '1<sup>er</sup>' : bulletin.trimestre === 2 ? '2<sup>ème</sup>' : '3<sup>ème</sup>'} ${typePeriode === 'semestre' ? 'Semestre' : 'Trimestre'}</h2>
-            </div>
-        </div>
-
-        <div class="info-boxes">
-            <div class="info-box">
-                <p><strong>Année Scolaire :</strong> ${bulletin.annee_scolaire}</p>
-                <p><strong>Filière / Série :</strong> ${(bulletin.eleve as any).classe?.serie?.nom || 'Enseignement Général'}</p>
-                <p><strong>Classe :</strong> ${bulletin.eleve.classe?.nom_classe || 'N/A'}</p>
-                <p><strong>Cycle :</strong> ${bulletin.niveau?.cycle === 'primaire' ? 'Élémentaire' : 'Moyen/Secondaire'}</p>
-            </div>
-            <div class="info-box">
-                <p><strong>Prénom & Nom :</strong> ${bulletin.eleve.prenom} ${bulletin.eleve.nom}</p>
-                <p><strong>Matricule :</strong> ${bulletin.eleve.matricule || 'Sans'}</p>
-                <p><strong>Naissance :</strong> ${bulletin.eleve.date_naissance ? new Date(bulletin.eleve.date_naissance).toLocaleDateString('fr-FR') : '—'}</p>
-                ${bulletin.eleve.pin_parent ? `<p><strong>PIN Parent :</strong> <span style="font-family: monospace; font-weight: bold; background: #eee; padding: 2px 4px;">${bulletin.eleve.pin_parent}</span></p>` : ''}
-            </div>
-        </div>
-
-        <table class="grades-table">
-            <thead>
-                <tr>
-                    <th style="text-align: left; padding-left: 10px;">Matières</th>
-                    <th class="text-center">Coef</th>
-                    <th class="text-center">MOY. DEV.</th>
-                    <th class="text-center">Comp.</th>
-                    <th class="text-center" style="background: #f8fafc;">Moyenne ${bulletin.niveau?.cycle === 'primaire' ? '(/10)' : '(/20)'}</th>
-                    <th class="text-center" style="background: #fff7ed;">TOTAL POINTS</th>
-                    <th>Appréciation</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${bulletin.matieres.map(matiere => {
-                  const moyDev = (matiere.moyenne_controles ?? 0).toFixed(2);
-                  const comp = matiere.note_examen !== undefined ? matiere.note_examen.toFixed(2) : '—';
-                  const totalPoints = (matiere.moyenne * matiere.coefficient).toFixed(2);
-                  return `
-                    <tr>
-                        <td style="padding-left: 10px;"><strong>${matiere.matiere_nom}</strong></td>
-                        <td class="text-center">${matiere.coefficient}</td>
-                        <td class="text-center">${moyDev}</td>
-                        <td class="text-center">${comp}</td>
-                        <td class="text-center" style="font-weight:900; background: #f1f5f9;">${matiere.moyenne.toFixed(2)}</td>
-                        <td class="text-center" style="font-weight:900; background: #fff7ed;">${totalPoints}</td>
-                        <td style="font-size:10px; font-style:italic;">${matiere.appreciation || ''}</td>
-                    </tr>
-                  `;
-                }).join('')}
-            </tbody>
-            <tfoot>
-                <tr style="background:#f8fafc; font-weight:900;">
-                    <td colspan="1" style="text-align:right; padding-right:15px;">TOTAL :</td>
-                    <td class="text-center">${bulletin.matieres.reduce((acc, m) => acc + (m.is_bonus ? 0 : m.coefficient), 0)}</td>
-                    <td colspan="3"></td>
-                    <td class="text-center" style="background:#fff7ed; font-size: 14px;">${bulletin.matieres.reduce((acc, m) => acc + (m.moyenne * m.coefficient), 0).toFixed(2)}</td>
-                    <td></td>
-                </tr>
-            </tfoot>
-        </table>
-
-        <div style="margin:20px 0; overflow:hidden;">
-            <div class="final-average-box">
-                <span class="avg-label">MOYENNE DU ${typePeriode === 'semestre' ? 'SEMESTRE' : 'TRIMESTRE'} :</span>
-                <span class="avg-value">${displayMoyenneTotal.toFixed(2)}</span>
-            </div>
-        </div>
-
-        <div class="appreciation-footer">
-            <div style="flex:1; display:flex; flex-direction:column; gap:10px;">
-                <div class="app-box">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px dotted #ccc;">
-                        <span><strong>Total Absences:</strong> ${bulletin.attendance?.absences || 0}</span>
-                        <span><strong>Total Retards:</strong> ${bulletin.attendance?.retards || 0}</span>
-                        <span><strong>Rang:</strong> ${bulletin.rang} / ${bulletin.total_eleves}</span>
-                    </div>
-                    <div style="margin-top:10px;">
-                        <strong>Appréciation :</strong> <span style="font-style:italic; font-weight:700;">${(bulletin.eleve as any).appreciation_trimestre || 'Bon travail.'}</span>
-                    </div>
-                </div>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${bulletin.eleve.id}" width="60" height="60">
-                    <div style="font-size:8px; color:#999;">Authentifié par EduMatrix <br/> ${bulletin.eleve.id.substring(0,8)}</div>
-                </div>
-            </div>
-            <div class="footer-right">
-                <div class="signer-title">Directeur des Études</div>
-                <div class="stamp-area">
-                    ${ecole?.tampon_url ? `<img src="${ecole.tampon_url}" class="stamp">` : ''}
-                    ${ecole?.signature_url ? `<img src="${ecole.signature_url}" class="signature">` : ''}
-                </div>
-            </div>
-        </div>
-    </div>`;
-
-    if (insideCombined) return content;
-
-    return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Bulletin</title><style>
-        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Inter:wght@400;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; margin: 0; padding: 20px; background: #fff; }
-        .bulletin { max-width: 850px; margin: 0 auto; padding: 40px; border: 1.5px solid #000; position: relative; }
-        .header-section { display: flex; align-items: flex-start; margin-bottom: 25px; gap: 20px; }
-        .logo { max-width: 90px; height: auto; }
-        .header-center { flex: 1; text-align: center; }
-        .school-name { font-size: 18px; font-weight: 900; text-transform: uppercase; }
-        .header-line { height: 2px; background: #000; width: 60%; margin: 8px auto; }
-        .bulletin-title { font-family: 'Dancing Script', cursive; font-size: 32px; color: #000; margin: 10px 0; }
-        .info-boxes { display: flex; gap: 20px; margin-bottom: 30px; }
-        .info-box { flex: 1; border: 1.5px solid #000; border-radius: 8px; padding: 12px 15px; }
-        .info-box p { margin: 4px 0; font-size: 12px; }
-        .grades-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1.5px solid #000; }
-        .grades-table th { background: #f8fafc; border: 1.5px solid #000; padding: 8px; font-size: 11px; text-transform: uppercase; font-weight: 900; }
-        .grades-table td { border: 1.5px solid #000; padding: 6px 10px; font-size: 12px; }
-        .text-center { text-align: center; }
-        .final-average-box { display: flex; align-items: center; gap: 15px; padding: 10px 20px; border: 2.5px solid #000; border-radius: 4px; float: right; }
-        .avg-label { font-size: 14px; font-weight: 800; }
-        .avg-value { font-size: 20px; font-weight: 900; }
-        .appreciation-footer { display: flex; gap: 20px; clear: both; margin-top: 30px; }
-        .app-box { flex: 1; border: 1.5px solid #000; border-radius: 8px; padding: 15px; font-size: 11px; }
-        .footer-right { width: 220px; text-align: center; }
-        .signer-title { font-weight: 900; text-decoration: underline; margin-bottom: 10px; }
-        .stamp-area { height: 100px; position: relative; display: flex; align-items: center; justify-content: center; }
-        .stamp { max-height: 90px; opacity: 0.8; transform: rotate(-5deg); position: absolute; }
-        .signature { max-height: 50px; position: absolute; z-index: 2; }
-        @media print { 
-          body { padding: 0; } 
-          .bulletin { border: none; padding: 20px; box-shadow: none; margin: 0 auto; } 
-          @page { margin: 1cm; }
-        }
-    </style>
-    <script>
-        window.addEventListener('load', () => {
-          setTimeout(() => {
-            window.print();
-          }, 1500);
-        });
-    </script>
-    </head><body><div id="print-root">${content}</div></body></html>`;
-  }
 
   const selectedClasseData = classes.find(c => c.id === selectedClasse)
 
@@ -436,16 +225,11 @@ export default function BulletinsPage() {
 
           {bulletins.length > 0 && (
             <button
-              onClick={generateAllBulletinsPDF}
-              disabled={!isOnline}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg ${
-                isOnline 
-                ? 'bg-slate-900 text-white hover:bg-emerald-600 shadow-slate-900/20' 
-                : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
-              }`}
+              onClick={handleGenerateAll}
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg bg-slate-900 text-white hover:bg-emerald-600 shadow-slate-900/20"
             >
               {generating === 'all' ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-              Imprimer tout
+              Tout exporter
             </button>
           )}
         </div>
@@ -482,6 +266,20 @@ export default function BulletinsPage() {
             <select value={anneeScolaire} onChange={(e) => setAnneeScolaire(e.target.value)} className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10">
               {anneesScolaires.map(an => <option key={an} value={an}>{an}</option>)}
             </select>
+          </div>
+          {/* Toggle PIN Parent */}
+          <div className="flex items-center gap-3 pt-6">
+            <button
+              onClick={() => setIncludePIN(v => !v)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest border-2 transition-all ${
+                includePIN
+                  ? 'bg-amber-50 border-amber-300 text-amber-700'
+                  : 'bg-slate-50 border-slate-200 text-slate-400'
+              }`}
+            >
+              <KeyRound className="w-3.5 h-3.5" />
+              PIN Parent {includePIN ? 'inclus' : 'masqué'}
+            </button>
           </div>
         </div>
       </div>

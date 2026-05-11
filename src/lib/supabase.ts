@@ -298,7 +298,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables.')
 }
 
-export const supabase = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey) as any
+export const supabase = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey)
 
 // ─────────────────────────────────────────
 // Auth helpers

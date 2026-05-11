@@ -1,0 +1,211 @@
+// src/lib/bulletinPdfGenerator.ts
+// Génération PDF des bulletins avec jsPDF — remplace window.open()
+import { jsPDF } from 'jspdf'
+import autoTable from 'jspdf-autotable'
+import type { BulletinData } from './calculMoyennes'
+import type { Ecole } from './supabase'
+
+/** Dessine un bulletin complet sur la page courante du doc jsPDF */
+export function drawBulletin(
+  doc: jsPDF,
+  bulletin: BulletinData,
+  ecole: Ecole | null,
+  typePeriode: 'trimestre' | 'semestre',
+  includePIN: boolean
+) {
+  const margin = 12
+  const pw = 210
+  const cw = pw - 2 * margin
+  const isPrimaire = bulletin.niveau?.cycle === 'primaire'
+  const baremeLabel = isPrimaire ? '/10' : '/20'
+  const perioLabel = typePeriode === 'semestre' ? 'Semestre' : 'Trimestre'
+  const ordinal = bulletin.trimestre === 1 ? '1er' : `${bulletin.trimestre}ème`
+
+  doc.setTextColor(0, 0, 0)
+
+  // ── Bordure ──────────────────────────────────────────────────────────────
+  doc.setLineWidth(0.5)
+  doc.setDrawColor(0)
+  doc.rect(margin, margin, cw, 273)
+
+  let y = margin + 8
+
+  // ── En-tête ──────────────────────────────────────────────────────────────
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(13)
+  doc.text((ecole?.nom || 'ÉTABLISSEMENT SCOLAIRE').toUpperCase(), pw / 2, y, { align: 'center' })
+  y += 5
+
+  doc.setLineWidth(0.5)
+  doc.line(margin + 25, y, pw - margin - 25, y)
+  y += 4
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  doc.text("Agréé par l'État — Plateforme EduMatrix", pw / 2, y, { align: 'center' })
+  y += 6
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(15)
+  doc.text(`Bulletin du ${ordinal} ${perioLabel}`, pw / 2, y, { align: 'center' })
+  y += 11
+
+  // ── Boîtes d'informations ─────────────────────────────────────────────────
+  const boxH = 28
+  const halfW = cw / 2 - 3
+
+  // Boîte gauche : infos classe
+  doc.setLineWidth(0.3)
+  doc.rect(margin, y, halfW, boxH)
+  doc.setFontSize(8)
+  const lx = margin + 4
+  const rows: [string, string][] = [
+    ['Année Scolaire :', bulletin.annee_scolaire],
+    ['Filière / Série :', (bulletin.eleve as any).classe?.serie?.nom || 'Enseignement Général'],
+    ['Classe :', bulletin.eleve.classe?.nom_classe || 'N/A'],
+    ['Cycle :', isPrimaire ? 'Élémentaire' : 'Moyen / Secondaire'],
+  ]
+  rows.forEach(([label, val], i) => {
+    const lineY = y + 7 + i * 6
+    doc.setFont('helvetica', 'bold'); doc.text(label, lx, lineY)
+    doc.setFont('helvetica', 'normal'); doc.text(val, lx + label.length * 1.8 + 2, lineY)
+  })
+
+  // Boîte droite : infos élève
+  const rx = margin + halfW + 6
+  doc.rect(rx, y, halfW, boxH)
+  const rtx = rx + 4
+  const dob = bulletin.eleve.date_naissance
+    ? new Date(bulletin.eleve.date_naissance).toLocaleDateString('fr-FR')
+    : '—'
+  const studentRows: [string, string][] = [
+    ['Prénom & Nom :', `${bulletin.eleve.prenom} ${bulletin.eleve.nom}`],
+    ['Matricule :', bulletin.eleve.matricule || 'Sans'],
+    ['Naissance :', dob],
+  ]
+  if (includePIN && bulletin.eleve.pin_parent) {
+    studentRows.push(['PIN Parent :', bulletin.eleve.pin_parent])
+  }
+  studentRows.forEach(([label, val], i) => {
+    const lineY = y + 7 + i * 6
+    doc.setFont('helvetica', 'bold'); doc.text(label, rtx, lineY)
+    doc.setFont('helvetica', 'normal'); doc.text(val, rtx + label.length * 1.8 + 2, lineY)
+  })
+
+  y += boxH + 6
+
+  // ── Tableau des notes ─────────────────────────────────────────────────────
+  const tableRows = bulletin.matieres.map(m => [
+    m.matiere_nom,
+    String(m.coefficient),
+    (m.moyenne_controles ?? 0).toFixed(2),
+    m.note_examen !== undefined ? m.note_examen.toFixed(2) : '—',
+    m.moyenne.toFixed(2),
+    (m.moyenne * m.coefficient).toFixed(2),
+    m.appreciation || '',
+  ])
+
+  const totalCoef = bulletin.matieres.reduce((a, m) => a + (m.is_bonus ? 0 : m.coefficient), 0)
+  const totalPts  = bulletin.matieres.reduce((a, m) => a + m.moyenne * m.coefficient, 0)
+  tableRows.push(['TOTAUX', String(totalCoef), '', '', '', totalPts.toFixed(2), ''])
+
+  autoTable(doc, {
+    startY: y,
+    head: [['Matières', 'Coef', 'Moy. CC', 'Comp.', `Moy. (${baremeLabel})`, 'Total Pts', 'Appréciation']],
+    body: tableRows,
+    margin: { left: margin, right: margin },
+    styles: { fontSize: 8, cellPadding: 2, lineColor: [0, 0, 0], lineWidth: 0.2, textColor: [0, 0, 0] },
+    headStyles: { fillColor: [248, 250, 252], textColor: [0, 0, 0], fontStyle: 'bold', fontSize: 7, halign: 'center' },
+    columnStyles: {
+      0: { fontStyle: 'bold', cellWidth: 38 },
+      1: { halign: 'center', cellWidth: 12 },
+      2: { halign: 'center', cellWidth: 18 },
+      3: { halign: 'center', cellWidth: 16 },
+      4: { halign: 'center', fontStyle: 'bold', fillColor: [241, 245, 249], cellWidth: 22 },
+      5: { halign: 'center', fontStyle: 'bold', fillColor: [255, 247, 237], cellWidth: 20 },
+      6: { fontSize: 7, fontStyle: 'italic' },
+    },
+    didParseCell: (data: any) => {
+      if (data.row.index === tableRows.length - 1) {
+        data.cell.styles.fontStyle = 'bold'
+        data.cell.styles.fillColor = [248, 250, 252]
+      }
+    },
+  })
+
+  y = (doc as any).lastAutoTable.finalY + 6
+
+  // ── Moyenne générale ──────────────────────────────────────────────────────
+  const avgW = 95
+  const avgX = pw - margin - avgW
+  doc.setLineWidth(0.8)
+  doc.rect(avgX, y, avgW, 10)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9)
+  const avgLabel = typePeriode === 'semestre' ? 'SEMESTRE' : 'TRIMESTRE'
+  doc.text(
+    `MOY. DU ${avgLabel} : ${bulletin.moyenne_generale.toFixed(2)} ${baremeLabel}   [${bulletin.mention}]`,
+    avgX + 3, y + 7
+  )
+
+  y += 15
+
+  // ── Assiduité & Appréciation ──────────────────────────────────────────────
+  const attW = cw - 52
+  doc.setLineWidth(0.3)
+  doc.rect(margin, y, attW, 22)
+
+  doc.setFontSize(8)
+  doc.setFont('helvetica', 'bold')
+  doc.text(`Absences : ${bulletin.attendance?.absences || 0}`, margin + 4, y + 7)
+  doc.text(`Retards : ${bulletin.attendance?.retards || 0}`, margin + 42, y + 7)
+  doc.text(`Rang : ${bulletin.rang ?? '—'} / ${bulletin.total_eleves ?? '—'}`, margin + 80, y + 7)
+
+  const appreciation = (bulletin.eleve as any).appreciation_trimestre || 'Bon travail.'
+  doc.setFont('helvetica', 'bold')
+  doc.text('Appréciation :', margin + 4, y + 16)
+  doc.setFont('helvetica', 'italic')
+  doc.text(appreciation, margin + 36, y + 16)
+
+  // ── Zone signature ────────────────────────────────────────────────────────
+  const sigX = margin + attW + 4
+  const sigW = cw - attW - 4
+  doc.setLineWidth(0.3)
+  doc.rect(sigX, y, sigW, 22)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text('Directeur des Études', sigX + sigW / 2, y + 6, { align: 'center' })
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  doc.text('Signature & Cachet', sigX + sigW / 2, y + 18, { align: 'center' })
+}
+
+/** Génère et télécharge le PDF d'un seul bulletin */
+export function generateSingleBulletinPDF(
+  bulletin: BulletinData,
+  ecole: Ecole | null,
+  typePeriode: 'trimestre' | 'semestre',
+  includePIN: boolean
+) {
+  const doc = new jsPDF({ format: 'a4', unit: 'mm' })
+  drawBulletin(doc, bulletin, ecole, typePeriode, includePIN)
+  const fileName = `Bulletin_${bulletin.eleve.prenom}_${bulletin.eleve.nom}_T${bulletin.trimestre}.pdf`
+  doc.save(fileName)
+}
+
+/** Génère et télécharge le PDF de tous les bulletins d'une classe */
+export function generateAllBulletinsPDF(
+  bulletins: BulletinData[],
+  ecole: Ecole | null,
+  typePeriode: 'trimestre' | 'semestre',
+  classeNom: string,
+  includePIN: boolean
+) {
+  if (bulletins.length === 0) return
+  const doc = new jsPDF({ format: 'a4', unit: 'mm' })
+  bulletins.forEach((bulletin, idx) => {
+    if (idx > 0) doc.addPage()
+    drawBulletin(doc, bulletin, ecole, typePeriode, includePIN)
+  })
+  doc.save(`Bulletins_${classeNom}_T${bulletins[0].trimestre}.pdf`)
+}

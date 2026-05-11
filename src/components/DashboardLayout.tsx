@@ -4,7 +4,7 @@
 // Sidebar partagée pour toutes les pages du dashboard
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useProfile } from '@/hooks/useProfile'
 import type { Profile, Ecole } from '@/lib/supabase'
@@ -74,6 +74,7 @@ function NavLink({ item, active, onClick }: { item: NavItem; active: boolean; on
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
   const { profile, ecole, loading } = useProfile()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
@@ -100,7 +101,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
       }
       
-      window.location.href = '/login'
+      router.push('/login')
     }
   }
 
