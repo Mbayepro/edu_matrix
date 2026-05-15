@@ -5,13 +5,34 @@ import autoTable from 'jspdf-autotable'
 import type { BulletinData } from './calculMoyennes'
 import type { Ecole } from './supabase'
 
+/** Helper pour charger une image distante en base64 pour jsPDF */
+async function getImageData(url: string | null | undefined): Promise<string | null> {
+  if (!url) return null
+  try {
+    const res = await fetch(url, { mode: 'cors' })
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
+    const blob = await res.blob()
+    
+    return new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result as string)
+      reader.onerror = () => resolve(null)
+      reader.readAsDataURL(blob)
+    })
+  } catch (err) {
+    console.error('Erreur chargement image:', url, err)
+    return null
+  }
+}
+
 /** Dessine un bulletin complet sur la page courante du doc jsPDF */
 export function drawBulletin(
   doc: jsPDF,
   bulletin: BulletinData,
   ecole: Ecole | null,
   typePeriode: 'trimestre' | 'semestre',
-  includePIN: boolean
+  includePIN: boolean,
+  images?: { logo?: string | null, signature?: string | null, tampon?: string | null }
 ) {
   const margin = 12
   const pw = 210
@@ -30,24 +51,29 @@ export function drawBulletin(
 
   let y = margin + 8
 
-  // ── En-tête ──────────────────────────────────────────────────────────────
+  // ── En-tête avec LOGO ───────────────────────────────────────────────────
+  if (images?.logo) {
+    const logoSize = 25
+    doc.addImage(images.logo, 'PNG', margin + 5, y - 4, logoSize, logoSize)
+  }
+
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(13)
   doc.text((ecole?.nom || 'ÉTABLISSEMENT SCOLAIRE').toUpperCase(), pw / 2, y, { align: 'center' })
   y += 5
 
   doc.setLineWidth(0.5)
-  doc.line(margin + 25, y, pw - margin - 25, y)
+  doc.line(margin + 35, y, pw - margin - 35, y)
   y += 4
 
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
-  doc.text("Agréé par l'État — Plateforme EduMatrix", pw / 2, y, { align: 'center' })
+  doc.text(ecole?.adresse || "Plateforme EduMatrix — Gestion Scolaire Moderne", pw / 2, y, { align: 'center' })
   y += 6
 
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(15)
-  doc.text(`Bulletin du ${ordinal} ${perioLabel}`, pw / 2, y, { align: 'center' })
+  doc.text(`BULLETIN DE NOTES : ${ordinal} ${perioLabel.toUpperCase()}`, pw / 2, y, { align: 'center' })
   y += 11
 
   // ── Boîtes d'informations ─────────────────────────────────────────────────
@@ -68,7 +94,7 @@ export function drawBulletin(
   rows.forEach(([label, val], i) => {
     const lineY = y + 7 + i * 6
     doc.setFont('helvetica', 'bold'); doc.text(label, lx, lineY)
-    doc.setFont('helvetica', 'normal'); doc.text(val, lx + label.length * 1.8 + 2, lineY)
+    doc.setFont('helvetica', 'normal'); doc.text(val, lx + label.length * 1.8 + 3, lineY)
   })
 
   // Boîte droite : infos élève
@@ -89,7 +115,7 @@ export function drawBulletin(
   studentRows.forEach(([label, val], i) => {
     const lineY = y + 7 + i * 6
     doc.setFont('helvetica', 'bold'); doc.text(label, rtx, lineY)
-    doc.setFont('helvetica', 'normal'); doc.text(val, rtx + label.length * 1.8 + 2, lineY)
+    doc.setFont('helvetica', 'normal'); doc.text(val, rtx + label.length * 1.8 + 3, lineY)
   })
 
   y += boxH + 6
@@ -161,13 +187,13 @@ export function drawBulletin(
   doc.text(`Retards : ${bulletin.attendance?.retards || 0}`, margin + 42, y + 7)
   doc.text(`Rang : ${bulletin.rang ?? '—'} / ${bulletin.total_eleves ?? '—'}`, margin + 80, y + 7)
 
-  const appreciation = (bulletin.eleve as any).appreciation_trimestre || 'Bon travail.'
+  const appreciation = (bulletin.eleve as any).appreciation_trimestre || 'Félicitations pour vos efforts.'
   doc.setFont('helvetica', 'bold')
   doc.text('Appréciation :', margin + 4, y + 16)
   doc.setFont('helvetica', 'italic')
   doc.text(appreciation, margin + 36, y + 16)
 
-  // ── Zone signature ────────────────────────────────────────────────────────
+  // ── Zone signature avec TAMPON & SIGNATURE ────────────────────────────────
   const sigX = margin + attW + 4
   const sigW = cw - attW - 4
   doc.setLineWidth(0.3)
@@ -175,26 +201,44 @@ export function drawBulletin(
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(8)
   doc.text('Directeur des Études', sigX + sigW / 2, y + 6, { align: 'center' })
+  
+  // Tampon
+  if (images?.tampon) {
+    doc.addImage(images.tampon, 'PNG', sigX + 5, y + 5, 12, 12)
+  }
+  // Signature
+  if (images?.signature) {
+    doc.addImage(images.signature, 'PNG', sigX + sigW / 2 - 10, y + 10, 20, 10)
+  }
+
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7)
-  doc.text('Signature & Cachet', sigX + sigW / 2, y + 18, { align: 'center' })
+  doc.text('Signature & Cachet', sigX + sigW / 2, y + 20, { align: 'center' })
 }
 
 /** Génère et télécharge le PDF d'un seul bulletin */
-export function generateSingleBulletinPDF(
+export async function generateSingleBulletinPDF(
   bulletin: BulletinData,
   ecole: Ecole | null,
   typePeriode: 'trimestre' | 'semestre',
   includePIN: boolean
 ) {
   const doc = new jsPDF({ format: 'a4', unit: 'mm' })
-  drawBulletin(doc, bulletin, ecole, typePeriode, includePIN)
+  
+  // Chargement des images en parallèle
+  const [logo, signature, tampon] = await Promise.all([
+    getImageData(ecole?.logo_url),
+    getImageData(ecole?.signature_url),
+    getImageData(ecole?.tampon_url)
+  ])
+
+  drawBulletin(doc, bulletin, ecole, typePeriode, includePIN, { logo, signature, tampon })
   const fileName = `Bulletin_${bulletin.eleve.prenom}_${bulletin.eleve.nom}_T${bulletin.trimestre}.pdf`
   doc.save(fileName)
 }
 
 /** Génère et télécharge le PDF de tous les bulletins d'une classe */
-export function generateAllBulletinsPDF(
+export async function generateAllBulletinsPDF(
   bulletins: BulletinData[],
   ecole: Ecole | null,
   typePeriode: 'trimestre' | 'semestre',
@@ -203,9 +247,17 @@ export function generateAllBulletinsPDF(
 ) {
   if (bulletins.length === 0) return
   const doc = new jsPDF({ format: 'a4', unit: 'mm' })
+
+  // Chargement des images une seule fois pour tout le lot
+  const [logo, signature, tampon] = await Promise.all([
+    getImageData(ecole?.logo_url),
+    getImageData(ecole?.signature_url),
+    getImageData(ecole?.tampon_url)
+  ])
+
   bulletins.forEach((bulletin, idx) => {
     if (idx > 0) doc.addPage()
-    drawBulletin(doc, bulletin, ecole, typePeriode, includePIN)
+    drawBulletin(doc, bulletin, ecole, typePeriode, includePIN, { logo, signature, tampon })
   })
   doc.save(`Bulletins_${classeNom}_T${bulletins[0].trimestre}.pdf`)
 }

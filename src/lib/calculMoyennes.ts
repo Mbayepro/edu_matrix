@@ -303,7 +303,7 @@ export class CalculateurMoyennes {
   static async genererBulletinsClasse(
     classe_id: string,
     trimestre: number,
-    annee_scolaire: string = '2024-2025'
+    annee_scolaire: string = '2025-2026'
   ): Promise<BulletinData[]> {
     // 1. Déterminer l'école pour charger ses paramètres
     const { data: classeRaw } = await supabase.from('classes').select('ecole_id').eq('id', classe_id).single() as { data: { ecole_id: string } | null; error: unknown }
@@ -322,10 +322,10 @@ export class CalculateurMoyennes {
       supabase.from('ecoles' as any).select('*').eq('id', ecoleId).single() as any,
       supabase.from('eleves' as any).select('*, classe:classes(*)').eq('classe_id', classe_id).order('nom, prenom') as any,
       supabase.from('notes' as any)
-        .select('*, evaluation:evaluations!inner(*)')
-        .eq('evaluation.classe_id', classe_id)
-        .eq('evaluation.trimestre', trimestre)
-        .eq('evaluation.annee_scolaire', annee_scolaire) as any,
+        .select('*, evaluations!inner(*)')
+        .eq('evaluations.classe_id', classe_id)
+        .eq('evaluations.trimestre', trimestre)
+        .eq('evaluations.annee_scolaire', annee_scolaire) as any,
       supabase.from('presences' as any)
         .select('*')
         .eq('classe_id', classe_id) as any
@@ -372,9 +372,9 @@ export class CalculateurMoyennes {
         if (p.eleve_id !== eleve.id) return false
         const date = new Date(p.date)
         const month = date.getMonth() + 1
-        if (trimestre === 1) return month >= 10 || month <= 12
-        if (trimestre === 2) return month >= 1 && month <= 3
-        if (trimestre === 3) return month >= 4 && month <= 7
+        if (trimestre === 1) return month >= 9 && month <= 12  // Septembre à Décembre
+        if (trimestre === 2) return month >= 1 && month <= 3   // Janvier à Mars
+        if (trimestre === 3) return month >= 4 && month <= 8   // Avril à Août
         return true
       })
 
@@ -388,7 +388,7 @@ export class CalculateurMoyennes {
         annee_scolaire,
         niveau!,
         serie,
-        (n) => n.evaluation
+        (n) => n.evaluations || n.evaluation
       )
     })
 
@@ -402,7 +402,7 @@ export class CalculateurMoyennes {
   static async genererBulletin(
     eleve_id: string,
     trimestre: number,
-    annee_scolaire: string = '2024-2025'
+    annee_scolaire: string = '2025-2026'
   ): Promise<BulletinData> {
     const { data: eleve } = await supabase.from('eleves').select('classe_id').eq('id', eleve_id).single() as { data: { classe_id: string } | null; error: unknown }
     if (!eleve) throw new Error("Élève introuvable")

@@ -33,7 +33,7 @@ export default function BulletinsPage() {
   const [classes, setClasses] = useState<Classe[]>([])
   const [selectedClasse, setSelectedClasse] = useState<string>('')
   const [selectedTrimestre, setSelectedTrimestre] = useState<1 | 2 | 3>(1)
-  const [anneeScolaire, setAnneeScolaire] = useState('2024-2025')
+  const [anneeScolaire, setAnneeScolaire] = useState('2025-2026')
   const [typePeriode, setTypePeriode] = useState<'trimestre' | 'semestre'>('trimestre')
   const [bulletins, setBulletins] = useState<BulletinData[]>([])
   const [loading, setLoading] = useState(true)
@@ -171,9 +171,10 @@ export default function BulletinsPage() {
   async function generateBulletinPDF(bulletin: BulletinData) {
     setGenerating(bulletin.eleve.id)
     try {
-      generateSingleBulletinPDF(bulletin, ecole, typePeriode, includePIN)
+      await generateSingleBulletinPDF(bulletin, ecole, typePeriode, includePIN)
       showToast('PDF téléchargé avec succès !', 'success')
     } catch (e) {
+      console.error(e)
       showToast('Erreur lors de la génération du PDF.', 'error')
     } finally {
       setGenerating(null)
@@ -185,9 +186,10 @@ export default function BulletinsPage() {
     setGenerating('all')
     try {
       const classeNom = classes.find(c => c.id === selectedClasse)?.nom_classe || 'Classe'
-      generateAllPDF(bulletins, ecole, typePeriode, classeNom, includePIN)
+      await generateAllPDF(bulletins, ecole, typePeriode, classeNom, includePIN)
       showToast(`${bulletins.length} bulletins exportés en PDF !`, 'success')
     } catch (e) {
+      console.error(e)
       showToast('Erreur lors de la génération des PDFs.', 'error')
     } finally {
       setGenerating(null)
@@ -351,14 +353,9 @@ export default function BulletinsPage() {
                   </div>
                   <button 
                     onClick={() => generateBulletinPDF(bulletin)} 
-                    disabled={!isOnline}
-                    className={`p-3 rounded-xl transition-all shadow-lg ${
-                      isOnline 
-                      ? 'bg-emerald-600 text-white hover:bg-slate-900 shadow-emerald-600/20' 
-                      : 'bg-slate-100 text-slate-300 cursor-not-allowed shadow-none'
-                    }`}
+                    className="p-3 rounded-xl transition-all shadow-lg bg-emerald-600 text-white hover:bg-slate-900 shadow-emerald-600/20"
                   >
-                    {isOnline ? <Download className="w-5 h-5" /> : <Cloud className="w-5 h-5" />}
+                    <Download className="w-5 h-5" />
                   </button>
                 </div>
               </div>
