@@ -349,7 +349,29 @@ export default function BulletinsPage() {
                 <div className="flex items-center gap-4">
                   <div className="text-right">
                     <p className="text-[10px] uppercase font-black text-slate-400">Moyenne</p>
-                    <p className="text-xl font-black text-slate-900">{bulletin.moyenne_generale.toFixed(2)}</p>
+                    <div className="flex items-center gap-2">
+                      {bulletin.annual?.progression !== null && bulletin.annual?.progression !== undefined && (
+                        <div className={`flex items-center text-[10px] font-black ${bulletin.annual.progression >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                          {bulletin.annual.progression >= 0 ? '↑' : '↓'}
+                          {Math.abs(bulletin.annual.progression).toFixed(2)}
+                        </div>
+                      )}
+                      <p className="text-xl font-black text-slate-900">{bulletin.moyenne_generale.toFixed(2)}</p>
+                    </div>
+                    {bulletin.annual && (
+                      <div className="mt-1 flex flex-col items-end gap-1">
+                        <p className="text-[9px] font-bold text-slate-400">Annuel: {bulletin.annual.moyenne_annuelle.toFixed(2)}</p>
+                        {bulletin.annual.decision && bulletin.annual.decision !== 'En attente' && (
+                          <span className={`text-[8px] px-2 py-0.5 rounded-full font-black uppercase tracking-tighter ${
+                            bulletin.annual.decision === 'Passage' ? 'bg-emerald-100 text-emerald-700' :
+                            bulletin.annual.decision === 'Redoublement' ? 'bg-amber-100 text-amber-700' :
+                            'bg-rose-100 text-rose-700'
+                          }`}>
+                            {bulletin.annual.decision}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <button 
                     onClick={() => generateBulletinPDF(bulletin)} 

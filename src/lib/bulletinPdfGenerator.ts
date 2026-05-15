@@ -161,7 +161,7 @@ export function drawBulletin(
 
   y = (doc as any).lastAutoTable.finalY + 6
 
-  // ── Moyenne générale ──────────────────────────────────────────────────────
+  // ── Moyenne générale avec PROGRESSION ─────────────────────────────────────
   const avgW = 95
   const avgX = pw - margin - avgW
   doc.setLineWidth(0.8)
@@ -169,29 +169,72 @@ export function drawBulletin(
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(9)
   const avgLabel = typePeriode === 'semestre' ? 'SEMESTRE' : 'TRIMESTRE'
+  
   doc.text(
     `MOY. DU ${avgLabel} : ${bulletin.moyenne_generale.toFixed(2)} ${baremeLabel}   [${bulletin.mention}]`,
     avgX + 3, y + 7
   )
 
+  // Indicateur de progression (Tendance)
+  if (bulletin.annual?.progression !== null && bulletin.annual?.progression !== undefined) {
+    const prog = bulletin.annual.progression
+    const isUp = prog >= 0
+    doc.setFontSize(7)
+    if (isUp) doc.setTextColor(21, 128, 61)
+    else doc.setTextColor(185, 28, 28)
+    const progText = `${isUp ? '↑' : '↓'} ${Math.abs(prog).toFixed(2)}`
+    doc.text(progText, avgX + avgW - 12, y + 7, { align: 'right' })
+    doc.setTextColor(0, 0, 0)
+  }
+
   y += 15
 
+  // ── BILAN ANNUEL (Tableau récapitulatif) ──────────────────────────────────
+  if (bulletin.annual) {
+    const tableW = 60
+    const tableX = pw - margin - tableW
+    const tableY = y
+    
+    doc.setFontSize(8)
+    doc.setFont('helvetica', 'bold')
+    doc.text('BILAN ANNUEL', tableX, tableY - 2)
+    
+    const head = typePeriode === 'semestre' ? ['S1', 'S2', 'ANNUEL'] : ['T1', 'T2', 'T3', 'ANNUEL']
+    const body = [
+      bulletin.annual.moyennes_trimestrielles
+        .filter((_, i) => typePeriode === 'semestre' ? i < 2 : i < 3)
+        .map(v => v !== null ? v.toFixed(2) : '—')
+        .concat([bulletin.annual.moyenne_annuelle.toFixed(2)])
+    ]
+
+    autoTable(doc, {
+      startY: tableY,
+      head: [head],
+      body: body,
+      margin: { left: tableX },
+      tableWidth: tableW,
+      theme: 'grid',
+      styles: { fontSize: 7, cellPadding: 1.5, halign: 'center' },
+      headStyles: { fillColor: [241, 245, 249], textColor: [0, 0, 0], fontStyle: 'bold' },
+    })
+  }
+
   // ── Assiduité & Appréciation ──────────────────────────────────────────────
-  const attW = cw - 52
+  const attW = cw - 65
   doc.setLineWidth(0.3)
   doc.rect(margin, y, attW, 22)
 
   doc.setFontSize(8)
   doc.setFont('helvetica', 'bold')
   doc.text(`Absences : ${bulletin.attendance?.absences || 0}`, margin + 4, y + 7)
-  doc.text(`Retards : ${bulletin.attendance?.retards || 0}`, margin + 42, y + 7)
-  doc.text(`Rang : ${bulletin.rang ?? '—'} / ${bulletin.total_eleves ?? '—'}`, margin + 80, y + 7)
+  doc.text(`Retards : ${bulletin.attendance?.retards || 0}`, margin + 35, y + 7)
+  doc.text(`Rang : ${bulletin.rang ?? '—'} / ${bulletin.total_eleves ?? '—'}`, margin + 65, y + 7)
 
-  const appreciation = (bulletin.eleve as any).appreciation_trimestre || 'Félicitations pour vos efforts.'
+  const appreciation = (bulletin.eleve as any).appreciation_trimestre || bulletin.mention
   doc.setFont('helvetica', 'bold')
   doc.text('Appréciation :', margin + 4, y + 16)
   doc.setFont('helvetica', 'italic')
-  doc.text(appreciation, margin + 36, y + 16)
+  doc.text(appreciation, margin + 28, y + 16, { maxWidth: attW - 32 })
 
   // ── Zone signature avec TAMPON & SIGNATURE ────────────────────────────────
   const sigX = margin + attW + 4
@@ -200,15 +243,28 @@ export function drawBulletin(
   doc.rect(sigX, y, sigW, 22)
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(8)
-  doc.text('Directeur des Études', sigX + sigW / 2, y + 6, { align: 'center' })
+  doc.text('Le Directeur', sigX + sigW / 2, y + 6, { align: 'center' })
   
+  // DÉCISION DE FIN D'ANNÉE (si applicable)
+  if (bulletin.annual?.decision && bulletin.annual.decision !== 'En attente') {
+    doc.setFontSize(10)
+    const dec = bulletin.annual.decision.toUpperCase()
+    if (dec === 'PASSAGE') doc.setTextColor(5, 150, 105)
+    else if (dec === 'REDOUBLEMENT') doc.setTextColor(217, 119, 6)
+    else if (dec === 'EXCLUSION') doc.setTextColor(220, 38, 38)
+    else doc.setTextColor(0, 0, 0)
+
+    doc.text(`DÉCISION : ${dec}`, sigX + sigW / 2, y + 14, { align: 'center' })
+    doc.setTextColor(0, 0, 0)
+  }
+
   // Tampon
   if (images?.tampon) {
-    doc.addImage(images.tampon, 'PNG', sigX + 5, y + 5, 12, 12)
+    doc.addImage(images.tampon, 'PNG', sigX + 4, y + 4, 11, 11)
   }
   // Signature
   if (images?.signature) {
-    doc.addImage(images.signature, 'PNG', sigX + sigW / 2 - 10, y + 10, 20, 10)
+    doc.addImage(images.signature, 'PNG', sigX + sigW / 2 - 8, y + 9, 18, 9)
   }
 
   doc.setFont('helvetica', 'normal')

@@ -24,6 +24,14 @@ export interface AttendanceData {
   retards: number
 }
 
+export interface AnnualData {
+  moyenne_annuelle: number
+  mention_annuelle: string
+  moyennes_trimestrielles: (number | null)[] // [T1, T2, T3]
+  progression: number | null // MG_courante - MG_precedente
+  decision?: 'Passage' | 'Redoublement' | 'Exclusion' | 'En attente'
+}
+
 export interface BulletinData {
   eleve: Eleve
   niveau: Niveau
@@ -36,6 +44,7 @@ export interface BulletinData {
   rang?: number
   total_eleves?: number
   attendance?: AttendanceData
+  annual?: AnnualData
 }
 
 export class CalculateurMoyennes {
@@ -316,7 +325,8 @@ export class CalculateurMoyennes {
       { data: ecoleData, error: ecErr },
       { data: eleves, error: elErr },
       { data: allNotes, error: ntErr },
-      { data: allPresences, error: prErr }
+      { data: allPresences, error: prErr },
+      { data: pmData, error: pmErr }
     ] = await Promise.all([
       supabase.from('classes' as any).select('*, serie:series(*)').eq('id', classe_id).single() as any,
       supabase.from('ecoles' as any).select('*').eq('id', ecoleId).single() as any,
@@ -328,16 +338,24 @@ export class CalculateurMoyennes {
         .eq('evaluations.annee_scolaire', annee_scolaire) as any,
       supabase.from('presences' as any)
         .select('*')
-        .eq('classe_id', classe_id) as any
+        .eq('classe_id', classe_id) as any,
+      supabase
+        .from('v_moyennes_generales')
+        .select('eleve_id, trimestre, moyenne_generale')
+        .eq('classe_id', classe_id)
+        .eq('annee_scolaire', annee_scolaire) as any
     ])
 
-    if (clErr || ecErr || elErr || ntErr || prErr) throw new Error("Erreur lors de la récupération groupée des données.")
+    const pastMoyennes = (pmData || []) as any[]
+
+    if (clErr || ecErr || elErr || ntErr || prErr || pmErr) throw new Error("Erreur lors de la récupération groupée des données.")
     if (!eleves || eleves.length === 0) return []
 
     const classe = classeData as any
     const serie = classe.serie
     const ecole = ecoleData as any
     const calculationMethod = ecole.calculation_method || 'BLOCKS' // 'BLOCKS' | 'WEIGHTED'
+    const typePeriode = ecole.type_periode || 'trimestre'
 
     // 3. Charger le niveau avec plus de souplesse
     let { data: niveau } = await supabase
@@ -378,7 +396,9 @@ export class CalculateurMoyennes {
         return true
       })
 
-      return this.processStudentBulletin(
+      const studentPast = pastMoyennes.filter(m => m.eleve_id === eleve.id)
+
+      const bulletin = this.processStudentBulletin(
         eleve,
         studentNotes,
         studentPresences,
@@ -390,6 +410,44 @@ export class CalculateurMoyennes {
         serie,
         (n) => n.evaluations || n.evaluation
       )
+
+      // Injecter les données annuelles et la progression
+      const currentMG = bulletin.moyenne_generale
+      const prevMG = studentPast.find(m => m.trimestre === trimestre - 1)?.moyenne_generale
+      
+      bulletin.annual = {
+        moyenne_annuelle: 0,
+        mention_annuelle: '',
+        moyennes_trimestrielles: [null, null, null],
+        progression: prevMG !== undefined ? currentMG - prevMG : null
+      }
+
+      const trimAverages = [null, null, null] as (number | null)[]
+      studentPast.forEach(m => {
+        if (m.trimestre >= 1 && m.trimestre <= 3) {
+          trimAverages[m.trimestre - 1] = m.moyenne_generale
+        }
+      })
+      // Inclure la moyenne actuelle
+      trimAverages[trimestre - 1] = currentMG
+      bulletin.annual.moyennes_trimestrielles = trimAverages
+
+      const validAverages = trimAverages.filter(v => v !== null) as number[]
+      if (validAverages.length > 0) {
+        const annualAvg = validAverages.reduce((a, b) => a + b, 0) / validAverages.length
+        bulletin.annual.moyenne_annuelle = Math.round(annualAvg * 100) / 100
+        bulletin.annual.mention_annuelle = this.determinerMention(bulletin.annual.moyenne_annuelle * (isPrimaire ? 2 : 1), isPrimaire ? 'primaire' : 'moyen')
+        
+        // Décision si c'est le dernier trimestre (T3 ou S2)
+        const isFinal = (typePeriode === 'semestre' && trimestre === 2) || (typePeriode === 'trimestre' && trimestre === 3)
+        if (isFinal && validAverages.length >= (typePeriode === 'semestre' ? 2 : 2)) { // On attend au moins 2 notes pour décider
+          bulletin.annual.decision = this.determinerDecisionAnnuelle(bulletin.annual.moyenne_annuelle, isPrimaire)
+        } else {
+          bulletin.annual.decision = 'En attente'
+        }
+      }
+
+      return bulletin
     })
 
     // 6. Calculer les rangs sur l'ensemble des bulletins
@@ -450,6 +508,15 @@ export class CalculateurMoyennes {
     if (moyenne < 16) return 'Bien'
     if (moyenne < 18) return 'Très bien'
     return 'Excellent'
+  }
+
+  private static determinerDecisionAnnuelle(moyenne: number, isPrimaire: boolean): 'Passage' | 'Redoublement' | 'Exclusion' {
+    const thresholdPassage = isPrimaire ? 5 : 10
+    const thresholdRedoublement = isPrimaire ? 4 : 8.5
+
+    if (moyenne >= thresholdPassage) return 'Passage'
+    if (moyenne >= thresholdRedoublement) return 'Redoublement'
+    return 'Exclusion'
   }
 
   private static genererAppreciation(noteSur20: number): string {
