@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { CalculateurMoyennes } from '@/lib/calculMoyennes'
@@ -24,6 +25,7 @@ import { useNetwork } from '@/hooks/useNetwork'
 import { db } from '@/lib/db'
 
 export default function BulletinsPage() {
+  const searchParams = useSearchParams()
   const [ecoleId, setEcoleId] = useState<string | null>(null)
   const [profileId, setProfileId] = useState<string | null>(null)
   const [isTeacher, setIsTeacher] = useState(false)
@@ -60,6 +62,13 @@ export default function BulletinsPage() {
   useEffect(() => {
     init()
   }, [])
+
+  useEffect(() => {
+    const c = searchParams.get('classe')
+    const t = searchParams.get('trimestre')
+    if (c) setSelectedClasse(c)
+    if (t) setSelectedTrimestre(Number(t) as 1 | 2 | 3)
+  }, [searchParams])
 
   useEffect(() => {
     if (ecoleId) {
@@ -209,7 +218,9 @@ export default function BulletinsPage() {
             </div>
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">Bulletins Scolaires</h1>
           </div>
-          <p className="text-sm text-slate-500 font-medium tracking-tight">Générez les bulletins officiels de vos élèves.</p>
+          <p className="text-sm text-slate-500 font-medium tracking-tight">
+            Sélectionnez une classe pour calculer les moyennes et générer les bulletins officiels.
+          </p>
         </div>
         
         <div className="flex items-center gap-3">
@@ -226,10 +237,10 @@ export default function BulletinsPage() {
           {bulletins.length > 0 && (
             <button
               onClick={handleGenerateAll}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg bg-slate-900 text-white hover:bg-emerald-600 shadow-slate-900/20"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg bg-emerald-600 text-white hover:bg-slate-900 shadow-emerald-600/20"
             >
               {generating === 'all' ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-              Tout exporter
+              Imprimer tous les bulletins
             </button>
           )}
         </div>
@@ -293,6 +304,32 @@ export default function BulletinsPage() {
              </p>
            </div>
          </div>
+      )}
+
+      {loadingBulletins && (
+        <div className="flex flex-col items-center justify-center p-20 gap-4">
+          <Loader2 className="w-10 h-10 animate-spin text-emerald-600" />
+          <p className="text-sm font-bold text-slate-500 animate-pulse uppercase tracking-widest text-center">
+            Calcul des moyennes et préparation des bulletins en cours...<br/>
+            <span className="text-[10px] opacity-70">Cette opération peut prendre quelques secondes.</span>
+          </p>
+        </div>
+      )}
+
+      {bulletins.length === 0 && !loadingBulletins && (
+        <div className="premium-glass rounded-[2rem] p-20 text-center space-y-4">
+          <div className="w-20 h-20 rounded-3xl bg-slate-100 flex items-center justify-center mx-auto border border-slate-200">
+            <FileText className="w-10 h-10 text-slate-300" />
+          </div>
+          <div className="max-w-xs mx-auto">
+            <h3 className="text-lg font-black text-white uppercase tracking-tight">Aucun bulletin à afficher</h3>
+            <p className="text-sm text-slate-500 font-medium">
+              {!selectedClasse 
+                ? "Veuillez d'abord sélectionner une classe et une période dans les filtres ci-dessus." 
+                : "Aucune note n'a été saisie pour cette classe sur cette période."}
+            </p>
+          </div>
+        </div>
       )}
 
       {bulletins.length > 0 && (

@@ -9,7 +9,7 @@ import type { Profile, Ecole } from '@/lib/supabase'
 import {
   Users, BookOpen, AlertCircle, LayoutGrid,
   TrendingUp, UserCheck, Activity, ChevronRight, MessageCircle,
-  ShieldCheck, ArrowUpRight, ArrowDownRight, Clock, Sparkles
+  ShieldCheck, ArrowUpRight, ArrowDownRight, Clock, Sparkles, FileText, UsersRound, Settings
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -573,12 +573,14 @@ export default function DashboardPage() {
         </div>
 
         {/* Shortcuts Panel */}
-        <div className="lg:col-span-3 grid grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-3 grid grid-cols-2 lg:grid-cols-6 gap-6">
            {[
              { label: 'Inscrire un élève',  href: '/dashboard/eleves/nouveau', icon: Users, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
              { label: 'Saisir les Notes',   href: '/dashboard/notes',         icon: TrendingUp, color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
-             { label: 'Feuille d\'Appel',   href: '/dashboard/presences',     icon: UserCheck, color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
-             { label: 'Configuration',      href: '/dashboard/parametres',    icon: BookOpen, color: 'text-violet-400 bg-violet-500/10 border-violet-500/20' },
+             { label: 'Feuille d\'Appel',   href: '/dashboard/presences',     icon: UserCheck, color: 'text-rose-400 bg-rose-500/10 border-rose-500/20' },
+             { label: 'Imprimer Bulletins', href: '/dashboard/bulletins',     icon: FileText,   color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
+             { label: 'Conseil de Classe',  href: '/dashboard/conseil-classe', icon: UsersRound, color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' },
+             { label: 'Configuration',      href: '/dashboard/parametres',    icon: Settings,   color: 'text-violet-400 bg-violet-500/10 border-violet-500/20' },
            ].map((a) => (
              <Link key={a.label} href={a.href} className="group premium-glass rounded-[3rem] p-8 transition-all duration-700 flex flex-col items-center text-center gap-5 premium-glass-hover border-white/5">
                 <div className={`w-20 h-20 rounded-[2rem] flex items-center justify-center transition-all duration-700 group-hover:scale-110 group-hover:rotate-6 ${a.color} shadow-2xl`}>

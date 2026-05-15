@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { useProfile } from '@/hooks/useProfile'
 import { CalculateurMoyennes, BulletinData } from '@/lib/calculMoyennes'
@@ -18,7 +19,9 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   X,
-  Save
+  Save,
+  Filter,
+  FileDown
 } from 'lucide-react'
 import { useToast } from '@/contexts/ToastContext'
 import { Skeleton, SkeletonCard, SkeletonTable } from '@/components/Skeleton'
@@ -186,8 +189,18 @@ export default function ConseilClassePage() {
               onChange={(e) => setAnneeScolaire(e.target.value)}
               className="bg-transparent border-none focus:outline-none text-sm font-black text-slate-900 pr-8 cursor-pointer w-24"
             />
-            <School className="w-4 h-4 text-emerald-600 absolute right-4 pointer-events-none" />
+            <TrendingUp className="w-4 h-4 text-emerald-600 absolute right-4 pointer-events-none" />
           </div>
+
+          {selectedClasse && (
+            <Link
+              href={`/dashboard/bulletins?classe=${selectedClasse}&trimestre=${selectedTrimestre}`}
+              className="flex items-center gap-2 px-6 py-2 rounded-2xl bg-emerald-600 text-white text-xs font-black uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg shadow-emerald-600/20"
+            >
+              <FileText className="w-4 h-4" />
+              Imprimer Bulletins
+            </Link>
+          )}
         </div>
       </div>
 
