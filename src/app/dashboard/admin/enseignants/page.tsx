@@ -144,7 +144,7 @@ export default function EnseignantsAdminPage() {
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="bg-blue-100 p-2.5 rounded-xl">
-          <GraduationCap className="w-5 h-5 text-blue-600" />
+          <GraduationCap className="w-5 h-5 text-blue-400" />
         </div>
         <div>
           <h1 className="text-xl font-bold text-slate-800">Gestion des enseignants</h1>
@@ -227,7 +227,7 @@ export default function EnseignantsAdminPage() {
                   <td className="px-4 py-3 text-slate-600">{a.classe?.nom_classe}</td>
                   <td className="px-4 py-3">
                     {a.matiere ? (
-                      <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium">{a.matiere.nom}</span>
+                      <span className="text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded-full font-medium">{a.matiere.nom}</span>
                     ) : (
                       <span className="text-xs text-slate-400 italic">Toutes matières</span>
                     )}

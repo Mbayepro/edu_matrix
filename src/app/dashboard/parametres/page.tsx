@@ -201,7 +201,7 @@ export default function SchoolSettingsPage() {
         <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-8 space-y-8">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-              <ImageIcon className="w-5 h-5 text-blue-600" />
+              <ImageIcon className="w-5 h-5 text-blue-400" />
             </div>
             <h2 className="text-base font-black uppercase tracking-widest text-slate-900">Informations Générales</h2>
           </div>

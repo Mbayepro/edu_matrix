@@ -250,7 +250,7 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
           </p>
         </div>
         {pendingCount > 0 && (
-          <div className="flex flex-col items-center bg-indigo-50 border border-indigo-100 text-indigo-700 px-3 py-1.5 rounded-xl shadow-sm">
+          <div className="flex flex-col items-center bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 px-3 py-1.5 rounded-xl shadow-sm">
             <span className="text-[10px] uppercase font-black tracking-widest leading-none">Synchro. en attente</span>
             <span className="text-xl font-black mt-1">{pendingCount}</span>
           </div>

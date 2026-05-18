@@ -183,7 +183,7 @@ export default function EquipeManagementPage() {
                   <span className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${
                     m.role === 'director' 
                       ? 'bg-amber-50 border-amber-200 text-amber-700' 
-                      : 'bg-blue-50 border-blue-200 text-blue-700'
+                      : 'bg-blue-500/10 border-blue-500/20 text-blue-400'
                   }`}>
                     {m.role === 'director' ? <ShieldCheck className="w-3.5 h-3.5" /> : <User className="w-3.5 h-3.5" />}
                     {m.role === 'director' ? 'Directeur' : 'Enseignant'}

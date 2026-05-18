@@ -125,7 +125,7 @@ export default function AdminEmargementsPage() {
         </div>
 
         <div className="relative group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-400 transition-colors" />
           <input 
             type="text"
             placeholder="Rechercher un prof, un sujet..."
@@ -159,7 +159,7 @@ export default function AdminEmargementsPage() {
                   <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
                     <td className="px-8 py-5 whitespace-nowrap">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-500 transition-transform group-hover:scale-110">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 transition-transform group-hover:scale-110">
                            <Calendar className="w-5 h-5" />
                         </div>
                         <div>
@@ -182,7 +182,7 @@ export default function AdminEmargementsPage() {
                     </td>
                     <td className="px-8 py-5">
                        <div className="flex flex-col gap-1">
-                         <span className="inline-flex w-fit px-2.5 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 text-[9px] font-black uppercase tracking-tight">{classMap.get(item.classe_id)}</span>
+                         <span className="inline-flex w-fit px-2.5 py-0.5 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[9px] font-black uppercase tracking-tight">{classMap.get(item.classe_id)}</span>
                          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tighter">{matMap.get(item.matiere_id)}</span>
                        </div>
                     </td>
@@ -193,7 +193,7 @@ export default function AdminEmargementsPage() {
                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
                          <button 
                            onClick={() => setEditingItem(item)}
-                           className="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-500/10 transition-all"
+                           className="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-indigo-400 hover:border-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/10 transition-all"
                            title="Modifier"
                          >
                            <Edit2 className="w-4 h-4" />
@@ -231,10 +231,10 @@ export default function AdminEmargementsPage() {
              </div>
              
              <div className="space-y-4">
-                <div className="p-5 bg-indigo-50/50 rounded-2xl border border-indigo-100/50">
-                   <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-2">Contexte du cours</p>
+                <div className="p-5 bg-indigo-500/10/50 rounded-2xl border border-indigo-500/20/50">
+                   <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2">Contexte du cours</p>
                    <div className="flex items-center gap-3">
-                      <div className="px-2 py-1 bg-white rounded-lg text-[10px] font-black text-indigo-600 shadow-sm border border-indigo-100">
+                      <div className="px-2 py-1 bg-white rounded-lg text-[10px] font-black text-indigo-400 shadow-sm border border-indigo-500/20">
                         {classMap.get(editingItem.classe_id)}
                       </div>
                       <p className="text-sm font-bold text-slate-700">

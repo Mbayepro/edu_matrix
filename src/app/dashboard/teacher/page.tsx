@@ -202,7 +202,7 @@ export default function TeacherDashboard() {
                     className="flex flex-col gap-4 p-5 border border-slate-200/60 rounded-[2rem] hover:border-emerald-300 hover:shadow-lg hover:shadow-emerald-500/5 transition-all group bg-white">
                     <div className="flex items-center gap-4">
                       <div className="bg-gradient-to-br from-blue-100 to-indigo-100 p-3 rounded-2xl shrink-0 shadow-inner">
-                        <BookOpen className="w-6 h-6 text-indigo-600" />
+                        <BookOpen className="w-6 h-6 text-indigo-400" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start gap-2">
@@ -225,11 +225,11 @@ export default function TeacherDashboard() {
                           <p className="text-xs font-black text-slate-800">{nbEleves}</p>
                         </div>
                       </div>
-                      <div className="flex-1 min-w-[30%] bg-blue-50/50 rounded-xl p-2.5 flex items-center gap-2 border border-blue-100/50">
-                        <div className="bg-white p-1.5 rounded-lg shadow-sm"><TrendingUp className="w-3.5 h-3.5 text-blue-500" /></div>
+                      <div className="flex-1 min-w-[30%] bg-blue-500/10/50 rounded-xl p-2.5 flex items-center gap-2 border border-blue-100/50">
+                        <div className="bg-white p-1.5 rounded-lg shadow-sm"><TrendingUp className="w-3.5 h-3.5 text-blue-400" /></div>
                         <div>
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Notes</p>
-                          <p className="text-xs font-black text-blue-800">{nbNotes}</p>
+                          <p className="text-xs font-black text-blue-400">{nbNotes}</p>
                         </div>
                       </div>
                       <div className={`flex-1 min-w-[30%] rounded-xl p-2.5 flex items-center gap-2 border ${presAujourd > 0 ? 'bg-emerald-50/50 border-emerald-100/50' : 'bg-slate-50 border-slate-100'}`}>

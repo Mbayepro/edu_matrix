@@ -253,10 +253,10 @@ export default function ConseilClassePage() {
 
             <div className="bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-110" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-blue-600/60 mb-3 ml-1">Félicitations</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-blue-400/60 mb-3 ml-1">Félicitations</p>
                 <div className="flex items-center justify-between">
-                    <span className="text-3xl font-black text-blue-600 tracking-tighter leading-none">{stats.felicitations}</span>
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100 shadow-sm">
+                    <span className="text-3xl font-black text-blue-400 tracking-tighter leading-none">{stats.felicitations}</span>
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-100 shadow-sm">
                       <Award className="w-5 h-5" />
                     </div>
                 </div>

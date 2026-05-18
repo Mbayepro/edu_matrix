@@ -271,7 +271,7 @@ export default function FraisManagementPage() {
                   </td>
                   <td className="px-4 py-5">
                     <span className={`inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
-                      f.frequence === 'unique' ? 'bg-blue-50 text-blue-700' :
+                      f.frequence === 'unique' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
                       f.frequence === 'mensuel' ? 'bg-amber-50 text-amber-700' :
                       'bg-purple-50 text-purple-700'
                     }`}>

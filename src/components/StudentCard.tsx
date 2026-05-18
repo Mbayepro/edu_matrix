@@ -62,12 +62,12 @@ function MentionBadge({ moyenne, isPrimary }: { moyenne: number, isPrimary?: boo
   if (isPrimary) {
     if (moyenne >= 8)      { label = 'Très bien';   className = 'bg-emerald-100 text-emerald-700' }
     else if (moyenne >= 7) { label = 'Bien';         className = 'bg-teal-100 text-teal-700' }
-    else if (moyenne >= 6) { label = 'Assez bien';   className = 'bg-blue-100 text-blue-700' }
+    else if (moyenne >= 6) { label = 'Assez bien';   className = 'bg-blue-500/10 text-blue-400 border border-blue-500/20' }
     else if (moyenne >= 5) { label = 'Passable';     className = 'bg-amber-100 text-amber-700' }
   } else {
     if (moyenne >= 16)      { label = 'Très bien';   className = 'bg-emerald-100 text-emerald-700' }
     else if (moyenne >= 14) { label = 'Bien';         className = 'bg-teal-100 text-teal-700' }
-    else if (moyenne >= 12) { label = 'Assez bien';   className = 'bg-blue-100 text-blue-700' }
+    else if (moyenne >= 12) { label = 'Assez bien';   className = 'bg-blue-500/10 text-blue-400 border border-blue-500/20' }
     else if (moyenne >= 10) { label = 'Passable';     className = 'bg-amber-100 text-amber-700' }
   }
 

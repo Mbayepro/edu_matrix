@@ -155,7 +155,7 @@ export default function EmargementPage() {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <div className="w-8 h-8 rounded-lg bg-indigo-600/10 flex items-center justify-center">
-              <BookOpen className="w-4 h-4 text-indigo-600" />
+              <BookOpen className="w-4 h-4 text-indigo-400" />
             </div>
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">Cahier de Textes</h1>
           </div>
@@ -223,7 +223,7 @@ Nouvel Émargement
         <div className="space-y-6">
           <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-6">
             <h3 className="text-sm font-black text-slate-900 flex items-center gap-2 mb-6">
-              <History className="w-4 h-4 text-indigo-600" />
+              <History className="w-4 h-4 text-indigo-400" />
               Récents émargements
             </h3>
 
@@ -242,7 +242,7 @@ Nouvel Émargement
                         <div className="w-6 h-6 rounded bg-white flex items-center justify-center shadow-sm">
                           <CheckCircle className="w-3 h-3 text-emerald-500" />
                         </div>
-                        <span className="text-[10px] font-black uppercase text-indigo-600">{h.classe_nom}</span>
+                        <span className="text-[10px] font-black uppercase text-indigo-400">{h.classe_nom}</span>
                       </div>
                       <span className="text-[9px] font-bold text-slate-400">{new Date(h.date_heure).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
