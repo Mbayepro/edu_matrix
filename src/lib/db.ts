@@ -135,8 +135,12 @@ export class EduMatrixDB extends Dexie {
   async getBulletinsCalculés(
     classeId: string,
     trimestre: number,
-    anneeScolaire: string = '2025-2026'
+    anneeScolaire?: string
   ): Promise<BulletinData[]> {
+    if (!anneeScolaire) {
+      const today = new Date();
+      anneeScolaire = today.getMonth() >= 8 ? `${today.getFullYear()}-${today.getFullYear() + 1}` : `${today.getFullYear() - 1}-${today.getFullYear()}`;
+    }
     const classe = await this.classes.get(classeId)
     if (!classe) throw new Error('Classe introuvable en local.')
 

@@ -29,6 +29,8 @@ interface Evaluation {
   ecole_id?: string;
   classe_id?: string;
   trimestre?: number;
+  annee_scolaire?: string;
+  created_at?: string;
 }
 
 interface Note {
@@ -146,6 +148,10 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
     if (!selectedMatiereId || !ecoleId) return;
     setSaving(true);
     
+    const today = new Date();
+    const year = today.getFullYear();
+    const currentAnneeScolaire = today.getMonth() >= 8 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
+
     const evalData: Evaluation = {
       id: crypto.randomUUID(),
       ecole_id: ecoleId,
@@ -156,7 +162,9 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
       libelle: newEval.libelle,
       date: newEval.date,
       coef: 1,
-      bareme: newEval.bareme
+      bareme: newEval.bareme,
+      annee_scolaire: currentAnneeScolaire,
+      created_at: new Date().toISOString()
     };
 
     try {
@@ -204,33 +212,47 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
     const trimmed = val.trim();
     // Permettre la suppression (val vide)
     if (trimmed === '') {
-      setNotes(prev => prev.filter(n => !(n.eleve_id === eleveId && n.evaluation_id === evalId)));
+      const existing = notes.find(n => n.eleve_id === eleveId && n.evaluation_id === evalId);
+      if (existing) {
+        setNotes(prev => prev.filter(n => n.id !== existing.id));
+        if (db) {
+          await db.notes.delete(existing.id);
+        }
+        if (ecoleId) {
+          await addToSyncQueue('notes', 'DELETE', { id: existing.id } as any, ecoleId);
+        }
+      }
       return;
     }
     const num = parseFloat(trimmed.replace(',', '.'));
     if (isNaN(num)) return;
 
+    const existingNote = notes.find(n => n.eleve_id === eleveId && n.evaluation_id === evalId);
+    const noteId = existingNote?.id || crypto.randomUUID();
+
     const noteData: Note = { 
-      id: `${eleveId}_${evalId}`, // ID stable pour upsert
+      id: noteId, 
+      ecole_id: ecoleId!,
       eleve_id: eleveId, 
       evaluation_id: evalId, 
       note: num,
       professeur_id: profile?.id
-    };
+    } as Note;
 
     try {
       // 1. Optimistic & Local
       if (db) {
         await db.notes.put(noteData as any);
         setNotes(prev => {
-          const filtered = prev.filter(n => !(n.eleve_id === eleveId && n.evaluation_id === evalId));
+          const filtered = prev.filter(n => n.id !== noteId);
           return [...filtered, noteData];
         });
       }
 
-      // 2. Queue (Supabase utilise upsert sur eleve_id, evaluation_id)
+      // 2. Queue
       if (ecoleId) {
-        await addToSyncQueue('notes', 'INSERT', noteData as any, ecoleId);
+        const action = existingNote ? 'UPDATE' : 'INSERT';
+        await addToSyncQueue('notes', action, noteData as any, ecoleId);
       }
       
     } catch (e) {
@@ -247,9 +269,20 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
     }
     const num = parseFloat(trimmed.replace(',', '.'));
     if (isNaN(num)) return;
-    const noteData: Note = { id: `${eleveId}_${evalId}`, eleve_id: eleveId, evaluation_id: evalId, note: num, professeur_id: profile?.id };
+    
+    const existingNote = notes.find(n => n.eleve_id === eleveId && n.evaluation_id === evalId);
+    const noteId = existingNote?.id || crypto.randomUUID();
+
+    const noteData: Note = { 
+      id: noteId, 
+      ecole_id: ecoleId!,
+      eleve_id: eleveId, 
+      evaluation_id: evalId, 
+      note: num, 
+      professeur_id: profile?.id 
+    } as Note;
     setNotes(prev => {
-      const filtered = prev.filter(n => !(n.eleve_id === eleveId && n.evaluation_id === evalId));
+      const filtered = prev.filter(n => n.id !== noteId);
       return [...filtered, noteData];
     });
   };

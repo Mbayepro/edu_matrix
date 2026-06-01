@@ -25,7 +25,10 @@ export async function syncFromSupabase(ecoleId: string): Promise<void> {
   const db = getDb()
   
   // Limiter les données volumineuses à l'année scolaire courante pour éviter la surcharge mémoire
-  const currentYear = new Date().getFullYear().toString() + '-' + (new Date().getFullYear() + 1).toString()
+  const today = new Date();
+  const currentYear = today.getMonth() >= 8 
+    ? `${today.getFullYear()}-${today.getFullYear() + 1}`
+    : `${today.getFullYear() - 1}-${today.getFullYear()}`
 
   const tables = [
     { name: 'ecoles', query: (supabase.from('ecoles' as any) as any).select('*').eq('id', ecoleId) },

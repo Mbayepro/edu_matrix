@@ -33,7 +33,12 @@ export default function BulletinsPage() {
   const [classes, setClasses] = useState<Classe[]>([])
   const [selectedClasse, setSelectedClasse] = useState<string>('')
   const [selectedTrimestre, setSelectedTrimestre] = useState<1 | 2 | 3>(1)
-  const [anneeScolaire, setAnneeScolaire] = useState('2025-2026')
+  const [anneeScolaire, setAnneeScolaire] = useState(() => {
+    const today = new Date();
+    return today.getMonth() >= 8 
+      ? `${today.getFullYear()}-${today.getFullYear() + 1}`
+      : `${today.getFullYear() - 1}-${today.getFullYear()}`
+  })
   const [typePeriode, setTypePeriode] = useState<'trimestre' | 'semestre'>('trimestre')
   const [bulletins, setBulletins] = useState<BulletinData[]>([])
   const [loading, setLoading] = useState(true)

@@ -138,6 +138,7 @@ export interface Evaluation {
   date: string
   coef: number
   bareme: number
+  annee_scolaire?: string
   created_at: string
   // Joined fields
   matiere?: Matiere

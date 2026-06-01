@@ -312,8 +312,13 @@ export class CalculateurMoyennes {
   static async genererBulletinsClasse(
     classe_id: string,
     trimestre: number,
-    annee_scolaire: string = '2025-2026'
+    annee_scolaire?: string
   ): Promise<BulletinData[]> {
+    if (!annee_scolaire) {
+      const today = new Date();
+      annee_scolaire = today.getMonth() >= 8 ? `${today.getFullYear()}-${today.getFullYear() + 1}` : `${today.getFullYear() - 1}-${today.getFullYear()}`;
+    }
+
     // 1. Déterminer l'école pour charger ses paramètres
     const { data: classeRaw } = await supabase.from('classes').select('ecole_id').eq('id', classe_id).single() as { data: { ecole_id: string } | null; error: unknown }
     if (!classeRaw) throw new Error("Classe introuvable.")
@@ -485,8 +490,12 @@ export class CalculateurMoyennes {
   static async genererBulletin(
     eleve_id: string,
     trimestre: number,
-    annee_scolaire: string = '2025-2026'
+    annee_scolaire?: string
   ): Promise<BulletinData> {
+    if (!annee_scolaire) {
+      const today = new Date();
+      annee_scolaire = today.getMonth() >= 8 ? `${today.getFullYear()}-${today.getFullYear() + 1}` : `${today.getFullYear() - 1}-${today.getFullYear()}`;
+    }
     const { data: eleve } = await supabase.from('eleves').select('classe_id').eq('id', eleve_id).single() as { data: { classe_id: string } | null; error: unknown }
     if (!eleve) throw new Error("Élève introuvable")
     
