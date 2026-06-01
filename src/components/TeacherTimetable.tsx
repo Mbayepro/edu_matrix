@@ -11,13 +11,13 @@ import { Loader2, Calendar } from 'lucide-react'
 const JOURS = ['', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'] as const
 
 const COLORS = [
-  'bg-blue-500/10 text-blue-400 border border-blue-500/20',
+  'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
   'bg-purple-100 text-purple-800 border-purple-200',
   'bg-emerald-100 text-emerald-800 border-emerald-200',
   'bg-amber-100 text-amber-800 border-amber-200',
   'bg-rose-100 text-rose-800 border-rose-200',
   'bg-cyan-100 text-cyan-800 border-cyan-200',
-  'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 border-indigo-500/20',
+  'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 border-emerald-500/20',
 ]
 
 interface Slot {
@@ -143,7 +143,7 @@ export default function TeacherTimetable({ enseignantId, ecoleId }: Props) {
           const daySlots = slotsForDay(jour)
           return (
             <div key={jour} className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-              <div className={`px-3 py-2 text-center text-xs font-bold ${daySlots.length ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'bg-slate-50 text-slate-400'}`}>
+              <div className={`px-3 py-2 text-center text-xs font-bold ${daySlots.length ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-50 text-slate-400'}`}>
                 {JOURS[jour]}
               </div>
               <div className="p-2 space-y-1.5 min-h-[120px]">

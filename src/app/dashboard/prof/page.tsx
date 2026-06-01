@@ -231,7 +231,7 @@ export default function ProfDashboard() {
             <h2 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em] mb-6">Actions Rapides</h2>
             <div className="space-y-4">
               {[
-                { label: 'Cahier de Textes', icon: ClipboardType, color: 'text-blue-400 bg-blue-500/10', href: '/dashboard/teacher/emargement' },
+                { label: 'Cahier de Textes', icon: ClipboardType, color: 'text-emerald-400 bg-emerald-500/10', href: '/dashboard/teacher/emargement' },
                 { label: 'Saisie de Notes',  icon: Edit3,         color: 'text-emerald-600 bg-emerald-50', href: '/dashboard/notes' },
                 { label: 'Mes Bulletins',    icon: BookOpen,      color: 'text-amber-600 bg-amber-50', href: '/dashboard/bulletins' },
                 { label: 'Liste Élèves',     icon: Users,         color: 'text-violet-600 bg-violet-50', href: '/dashboard/eleves' },

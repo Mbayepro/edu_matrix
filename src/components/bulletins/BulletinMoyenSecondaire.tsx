@@ -46,6 +46,7 @@ export interface BulletinData {
   total_coefficients: number;
   nombre_matieres: number;
   decision_conseil?: string;
+  annee_scolaire?: string;
 }
 
 export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }) {
@@ -118,7 +119,7 @@ export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }
           <p className="font-bold text-sm">RÉPUBLIQUE DU SÉNÉGAL</p>
           <p className="italic">Un Peuple - Un But - Une Foi</p>
           <p>**********</p>
-          <p className="font-bold">Année Scolaire : 2024 - 2025</p>
+          <p className="font-bold">Année Scolaire : {data.annee_scolaire || '2025 - 2026'}</p>
         </div>
       </div>
 

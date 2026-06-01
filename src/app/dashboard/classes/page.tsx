@@ -187,8 +187,8 @@ export default function ClassesPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-              <BookOpen className="w-5 h-5 text-blue-400" />
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+              <BookOpen className="w-5 h-5 text-emerald-400" />
             </div>
             <h1 className="text-3xl font-black text-white tracking-tight leading-none">Divisions Académiques</h1>
           </div>
@@ -198,10 +198,10 @@ export default function ClassesPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="premium-glass rounded-[1.5rem] p-4 flex items-center gap-6 group hover:border-blue-500/30 transition-all duration-500">
+          <div className="premium-glass rounded-[1.5rem] p-4 flex items-center gap-6 group hover:border-emerald-500/30 transition-all duration-500">
             <div className="flex flex-col">
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Total Classes</span>
-              <span className="text-2xl font-black text-white leading-tight group-hover:text-blue-400 transition-colors">
+              <span className="text-2xl font-black text-white leading-tight group-hover:text-emerald-400 transition-colors">
                 {classes.length}
               </span>
             </div>
@@ -270,7 +270,7 @@ export default function ClassesPage() {
       <div className="premium-glass rounded-[2.5rem] overflow-hidden min-h-[400px]">
         <div className="px-6 md:px-10 py-6 border-b border-white/5 bg-white/5 flex items-center justify-between">
           <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Cartographie des Classes</h2>
-          <div className="w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.5)] animate-pulse" />
+          <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.5)] animate-pulse" />
         </div>
         
         {classes.length === 0 ? (
@@ -307,11 +307,11 @@ export default function ClassesPage() {
                           />
                         ) : (
                           <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-white/5 text-white flex items-center justify-center group-hover:bg-blue-600/80 group-hover:rotate-3 transition-all duration-500 shadow-sm border border-white/10">
+                            <div className="w-12 h-12 rounded-2xl bg-white/5 text-white flex items-center justify-center group-hover:bg-emerald-600/80 group-hover:rotate-3 transition-all duration-500 shadow-sm border border-white/10">
                               <GraduationCap className="w-6 h-6" />
                             </div>
                             <div>
-                              <span className="text-base font-black text-white uppercase tracking-tight group-hover:text-blue-400 transition-colors">{c.nom_classe}</span>
+                              <span className="text-base font-black text-white uppercase tracking-tight group-hover:text-emerald-400 transition-colors">{c.nom_classe}</span>
                               <p className="text-[10px] text-slate-500 font-bold tracking-widest uppercase mt-0.5">Section Scolaire</p>
                             </div>
                           </div>
@@ -327,7 +327,7 @@ export default function ClassesPage() {
                             {NIVEAUX.map(n => <option key={n} value={n} className="bg-slate-900">{n}</option>)}
                           </select>
                         ) : (
-                          <span className="inline-flex items-center px-4 py-1.5 rounded-xl bg-blue-500/10 text-blue-400 text-[10px] font-black uppercase tracking-widest border border-blue-500/20 group-hover:bg-white/5 transition-all">
+                          <span className="inline-flex items-center px-4 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20 group-hover:bg-white/5 transition-all">
                             {c.niveau}
                           </span>
                         )}
@@ -363,7 +363,7 @@ export default function ClassesPage() {
                               <>
                                 <button
                                   onClick={() => startEdit(c)}
-                                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-500 hover:text-blue-400 hover:border-blue-500/30 hover:bg-white/10 transition-all shadow-sm"
+                                  className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-500 hover:text-emerald-400 hover:border-emerald-500/30 hover:bg-white/10 transition-all shadow-sm"
                                   title="Modifier"
                                 >
                                   <Edit2 className="w-4 h-4" />
@@ -460,7 +460,7 @@ export default function ClassesPage() {
                           {NIVEAUX.map(n => <option key={n} value={n} className="bg-slate-900">{n}</option>)}
                         </select>
                       ) : (
-                        <span className="inline-flex items-center px-3 py-1.5 rounded-xl bg-blue-500/10 text-blue-400 text-[10px] font-black uppercase tracking-widest border border-blue-500/20">
+                        <span className="inline-flex items-center px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
                           {c.niveau}
                         </span>
                       )}

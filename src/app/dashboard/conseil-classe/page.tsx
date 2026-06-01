@@ -252,11 +252,11 @@ export default function ConseilClassePage() {
             </div>
 
             <div className="bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-110" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-blue-400/60 mb-3 ml-1">Félicitations</p>
+                <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-110" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400/60 mb-3 ml-1">Félicitations</p>
                 <div className="flex items-center justify-between">
-                    <span className="text-3xl font-black text-blue-400 tracking-tighter leading-none">{stats.felicitations}</span>
-                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-100 shadow-sm">
+                    <span className="text-3xl font-black text-emerald-400 tracking-tighter leading-none">{stats.felicitations}</span>
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-100 shadow-sm">
                       <Award className="w-5 h-5" />
                     </div>
                 </div>
@@ -357,7 +357,7 @@ export default function ConseilClassePage() {
                       </td>
                       <td className="px-6 py-5">
                         <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-[0.15em] shadow-sm border ${
-                            b.moyenne_generale >= (isPrimary ? 7 : 14) ? 'bg-indigo-600 text-white border-indigo-700 shadow-indigo-200' :
+                            b.moyenne_generale >= (isPrimary ? 7 : 14) ? 'bg-emerald-600 text-white border-indigo-700 shadow-indigo-200' :
                             b.moyenne_generale >= (isPrimary ? 5 : 10) ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
                             'bg-red-50 text-red-600 border-red-100'
                         }`}>

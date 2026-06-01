@@ -194,7 +194,7 @@ export default function MatieresPage() {
               <button
                 type="button"
                 onClick={() => setForm(f => ({ ...f, est_bonus: !f.est_bonus }))}
-                className={`w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl border-2 transition-all text-[10px] font-black uppercase tracking-widest ${form.est_bonus ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400' : 'bg-slate-50 border-transparent text-slate-400'}`}
+                className={`w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl border-2 transition-all text-[10px] font-black uppercase tracking-widest ${form.est_bonus ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-slate-50 border-transparent text-slate-400'}`}
               >
                 {form.est_bonus ? '★ Bonus' : 'Classique'}
               </button>
@@ -266,7 +266,7 @@ export default function MatieresPage() {
                           <button
                             type="button"
                             onClick={() => setEditForm(f => ({ ...f, est_bonus: !f.est_bonus }))}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all text-[10px] font-black uppercase tracking-widest ${editForm.est_bonus ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400' : 'bg-slate-50 border-transparent text-slate-400'}`}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all text-[10px] font-black uppercase tracking-widest ${editForm.est_bonus ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-slate-50 border-transparent text-slate-400'}`}
                           >
                             {editForm.est_bonus ? '★ Bonus' : 'Classique'}
                           </button>
@@ -280,7 +280,7 @@ export default function MatieresPage() {
                             <div className="flex items-center gap-2">
                               <span className="text-base font-black text-slate-900 uppercase group-hover:text-emerald-700 transition-colors">{m.nom}</span>
                               {m.est_bonus && (
-                                <span className="px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[8px] font-black border border-indigo-500/20 uppercase tracking-tighter">Bonus</span>
+                                <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[8px] font-black border border-emerald-500/20 uppercase tracking-tighter">Bonus</span>
                               )}
                             </div>
                             <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-0.5">Enseignement Général</p>
@@ -314,10 +314,10 @@ export default function MatieresPage() {
                         />
                       ) : (
                         <div className="flex flex-col items-center">
-                          <div className={`inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-slate-50 text-slate-900 text-sm font-black border border-slate-100 shadow-sm group-hover:bg-emerald-50 group-hover:text-emerald-700 group-hover:border-emerald-100 transition-all ${m.est_bonus ? 'text-indigo-400' : ''}`}>
+                          <div className={`inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-slate-50 text-slate-900 text-sm font-black border border-slate-100 shadow-sm group-hover:bg-emerald-50 group-hover:text-emerald-700 group-hover:border-emerald-100 transition-all ${m.est_bonus ? 'text-emerald-400' : ''}`}>
                             {m.coefficient}
                           </div>
-                          {m.est_bonus && <span className="text-[8px] font-black text-indigo-400 uppercase mt-1">Pts seuls</span>}
+                          {m.est_bonus && <span className="text-[8px] font-black text-emerald-400 uppercase mt-1">Pts seuls</span>}
                         </div>
                       )}
                     </td>

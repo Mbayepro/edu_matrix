@@ -256,7 +256,7 @@ export default function SuperAdminDashboard() {
           />
         </a>
         <StatCard 
-          icon={<Users className="w-6 h-6 text-blue-400" />}
+          icon={<Users className="w-6 h-6 text-emerald-400" />}
           label="Utilisateurs totaux"
           value={stats.users}
         />
@@ -702,7 +702,7 @@ export default function SuperAdminDashboard() {
             {/* Section Configuration Technique */}
             <div className="space-y-4 pt-4">
               <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-700 pb-2">
-                <Database className="w-5 h-5 text-blue-400" />
+                <Database className="w-5 h-5 text-emerald-400" />
                 Configuration Technique
               </h3>
               
@@ -741,7 +741,7 @@ export default function SuperAdminDashboard() {
               <button 
                 type="submit" 
                 disabled={savingSettings}
-                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white rounded-lg transition-colors font-medium flex items-center gap-2 shadow-lg shadow-blue-500/20"
+                className="px-6 py-2.5 bg-emerald-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white rounded-lg transition-colors font-medium flex items-center gap-2 shadow-lg shadow-emerald-500/20"
               >
                 {savingSettings ? (
                   <>Patientez...</>
@@ -794,7 +794,7 @@ export default function SuperAdminDashboard() {
                 <button 
                   type="submit" 
                   disabled={isSaving}
-                  className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white rounded-lg transition-colors font-medium flex items-center justify-center"
+                  className="flex-1 px-4 py-2.5 bg-emerald-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white rounded-lg transition-colors font-medium flex items-center justify-center"
                 >
                   {isSaving ? 'Enregistrement...' : 'Enregistrer'}
                 </button>
@@ -848,7 +848,7 @@ function RoleBadge({ role }: { role: string }) {
   const styles: Record<string, string> = {
     superadmin: 'bg-purple-500/10 text-purple-400 border border-purple-500/20',
     director: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
-    teacher: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',
+    teacher: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
     student: 'bg-slate-500/10 text-slate-400 border border-slate-500/20',
   }
 

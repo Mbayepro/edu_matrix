@@ -562,10 +562,10 @@ export default function PaiementsPage() {
 
       {/* KPIs Dashboard */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="premium-glass p-6 group hover:border-blue-500/30 transition-all duration-500 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-700" />
+        <div className="premium-glass p-6 group hover:border-emerald-500/30 transition-all duration-500 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-700" />
           <div className="flex items-center gap-5 relative z-10">
-            <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center text-blue-400 group-hover:rotate-6 transition-all duration-500 border border-white/5">
+            <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center text-emerald-400 group-hover:rotate-6 transition-all duration-500 border border-white/5">
               <Users className="w-7 h-7" />
             </div>
             <div>

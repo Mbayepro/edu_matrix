@@ -151,34 +151,31 @@ export default function TeacherDashboard() {
       )}
 
       {/* Welcome Mobile-Optimized */}
-      <div className="bg-gradient-to-br from-emerald-900 via-teal-900 to-blue-900 rounded-[2rem] p-6 text-white relative overflow-hidden shadow-xl">
-        <div className="absolute inset-0 opacity-20"
-          style={{ backgroundImage: `radial-gradient(circle at 2px 2px, rgba(255,255,255,0.15) 1px, transparent 0)`, backgroundSize: '24px 24px' }} />
-        <div className="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 bg-emerald-500 rounded-full blur-3xl opacity-20" />
+      <div className="bg-slate-900 border border-slate-800 rounded-[2rem] p-6 text-white relative overflow-hidden shadow-sm">
         <div className="relative z-10">
-          <p className="text-emerald-100 text-xs font-bold uppercase tracking-widest bg-white/10 w-fit px-3 py-1 rounded-full backdrop-blur-sm mb-3">
+          <p className="text-emerald-400 text-xs font-bold uppercase tracking-widest bg-emerald-500/10 border border-emerald-500/20 w-fit px-3 py-1 rounded-full mb-3">
             Espace Enseignant
           </p>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight leading-tight">
             Bonjour,<br/>{profile?.prenom} {profile?.nom}
           </h1>
-          <p className="text-emerald-50/80 text-sm mt-2 font-medium">
+          <p className="text-slate-400 text-sm mt-2 font-medium">
             {stats.length} classe{stats.length > 1 ? 's' : ''} assignée{stats.length > 1 ? 's' : ''} cette année.
           </p>
         </div>
       </div>
 
       {/* Horizontal Scrollable Tabs */}
-      <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm overflow-hidden">
-        <div className="flex overflow-x-auto hide-scrollbar border-b border-slate-100 bg-slate-50/30 p-2 gap-2">
+      <div className="bg-slate-900 rounded-[2rem] border border-slate-800 shadow-sm overflow-hidden mt-4">
+        <div className="flex overflow-x-auto hide-scrollbar border-b border-slate-800 bg-slate-900 p-2 gap-2">
           {tabs.map((tab) => (
             <button
                key={tab.id}
                onClick={() => setActiveTab(tab.id)}
                className={`flex-none flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold transition-all whitespace-nowrap
                  ${activeTab === tab.id
-                   ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
-                   : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/50 bg-white border border-slate-100'
+                   ? 'bg-emerald-600 text-white'
+                   : 'text-slate-400 hover:text-white hover:bg-slate-800 bg-slate-900 border border-slate-800'
                  }`}
              >
                <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-white' : 'text-slate-400'}`} />
@@ -193,22 +190,22 @@ export default function TeacherDashboard() {
           {activeTab === 'apercu' && (
             <div className="space-y-3">
               {stats.length === 0 ? (
-                <div className="text-center py-8 text-slate-400 text-sm">
+                <div className="text-center py-8 text-slate-500 text-sm">
                   Aucune classe assignée pour le moment.
                 </div>
               ) : (
                 stats.map(({ classe, nbEleves, nbNotes, presAujourd }) => (
                   <div key={classe.id}
-                    className="flex flex-col gap-4 p-5 border border-slate-200/60 rounded-[2rem] hover:border-emerald-300 hover:shadow-lg hover:shadow-emerald-500/5 transition-all group bg-white">
+                    className="flex flex-col gap-4 p-5 border border-slate-800 rounded-[2rem] hover:border-emerald-500/30 hover:bg-slate-800/50 transition-all group bg-slate-900">
                     <div className="flex items-center gap-4">
-                      <div className="bg-gradient-to-br from-blue-100 to-indigo-100 p-3 rounded-2xl shrink-0 shadow-inner">
-                        <BookOpen className="w-6 h-6 text-indigo-400" />
+                      <div className="bg-emerald-500/10 p-3 rounded-xl shrink-0 border border-emerald-500/20">
+                        <BookOpen className="w-6 h-6 text-emerald-400" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start gap-2">
                           <div>
-                            <p className="font-black text-slate-900 text-lg truncate leading-tight">{classe.nom_classe}</p>
-                            <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md uppercase tracking-widest mt-1 inline-block">
+                            <p className="font-bold text-white text-lg truncate leading-tight">{classe.nom_classe}</p>
+                            <span className="text-[10px] font-bold bg-slate-800 text-slate-400 px-2 py-0.5 rounded-md uppercase tracking-widest mt-1 inline-block">
                               {classe.niveau}
                             </span>
                           </div>
@@ -218,25 +215,25 @@ export default function TeacherDashboard() {
                     
                     {/* Stats pills */}
                     <div className="flex flex-wrap gap-2">
-                      <div className="flex-1 min-w-[30%] bg-slate-50 rounded-xl p-2.5 flex items-center gap-2 border border-slate-100">
-                        <div className="bg-white p-1.5 rounded-lg shadow-sm"><Users className="w-3.5 h-3.5 text-slate-400" /></div>
+                      <div className="flex-1 min-w-[30%] bg-slate-800 rounded-xl p-2.5 flex items-center gap-2 border border-slate-700">
+                        <div className="bg-slate-700 p-1.5 rounded-lg"><Users className="w-3.5 h-3.5 text-slate-400" /></div>
                         <div>
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Élèves</p>
-                          <p className="text-xs font-black text-slate-800">{nbEleves}</p>
+                          <p className="text-xs font-bold text-white">{nbEleves}</p>
                         </div>
                       </div>
-                      <div className="flex-1 min-w-[30%] bg-blue-500/10/50 rounded-xl p-2.5 flex items-center gap-2 border border-blue-100/50">
-                        <div className="bg-white p-1.5 rounded-lg shadow-sm"><TrendingUp className="w-3.5 h-3.5 text-blue-400" /></div>
+                      <div className="flex-1 min-w-[30%] bg-emerald-500/10 rounded-xl p-2.5 flex items-center gap-2 border border-emerald-500/20">
+                        <div className="bg-emerald-500/20 p-1.5 rounded-lg"><TrendingUp className="w-3.5 h-3.5 text-emerald-400" /></div>
                         <div>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Notes</p>
-                          <p className="text-xs font-black text-blue-400">{nbNotes}</p>
+                          <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Notes</p>
+                          <p className="text-xs font-bold text-emerald-400">{nbNotes}</p>
                         </div>
                       </div>
-                      <div className={`flex-1 min-w-[30%] rounded-xl p-2.5 flex items-center gap-2 border ${presAujourd > 0 ? 'bg-emerald-50/50 border-emerald-100/50' : 'bg-slate-50 border-slate-100'}`}>
-                        <div className="bg-white p-1.5 rounded-lg shadow-sm"><Clock className={`w-3.5 h-3.5 ${presAujourd > 0 ? 'text-emerald-500' : 'text-slate-400'}`} /></div>
+                      <div className={`flex-1 min-w-[30%] rounded-xl p-2.5 flex items-center gap-2 border ${presAujourd > 0 ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-slate-800 border-slate-700'}`}>
+                        <div className={`p-1.5 rounded-lg ${presAujourd > 0 ? 'bg-emerald-500/20' : 'bg-slate-700'}`}><Clock className={`w-3.5 h-3.5 ${presAujourd > 0 ? 'text-emerald-400' : 'text-slate-400'}`} /></div>
                         <div>
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Présents</p>
-                          <p className={`text-xs font-black ${presAujourd > 0 ? 'text-emerald-800' : 'text-slate-800'}`}>{presAujourd}</p>
+                          <p className={`text-xs font-bold ${presAujourd > 0 ? 'text-emerald-400' : 'text-white'}`}>{presAujourd}</p>
                         </div>
                       </div>
                     </div>
@@ -245,13 +242,13 @@ export default function TeacherDashboard() {
                     <div className="flex gap-2 mt-1">
                       <button
                         onClick={() => { setSelectedClasse(classe.id); setActiveTab('notes') }}
-                        className="flex-1 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors shadow-md"
+                        className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors border border-slate-700"
                       >
                         <TrendingUp className="w-4 h-4" /> Notes
                       </button>
                       <button
                         onClick={() => { setSelectedClasse(classe.id); setActiveTab('presences') }}
-                        className="flex-1 py-3 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors"
+                        className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors"
                       >
                         <UserCheck className="w-4 h-4" /> Présences
                       </button>

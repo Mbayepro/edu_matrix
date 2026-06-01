@@ -13,13 +13,13 @@ import { useToast } from '@/contexts/ToastContext'
 const JOURS = ['', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'] as const
 
 const COLORS = [
-  'bg-blue-500/10 text-blue-400 border border-blue-500/20',
+  'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
   'bg-purple-100 text-purple-800 border-purple-200',
   'bg-emerald-100 text-emerald-800 border-emerald-200',
   'bg-amber-100 text-amber-800 border-amber-200',
   'bg-rose-100 text-rose-800 border-rose-200',
   'bg-cyan-100 text-cyan-800 border-cyan-200',
-  'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 border-indigo-500/20',
+  'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 border-emerald-500/20',
 ]
 
 interface Slot extends EmploiDuTemps {
@@ -278,8 +278,8 @@ export default function EmploiDuTempsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="bg-indigo-100 p-3 rounded-2xl shadow-inner">
-            <LayoutGrid className="w-6 h-6 text-indigo-400" />
+          <div className="bg-emerald-100 p-3 rounded-2xl shadow-inner">
+            <LayoutGrid className="w-6 h-6 text-emerald-400" />
           </div>
           <div>
             <h1 className="text-2xl font-black text-slate-800 tracking-tight">Emplois du Temps</h1>
@@ -362,11 +362,11 @@ export default function EmploiDuTempsPage() {
           <div className={`w-2 h-2 rounded-full ${activeTab === 'live' ? 'bg-rose-500 animate-pulse' : 'bg-slate-300'}`} />
           En Direct (Alertes)
         </button>
-        <button onClick={() => setActiveTab('teacher')} className={`px-6 py-3 font-black text-sm whitespace-nowrap transition-colors flex items-center gap-2 ${activeTab === 'teacher' ? 'text-indigo-400 border-b-2 border-indigo-600 -mb-0.5' : 'text-slate-400 hover:text-slate-600'}`}>
+        <button onClick={() => setActiveTab('teacher')} className={`px-6 py-3 font-black text-sm whitespace-nowrap transition-colors flex items-center gap-2 ${activeTab === 'teacher' ? 'text-emerald-400 border-b-2 border-indigo-600 -mb-0.5' : 'text-slate-400 hover:text-slate-600'}`}>
           <Users className="w-4 h-4" />
           Vue Professeurs
         </button>
-        <button onClick={() => setActiveTab('classe')} className={`px-6 py-3 font-black text-sm whitespace-nowrap transition-colors flex items-center gap-2 ${activeTab === 'classe' ? 'text-indigo-400 border-b-2 border-indigo-600 -mb-0.5' : 'text-slate-400 hover:text-slate-600'}`}>
+        <button onClick={() => setActiveTab('classe')} className={`px-6 py-3 font-black text-sm whitespace-nowrap transition-colors flex items-center gap-2 ${activeTab === 'classe' ? 'text-emerald-400 border-b-2 border-indigo-600 -mb-0.5' : 'text-slate-400 hover:text-slate-600'}`}>
           <LayoutGrid className="w-4 h-4" />
           Vue Classes
         </button>

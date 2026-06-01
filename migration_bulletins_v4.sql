@@ -70,12 +70,12 @@ SELECT
   sc.total_evals as nombre_evaluations
 FROM public.eleves e
 JOIN public.classes c ON e.classe_id = c.id
-LEFT JOIN public.niveaux niv ON niv.code = c.niveau AND niv.ecole_id = e.ecole_id
+LEFT JOIN public.niveaux niv ON (niv.code = c.niveau OR niv.nom = c.niveau) AND niv.ecole_id = e.ecole_id
 CROSS JOIN (SELECT id, nom, est_bonus, coefficient FROM public.matieres) m
 JOIN subject_components sc ON sc.eleve_id = e.id AND sc.matiere_id = m.id
-LEFT JOIN public.coefficients_niveaux cn ON 
+LEFT JOIN public.coefficients_matieres cn ON 
   cn.matiere_id = m.id AND 
-  cn.niveau = c.niveau AND
+  cn.niveau_id = niv.id AND
   cn.ecole_id = e.ecole_id
 WHERE e.created_at IS NOT NULL;
 

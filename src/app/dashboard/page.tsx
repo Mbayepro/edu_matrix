@@ -53,36 +53,32 @@ function StatCard({
   trend?: { val: string, positive: boolean }
 }) {
   const c = {
-    emerald: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20 shadow-emerald-500/10',
-    blue:    'text-blue-400 bg-blue-500/10 border-blue-500/20 shadow-blue-500/10',
-    amber:   'text-amber-400 bg-amber-500/10 border-amber-500/20 shadow-amber-500/10',
-    violet:  'text-violet-400 bg-violet-500/10 border-violet-500/20 shadow-violet-500/10',
+    emerald: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+    blue:    'text-blue-400 bg-blue-500/10 border-blue-500/20',
+    amber:   'text-amber-400 bg-amber-500/10 border-amber-500/20',
+    violet:  'text-violet-400 bg-violet-500/10 border-violet-500/20',
   }[color]
 
   return (
-    <div className="premium-glass rounded-[3rem] p-8 transition-all duration-500 group relative overflow-hidden premium-glass-hover">
-      <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700" />
+    <div className="bg-slate-900 rounded-[2rem] p-6 border border-slate-800 transition-colors hover:border-slate-700">
       
-      <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center mb-6 transition-all duration-700 group-hover:scale-110 group-hover:rotate-6 shadow-2xl ${c}`}>
-        <Icon className="w-8 h-8" />
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${c}`}>
+        <Icon className="w-6 h-6" />
       </div>
 
-      <div className="space-y-2 relative z-10">
+      <div className="space-y-1">
         <div className="flex items-center justify-between">
-          <h3 className="text-4xl font-black text-white tracking-tighter">{value.toLocaleString('fr-FR')}</h3>
+          <h3 className="text-3xl font-bold text-white">{value.toLocaleString('fr-FR')}</h3>
           {trend && (
-            <div className={`flex items-center gap-1 text-[10px] font-black px-2.5 py-1.5 rounded-xl border ${trend.positive ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'}`}>
-              {trend.positive ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
+            <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg ${trend.positive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
+              {trend.positive ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
               {trend.val}
             </div>
           )}
         </div>
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{label}</p>
+        <p className="text-sm font-medium text-slate-400">{label}</p>
         {subtitle && (
-          <div className="flex items-center gap-2 mt-4">
-            <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(251,191,36,0.5)]" />
-            <p className="text-[10px] text-slate-400 font-black uppercase tracking-tight">{subtitle}</p>
-          </div>
+          <p className="text-xs text-slate-500 mt-2">{subtitle}</p>
         )}
       </div>
     </div>
@@ -295,74 +291,52 @@ export default function DashboardPage() {
     <div className="space-y-8 max-w-7xl mx-auto pb-20 animate-in fade-in duration-700">
 
       {/* ── Intelligence Command Center ── */}
-      <div className="relative premium-glass rounded-[4rem] p-10 lg:p-16 text-white overflow-hidden shadow-2xl border border-white/5 group transition-all duration-1000 hover:shadow-emerald-500/10">
-        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-emerald-500/10 rounded-full blur-[150px] -mr-64 -mt-64 animate-pulse pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-amber-400/5 rounded-full blur-[120px] -ml-32 -mb-32 pointer-events-none" />
+      <div className="relative bg-slate-900 rounded-[2rem] p-8 lg:p-12 text-white overflow-hidden shadow-lg border border-slate-800">
         
-        {/* System Pulse Bar */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
-        
-        <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-16">
-          <div className="flex-1 text-center lg:text-left space-y-10">
+        <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-12">
+          <div className="flex-1 text-center lg:text-left space-y-8">
             <div className="flex flex-col sm:flex-row items-center gap-4 lg:items-start">
-              <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl text-[10px] font-black uppercase tracking-[0.4em] text-emerald-400 shadow-2xl">
-                <div className="relative w-2.5 h-2.5">
-                   <div className="absolute inset-0 bg-emerald-400 rounded-full animate-ping opacity-75" />
-                   <div className="relative w-2.5 h-2.5 bg-emerald-400 rounded-full" />
-                </div>
-                Live Systems · Operational
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-bold text-emerald-400">
+                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                Système Opérationnel
               </div>
-              <div className="px-5 py-2.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-slate-400">
-                {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} · GMT+0
+              <div className="px-4 py-2 rounded-full bg-slate-800 text-xs font-bold text-slate-300">
+                {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
               </div>
             </div>
 
             <div className="space-y-4">
-               <h1 className="text-6xl lg:text-8xl font-black tracking-tighter leading-[0.8] mb-4">
+               <h1 className="text-4xl lg:text-6xl font-bold tracking-tight mb-2">
                  Bonjour, <br/>
-                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-amber-200 animate-gradient drop-shadow-sm">
+                 <span className="text-emerald-400">
                    {profile?.prenom || 'Directeur'}
                  </span>
                </h1>
-               <div className="w-20 h-2 bg-emerald-500/30 rounded-full" />
             </div>
-            <p className="text-slate-300 text-xl lg:text-2xl font-medium max-w-xl mx-auto lg:mx-0 leading-relaxed tracking-tight">
-              L&apos;établissement <span className="text-white font-black border-b-4 border-emerald-500/30 pb-1">{ecole?.nom}</span> est synchronisé. <br/>
-              <span className="text-slate-500 text-sm font-black uppercase tracking-[0.2em] mt-4 block">Dashboard de contrôle global</span>
+            <p className="text-slate-300 text-lg font-medium max-w-xl mx-auto lg:mx-0">
+              L&apos;établissement <span className="text-white font-bold">{ecole?.nom}</span> est synchronisé. <br/>
+              <span className="text-slate-400 text-sm mt-2 block">Tableau de bord de direction</span>
             </p>
-            
-            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 pt-4">
-               <div className="flex items-center gap-3 bg-white/5 backdrop-blur-3xl px-8 py-4 rounded-[2rem] border border-white/10 transition-all hover:bg-white/10 hover:border-emerald-500/30 hover:scale-105 shadow-xl">
-                  <ShieldCheck className="w-6 h-6 text-emerald-400" />
-                  <span className="text-xs font-black uppercase tracking-[0.2em] text-emerald-400">Certifié RLS</span>
-               </div>
-               <div className="flex items-center gap-3 bg-white/5 backdrop-blur-3xl px-8 py-4 rounded-[2rem] border border-white/10 transition-all hover:bg-white/10 hover:border-amber-500/30 hover:scale-105 shadow-xl">
-                  <Activity className="w-6 h-6 text-amber-400 animate-pulse" />
-                  <span className="text-xs font-black uppercase tracking-[0.2em] text-amber-400">Flux Local-First</span>
-               </div>
-            </div>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 w-full lg:w-auto">
-            <div className="bg-white/5 backdrop-blur-3xl rounded-[3rem] p-12 border text-center shadow-2xl transition-all hover:scale-105 hover:bg-white/10 group/card relative overflow-hidden border-emerald-500/10">
-              <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover/card:opacity-100 transition-opacity" />
-              <p className="text-7xl font-black text-emerald-400 mb-2 emerald-glow-text leading-none tracking-tighter">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full lg:w-auto">
+            <div className="bg-slate-800 rounded-[2rem] p-8 text-center border border-slate-700">
+              <p className="text-5xl font-bold text-emerald-400 mb-2">
                 {stats?.presencesAujourd ?? 0}
               </p>
-              <p className="text-[11px] text-slate-400 font-black uppercase tracking-[0.3em] relative z-10">Présences</p>
-              <div className="mt-6 flex items-center justify-center gap-2 relative z-10">
-                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
-                 <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">En direct</span>
+              <p className="text-sm text-slate-400 font-bold uppercase">Présences</p>
+              <div className="mt-4 flex items-center justify-center gap-2">
+                 <div className="w-2 h-2 bg-emerald-500 rounded-full" />
+                 <span className="text-xs font-bold text-emerald-500">Aujourd'hui</span>
               </div>
             </div>
-            <div className="bg-white/5 backdrop-blur-3xl rounded-[3rem] p-12 border text-center shadow-2xl transition-all hover:scale-105 hover:bg-white/10 group/card relative overflow-hidden border-rose-500/10">
-              <div className="absolute inset-0 bg-rose-500/5 opacity-0 group-hover/card:opacity-100 transition-opacity" />
-              <p className="text-7xl font-black text-rose-400 mb-2 leading-none tracking-tighter shadow-rose-500/20 drop-shadow-xl">
+            <div className="bg-slate-800 rounded-[2rem] p-8 text-center border border-slate-700">
+              <p className="text-5xl font-bold text-rose-400 mb-2">
                 {stats?.elevesImpayes ?? 0}
               </p>
-              <p className="text-[11px] text-slate-400 font-black uppercase tracking-[0.3em] relative z-10">Impayés</p>
-              <div className="mt-6 flex items-center justify-center gap-2 relative z-10">
-                 <span className="text-[10px] font-black text-rose-400 uppercase tracking-widest bg-rose-500/10 px-3 py-1 rounded-lg border border-rose-500/20">Alerte Seuil</span>
+              <p className="text-sm text-slate-400 font-bold uppercase">Impayés</p>
+              <div className="mt-4 flex items-center justify-center gap-2">
+                 <span className="text-xs font-bold text-rose-400">À vérifier</span>
               </div>
             </div>
           </div>
@@ -378,16 +352,16 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Analytics & Insights ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="premium-glass rounded-[3rem] p-8 transition-all duration-500">
-          <div className="flex items-center justify-between mb-10">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-slate-900 rounded-[2rem] p-6 lg:p-8 border border-slate-800 transition-colors">
+          <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 shadow-sm">
-                <Activity className="w-6 h-6 text-emerald-400" />
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                <Activity className="w-5 h-5 text-emerald-400" />
               </div>
               <div>
-                <h2 className="font-black text-white text-base uppercase tracking-wider">Activité Présences</h2>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Derniers 7 jours d&apos;appel</p>
+                <h2 className="font-bold text-white text-base uppercase">Activité Présences</h2>
+                <p className="text-xs text-slate-400 font-bold uppercase mt-1">Derniers 7 jours d&apos;appel</p>
               </div>
             </div>
           </div>
@@ -397,10 +371,10 @@ export default function DashboardPage() {
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={presenceChart} barGap={6} barCategoryGap="30%">
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                  <XAxis dataKey="jour" tick={{ fontSize: 10, fill: '#64748b', fontWeight: '900' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(255,255,255,0.02)' }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                  <XAxis dataKey="jour" tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 'bold' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
                   <Bar dataKey="present" name="Présents" fill="#10b981" radius={[8,8,0,0]} />
                   <Bar dataKey="absent"  name="Absents"  fill="#fbbf24" radius={[8,8,0,0]} />
                 </BarChart>
@@ -409,15 +383,15 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="premium-glass rounded-[3rem] p-8 transition-all duration-500">
-          <div className="flex items-center justify-between mb-10">
+        <div className="bg-slate-900 rounded-[2rem] p-6 lg:p-8 border border-slate-800 transition-colors">
+          <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shadow-sm">
-                <TrendingUp className="w-6 h-6 text-blue-400" />
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                <TrendingUp className="w-5 h-5 text-emerald-400" />
               </div>
               <div>
-                <h2 className="font-black text-white text-base uppercase tracking-wider">Performance Globale</h2>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Moyennes par classe</p>
+                <h2 className="font-bold text-white text-base uppercase">Performance Globale</h2>
+                <p className="text-xs text-slate-400 font-bold uppercase mt-1">Moyennes par classe</p>
               </div>
             </div>
           </div>
@@ -427,13 +401,13 @@ export default function DashboardPage() {
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={notesChart}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                  <XAxis dataKey="classe" tick={{ fontSize: 10, fill: '#64748b', fontWeight: '900' }} axisLine={false} tickLine={false} />
-                  <YAxis domain={[0, 20]} tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                  <XAxis dataKey="classe" tick={{ fontSize: 12, fill: '#94a3b8', fontWeight: 'bold' }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[0, 20]} tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                   <Tooltip content={<ChartTooltip />} />
-                  <Line type="monotone" dataKey="moyenne" name="Moyenne" stroke="#60a5fa" strokeWidth={6}
-                    dot={{ fill: '#60a5fa', strokeWidth: 3, r: 8, stroke: '#050505' }} 
-                    activeDot={{ r: 10, strokeWidth: 0 }} />
+                  <Line type="monotone" dataKey="moyenne" name="Moyenne" stroke="#10b981" strokeWidth={4}
+                    dot={{ fill: '#10b981', strokeWidth: 2, r: 6, stroke: '#0f172a' }} 
+                    activeDot={{ r: 8, strokeWidth: 0 }} />
                 </LineChart>
               </ResponsiveContainer>
             )}
@@ -446,58 +420,56 @@ export default function DashboardPage() {
          <DailyReport ecoleId={ecoleId || ''} />
          <AtRiskPanel ecoleId={ecoleId || ''} />
          
-         {/* ── Intelligence Feed ── */}
-         <div className="bg-[#0A0A0A] rounded-[4rem] p-10 text-white relative overflow-hidden flex flex-col shadow-2xl border border-white/5 group">
-            <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-[100px] -mr-40 -mt-40 transition-all duration-1000 group-hover:scale-150" />
+      {/* ── Intelligence Feed ── */}
+         <div className="bg-slate-900 rounded-[2rem] p-8 text-white relative overflow-hidden flex flex-col shadow-lg border border-slate-800">
             
-            <div className="flex items-center justify-between mb-10 relative z-10">
+            <div className="flex items-center justify-between mb-8 relative z-10">
                <div>
-                  <h2 className="text-2xl font-black tracking-tighter uppercase leading-none">Intelligence Stream</h2>
-                  <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Événements en direct</p>
+                  <h2 className="text-xl font-bold uppercase">Flux d'Activité</h2>
+                  <p className="text-slate-400 text-xs font-bold uppercase mt-1">Événements récents</p>
                </div>
-               <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
-                  <Activity className="w-5 h-5 text-blue-400 animate-pulse" />
+               <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center">
+                  <Activity className="w-5 h-5 text-emerald-400" />
                </div>
             </div>
 
             <div className="space-y-6 relative z-10 flex-1">
                {activityLogs.map((log, i) => (
-                  <div key={i} className="flex gap-5 group/log hover:translate-x-2 transition-transform cursor-default">
+                  <div key={i} className="flex gap-4 group/log">
                      <div className="flex flex-col items-center gap-2">
-                        <div className={`w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center ${log.color} group-hover/log:scale-110 transition-transform`}>
+                        <div className={`w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center ${log.color}`}>
                            <log.icon className="w-5 h-5" />
                         </div>
-                        {i !== activityLogs.length - 1 && <div className="w-px flex-1 bg-white/5" />}
+                        {i !== activityLogs.length - 1 && <div className="w-px flex-1 bg-slate-700" />}
                      </div>
                      <div className="pb-6">
                         <div className="flex items-center gap-3 mb-1">
-                           <span className="text-[10px] font-black text-slate-500">{log.time}</span>
-                           <h4 className="text-xs font-black uppercase tracking-widest text-white group-hover/log:text-blue-400 transition-colors">{log.event}</h4>
+                           <span className="text-xs font-bold text-slate-400">{log.time}</span>
+                           <h4 className="text-sm font-bold text-white">{log.event}</h4>
                         </div>
-                        <p className="text-[11px] text-slate-400 font-medium tracking-tight">{log.details}</p>
+                        <p className="text-sm text-slate-300 font-medium">{log.details}</p>
                      </div>
                   </div>
                ))}
             </div>
 
-            <Link href="/dashboard/parametres" className="mt-4 py-5 rounded-[2rem] bg-white/5 border border-white/10 text-center text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 hover:bg-white/10 hover:text-white transition-all shadow-xl group/btn overflow-hidden relative">
-               <div className="absolute inset-0 bg-blue-500/5 translate-y-full group-hover/btn:translate-y-0 transition-transform" />
-               <span className="relative z-10">Historique complet</span>
+            <Link href="/dashboard/parametres" className="mt-4 py-4 rounded-xl bg-slate-800 border border-slate-700 text-center text-sm font-bold text-slate-300 hover:bg-slate-700 hover:text-white transition-all shadow-sm">
+               Historique complet
             </Link>
          </div>
       </div>
 
       {/* ── Operational Grid ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
         
         {/* Recent Enrollments */}
-        <div className="lg:col-span-2 premium-glass rounded-[3rem] overflow-hidden">
-          <div className="flex items-center justify-between px-8 py-7 border-b border-white/5 bg-white/5">
-            <h2 className="font-black text-white text-sm uppercase tracking-widest flex items-center gap-2">
-               <Users className="w-4 h-4 text-emerald-400" />
+        <div className="lg:col-span-2 bg-slate-900 rounded-[2rem] overflow-hidden border border-slate-800 shadow-sm">
+          <div className="flex items-center justify-between px-6 py-5 border-b border-slate-800 bg-slate-800/50">
+            <h2 className="font-bold text-white text-base flex items-center gap-2">
+               <Users className="w-5 h-5 text-emerald-400" />
                Derniers inscrits
             </h2>
-            <Link href="/dashboard/eleves" className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-emerald-400 hover:border-emerald-500/30 transition-all shadow-sm">
+            <Link href="/dashboard/eleves" className="px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs font-bold text-slate-300 hover:text-emerald-400 hover:border-emerald-500/30 transition-all">
               Gérer la liste
             </Link>
           </div>
@@ -506,22 +478,22 @@ export default function DashboardPage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-slate-800">
                   {recentEleves.map((e) => (
-                    <tr key={e.id} className="hover:bg-white/5 transition-colors group">
-                      <td className="px-8 py-5">
+                    <tr key={e.id} className="hover:bg-slate-800/50 transition-colors group">
+                      <td className="px-6 py-4">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-400 rounded-2xl flex items-center justify-center text-white text-base font-black shadow-lg shadow-emerald-500/10 transition-transform group-hover:scale-110">
+                          <div className="w-10 h-10 bg-emerald-500/20 text-emerald-400 rounded-xl flex items-center justify-center text-base font-bold transition-transform group-hover:scale-105">
                             {e.prenom[0]}
                           </div>
                           <div>
-                            <p className="text-sm font-black text-white truncate group-hover:text-emerald-400 transition-colors uppercase">{e.prenom} {e.nom}</p>
-                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-tighter mt-0.5">{(e.classe as any)?.nom_classe}</p>
+                            <p className="text-sm font-bold text-white truncate group-hover:text-emerald-400 transition-colors uppercase">{e.prenom} {e.nom}</p>
+                            <p className="text-xs text-slate-400 font-medium mt-0.5">{(e.classe as any)?.nom_classe}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-8 py-5 text-right">
-                        <p className="text-[10px] font-mono font-black text-slate-400 bg-white/5 px-2 py-1 rounded-lg inline-block border border-white/5">{e.matricule}</p>
+                      <td className="px-6 py-4 text-right">
+                        <p className="text-xs font-mono font-bold text-slate-400 bg-slate-800 px-2 py-1 rounded border border-slate-700 inline-block">{e.matricule}</p>
                       </td>
                     </tr>
                   ))}
@@ -532,26 +504,26 @@ export default function DashboardPage() {
         </div>
 
         {/* Real-time Alerts */}
-        <div className="premium-glass rounded-[3rem] overflow-hidden flex flex-col">
-          <div className="flex items-center justify-between px-8 py-7 border-b border-white/5 bg-amber-500/5">
-            <h2 className="font-black text-amber-400 text-sm uppercase tracking-widest flex items-center gap-2">
-               <AlertCircle className="w-4 h-4" />
+        <div className="bg-slate-900 rounded-[2rem] overflow-hidden flex flex-col border border-slate-800 shadow-sm">
+          <div className="flex items-center justify-between px-6 py-5 border-b border-slate-800 bg-amber-500/10">
+            <h2 className="font-bold text-amber-400 text-base flex items-center gap-2">
+               <AlertCircle className="w-5 h-5" />
                Vigilance Absences
             </h2>
           </div>
-          <div className="flex-1 overflow-y-auto max-h-[400px] scrollbar-thin scrollbar-thumb-white/10">
+          <div className="flex-1 overflow-y-auto max-h-[400px] scrollbar-thin scrollbar-thumb-slate-700">
             {absencesJour.length === 0 ? (
               <div className="p-16 text-center text-slate-500 text-sm italic">Parfait ! Aucune alerte aujourd&apos;hui.</div>
             ) : (
-              <ul className="divide-y divide-white/5">
+              <ul className="divide-y divide-slate-800">
                 {absencesJour.map((a) => (
-                  <li key={a.id} className="flex items-center gap-4 px-8 py-5 hover:bg-white/5 transition-colors group">
-                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-xs font-black shrink-0 transition-transform group-hover:scale-110 ${a.statut === 'absent' ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                  <li key={a.id} className="flex items-center gap-4 px-6 py-4 hover:bg-slate-800/50 transition-colors group">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-base font-bold shrink-0 ${a.statut === 'absent' ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-500/20 text-amber-400'}`}>
                       {a.eleve_nom[0]}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-black text-white truncate uppercase group-hover:text-amber-400 transition-colors">{a.eleve_nom}</p>
-                      <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-0.5">{a.classe_nom} • {a.statut}</p>
+                      <p className="text-sm font-bold text-white truncate group-hover:text-amber-400 transition-colors uppercase">{a.eleve_nom}</p>
+                      <p className="text-xs text-slate-400 font-medium mt-0.5">{a.classe_nom} • {a.statut}</p>
                     </div>
                     {a.telephone && (
                       <button
@@ -559,7 +531,7 @@ export default function DashboardPage() {
                           const msg = encodeURIComponent(`Bonjour, l'école ${ecole?.nom} vous informe que votre enfant ${a.eleve_nom} a été marqué ${a.statut} aujourd'hui.`);
                           window.open(`https://wa.me/${a.telephone.replace(/\s+/g, '').replace('+', '')}?text=${msg}`, '_blank');
                         }}
-                        className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all shadow-sm active:scale-95 shrink-0 border border-emerald-500/20"
+                        className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20 shrink-0"
                         title="Informer les parents"
                       >
                         <MessageCircle className="w-4 h-4" />
@@ -576,17 +548,17 @@ export default function DashboardPage() {
         <div className="lg:col-span-3 grid grid-cols-2 lg:grid-cols-6 gap-6">
            {[
              { label: 'Inscrire un élève',  href: '/dashboard/eleves/nouveau', icon: Users, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
-             { label: 'Saisir les Notes',   href: '/dashboard/notes',         icon: TrendingUp, color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
+             { label: 'Saisir les Notes',   href: '/dashboard/notes',         icon: TrendingUp, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
              { label: 'Feuille d\'Appel',   href: '/dashboard/presences',     icon: UserCheck, color: 'text-rose-400 bg-rose-500/10 border-rose-500/20' },
              { label: 'Imprimer Bulletins', href: '/dashboard/bulletins',     icon: FileText,   color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
-             { label: 'Conseil de Classe',  href: '/dashboard/conseil-classe', icon: UsersRound, color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20' },
+             { label: 'Conseil de Classe',  href: '/dashboard/conseil-classe', icon: UsersRound, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
              { label: 'Configuration',      href: '/dashboard/parametres',    icon: Settings,   color: 'text-violet-400 bg-violet-500/10 border-violet-500/20' },
            ].map((a) => (
-             <Link key={a.label} href={a.href} className="group premium-glass rounded-[3rem] p-8 transition-all duration-700 flex flex-col items-center text-center gap-5 premium-glass-hover border-white/5">
-                <div className={`w-20 h-20 rounded-[2rem] flex items-center justify-center transition-all duration-700 group-hover:scale-110 group-hover:rotate-6 ${a.color} shadow-2xl`}>
-                   <a.icon className="w-10 h-10" />
+             <Link key={a.label} href={a.href} className="group bg-slate-900 rounded-[2rem] p-6 border border-slate-800 transition-all flex flex-col items-center text-center gap-4 hover:border-slate-700">
+                <div className={`w-14 h-14 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${a.color}`}>
+                   <a.icon className="w-6 h-6" />
                 </div>
-                <span className="text-[11px] font-black text-slate-400 group-hover:text-emerald-400 uppercase tracking-[0.2em] transition-colors">{a.label}</span>
+                <span className="text-xs font-bold text-slate-300 group-hover:text-emerald-400 transition-colors">{a.label}</span>
              </Link>
            ))}
         </div>

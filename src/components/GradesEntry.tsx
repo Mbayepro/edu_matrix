@@ -201,7 +201,13 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
   };
 
   const handleNoteChange = async (eleveId: string, evalId: string, val: string) => {
-    const num = parseFloat(val.replace(',', '.'));
+    const trimmed = val.trim();
+    // Permettre la suppression (val vide)
+    if (trimmed === '') {
+      setNotes(prev => prev.filter(n => !(n.eleve_id === eleveId && n.evaluation_id === evalId)));
+      return;
+    }
+    const num = parseFloat(trimmed.replace(',', '.'));
     if (isNaN(num)) return;
 
     const noteData: Note = { 
@@ -232,6 +238,22 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
     }
   };
 
+  // Handler pour mise à jour locale immédiate (input onChange)
+  const handleNoteInputChange = (eleveId: string, evalId: string, val: string) => {
+    const trimmed = val.trim();
+    if (trimmed === '') {
+      setNotes(prev => prev.filter(n => !(n.eleve_id === eleveId && n.evaluation_id === evalId)));
+      return;
+    }
+    const num = parseFloat(trimmed.replace(',', '.'));
+    if (isNaN(num)) return;
+    const noteData: Note = { id: `${eleveId}_${evalId}`, eleve_id: eleveId, evaluation_id: evalId, note: num, professeur_id: profile?.id };
+    setNotes(prev => {
+      const filtered = prev.filter(n => !(n.eleve_id === eleveId && n.evaluation_id === evalId));
+      return [...filtered, noteData];
+    });
+  };
+
   const getNote = (eleveId: string, evalId: string) => {
     return notes.find(n => n.eleve_id === eleveId && n.evaluation_id === evalId)?.note ?? null;
   };
@@ -250,7 +272,7 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
           </p>
         </div>
         {pendingCount > 0 && (
-          <div className="flex flex-col items-center bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 px-3 py-1.5 rounded-xl shadow-sm">
+          <div className="flex flex-col items-center bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-xl shadow-sm">
             <span className="text-[10px] uppercase font-black tracking-widest leading-none">Synchro. en attente</span>
             <span className="text-xl font-black mt-1">{pendingCount}</span>
           </div>
@@ -308,7 +330,8 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
                           <input
                             type="text"
                             inputMode="decimal"
-                            defaultValue={val?.toString() || ''}
+                            value={val?.toString() ?? ''}
+                            onChange={(e) => handleNoteInputChange(eleve.id, ev.id, e.target.value)}
                             onBlur={(e) => handleNoteChange(eleve.id, ev.id, e.target.value)}
                             placeholder="--"
                             className={`w-12 h-8 bg-slate-50 border border-slate-100 rounded-lg text-center text-xs font-black focus:ring-4 focus:ring-emerald-500/10 focus:bg-white ${val !== null ? (val >= (ev.bareme/2) ? 'text-emerald-700' : 'text-red-600') : 'text-slate-300'}`}
@@ -396,7 +419,8 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
                       <input
                         type="text"
                         inputMode="decimal"
-                        defaultValue={val?.toString() || ''}
+                        value={val?.toString() ?? ''}
+                        onChange={(e) => handleNoteInputChange(eleve.id, selectedEval.id, e.target.value)}
                         onBlur={(e) => handleNoteChange(eleve.id, selectedEval.id, e.target.value)}
                         placeholder="--"
                         className={`w-16 h-14 bg-slate-50 border-2 rounded-xl text-center text-sm font-black focus:ring-4 focus:ring-emerald-500/20 focus:bg-white transition-all

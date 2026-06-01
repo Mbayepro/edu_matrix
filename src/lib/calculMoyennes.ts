@@ -53,7 +53,7 @@ export class CalculateurMoyennes {
    */
   static async getCoefficientsMatieres(
     ecole_id: string,
-    niveau_code: string,
+    niveau_id: string,
     serie_id?: string
   ): Promise<CoefficientMatiere[]> {
     let query = supabase
@@ -64,7 +64,7 @@ export class CalculateurMoyennes {
         serie:series(id, code, nom)
       `)
       .eq('ecole_id', ecole_id)
-      .ilike('niveau', niveau_code)
+      .eq('niveau_id', niveau_id)
 
     if (serie_id) {
        query = query.or(`serie_id.eq.${serie_id},serie_id.is.null`)
@@ -91,7 +91,7 @@ export class CalculateurMoyennes {
           id: m.id,
           ecole_id: ecole_id,
           matiere_id: m.id,
-          niveau_id: niveau_code,
+          niveau_id: niveau_id,
           serie_id: serie_id || null,
           coefficient: m.coefficient || 1,
           is_obligatoire: true,
@@ -319,37 +319,60 @@ export class CalculateurMoyennes {
     if (!classeRaw) throw new Error("Classe introuvable.")
     const ecoleId = classeRaw.ecole_id
 
-    // 2. Charger tout le nécessaire en parallèle
+    // 2. Charger les évaluations correspondantes
+    const { data: evaluations, error: evErr } = await supabase
+      .from('evaluations')
+      .select('*')
+      .eq('classe_id', classe_id)
+      .eq('trimestre', trimestre);
+
+    if (evErr) throw new Error("Erreur de chargement des évaluations.");
+
+    // S'il n'y a pas d'évaluation pour ce trimestre, on n'aura pas de notes ni de bulletins
+    const evalIds = ((evaluations as any[]) || []).map(ev => ev.id);
+
+    // Charger les autres données en parallèle
     const [
       { data: classeData, error: clErr },
       { data: ecoleData, error: ecErr },
       { data: eleves, error: elErr },
-      { data: allNotes, error: ntErr },
+      { data: rawNotes, error: ntErr },
       { data: allPresences, error: prErr },
       { data: pmData, error: pmErr }
     ] = await Promise.all([
       supabase.from('classes' as any).select('*, serie:series(*)').eq('id', classe_id).single() as any,
       supabase.from('ecoles' as any).select('*').eq('id', ecoleId).single() as any,
       supabase.from('eleves' as any).select('*, classe:classes(*)').eq('classe_id', classe_id).order('nom, prenom') as any,
-      supabase.from('notes' as any)
-        .select('*, evaluations!inner(*)')
-        .eq('evaluations.classe_id', classe_id)
-        .eq('evaluations.trimestre', trimestre)
-        .eq('evaluations.annee_scolaire', annee_scolaire) as any,
-      supabase.from('presences' as any)
-        .select('*')
-        .eq('classe_id', classe_id) as any,
+      evalIds.length > 0
+        ? supabase.from('notes' as any).select('*').in('evaluation_id', evalIds) as any
+        : Promise.resolve({ data: [], error: null }),
+      supabase.from('presences' as any).select('*').eq('classe_id', classe_id) as any,
       supabase
         .from('v_moyennes_generales')
         .select('eleve_id, trimestre, moyenne_generale')
         .eq('classe_id', classe_id)
         .eq('annee_scolaire', annee_scolaire) as any
-    ])
+    ]);
 
     const pastMoyennes = (pmData || []) as any[]
 
-    if (clErr || ecErr || elErr || ntErr || prErr || pmErr) throw new Error("Erreur lors de la récupération groupée des données.")
-    if (!eleves || eleves.length === 0) return []
+    if (clErr || ecErr || elErr || prErr || ntErr) throw new Error("Erreur lors de la récupération groupée des données.")
+    
+    // Reconstruire l'objet notes avec son évaluation liée
+    const evaluationsMap = new Map(((evaluations as any[]) || []).map(e => [e.id, e]));
+    let processedNotes = (rawNotes || []).map((note: any) => ({
+      ...note,
+      evaluations: evaluationsMap.get(note.evaluation_id)
+    }));
+
+    // Filtrage de annee_scolaire en post-traitement pour éviter l'erreur si la colonne n'existe pas
+    if (processedNotes.length > 0 && processedNotes[0]?.evaluations?.annee_scolaire !== undefined) {
+      // La colonne existe : on filtre
+      processedNotes = processedNotes.filter((n: any) => {
+        const ev = n.evaluations
+        return !ev?.annee_scolaire || ev.annee_scolaire === annee_scolaire
+      })
+    }
 
     const classe = classeData as any
     const serie = classe.serie
@@ -368,6 +391,7 @@ export class CalculateurMoyennes {
     if (!niveau) {
       console.warn(`Niveau ${classe.niveau} introuvable pour l'école ${ecoleId}.`)
       niveau = {
+        id: '',
         code: classe.niveau,
         nom: classe.niveau,
         cycle: (classe.niveau.includes('CM') || classe.niveau.includes('CE') || classe.niveau.includes('CP') || classe.niveau.includes('CI')) ? 'primaire' : 'moyen',
@@ -379,11 +403,12 @@ export class CalculateurMoyennes {
     const baremeMatiere = isPrimaire ? 10 : 20
 
     // 4. Charger les coefficients une seule fois
-    const coefficients = await this.getCoefficientsMatieres(ecoleId, classe.niveau, serie?.id)
+    const coefficients = await this.getCoefficientsMatieres(ecoleId, niveau!.id, serie?.id)
 
     // 5. Calculer les bulletins élève par élève
+    if (!eleves || eleves.length === 0) return []
     const bulletins: BulletinData[] = eleves.map((eleve: any) => {
-      const studentNotes = (allNotes || []).filter((n: any) => n.eleve_id === eleve.id)
+      const studentNotes = processedNotes.filter((n: any) => n.eleve_id === eleve.id)
 
       // Calculer l'assiduité par trimestre
       const studentPresences = (allPresences || []).filter((p: any) => {

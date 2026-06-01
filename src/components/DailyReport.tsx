@@ -125,7 +125,7 @@ export default function DailyReport({ ecoleId }: { ecoleId: string }) {
                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Cours donnés</p>
                <div className="flex items-center gap-2">
                   <span className="text-xl font-black text-white">{stats.nb_emargements}</span>
-                  <TrendingUp className="w-4 h-4 text-blue-400" />
+                  <TrendingUp className="w-4 h-4 text-emerald-400" />
                </div>
             </div>
          </div>

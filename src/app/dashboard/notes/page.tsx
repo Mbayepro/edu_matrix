@@ -42,7 +42,7 @@ export default function NotesPage() {
   const [selectedMatiere, setSelectedMatiere] = useState<string>('')
   const [selectedTrimestre, setSelectedTrimestre] = useState<1 | 2 | 3>(1)
   const [selectedEvaluation, setSelectedEvaluation] = useState<string>('')
-  const [anneeScolaire, setAnneeScolaire] = useState<string>('2024-2025')
+  const [anneeScolaire, setAnneeScolaire] = useState<string>('2025-2026')
   const [typePeriode, setTypePeriode] = useState<'trimestre' | 'semestre'>('trimestre')
   
   const [loading, setLoading] = useState(true)
@@ -219,18 +219,27 @@ export default function NotesPage() {
   async function loadEvaluations() {
     if (!selectedClasse || !selectedMatiere || !selectedTrimestre) return
     
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('evaluations')
       .select('*, matiere:matieres(nom), classe:classes(nom_classe)')
       .eq('classe_id', selectedClasse)
       .eq('matiere_id', selectedMatiere)
       .eq('trimestre', selectedTrimestre)
-      .eq('annee_scolaire', anneeScolaire)
       .order('date', { ascending: false })
     
-    setEvaluations(data as any ?? [])
-    if ((data as any) && (data as any).length > 0) {
-      setSelectedEvaluation((data as any)[0].id)
+    if (error) {
+      console.error('[Notes] Erreur chargement évaluations:', error)
+    }
+
+    // Filtre annee_scolaire en post-traitement (la colonne peut ne pas exister)
+    let filteredData = (data as any) ?? []
+    if (filteredData.length > 0 && filteredData[0]?.annee_scolaire !== undefined) {
+      filteredData = filteredData.filter((ev: any) => ev.annee_scolaire === anneeScolaire)
+    }
+    
+    setEvaluations(filteredData)
+    if (filteredData.length > 0) {
+      setSelectedEvaluation(filteredData[0].id)
     } else {
       setSelectedEvaluation('')
       setNotes({})
@@ -322,35 +331,60 @@ export default function NotesPage() {
     
     setSaving(true)
     try {
-      // Only upsert notes that were actually entered (skip students with no entry)
+      // 1. Notes to upsert (valid numbers)
       const notesToInsert = eleves
-        .filter(eleve => notes[eleve.id] !== undefined)
+        .filter(eleve => notes[eleve.id] !== undefined && notes[eleve.id] !== null && String(notes[eleve.id]) !== '')
         .map(eleve => ({
           ecole_id: ecoleId!,
           eleve_id: eleve.id,
           evaluation_id: selectedEvaluation,
-          note: notes[eleve.id],
+          note: Number(notes[eleve.id]),
           professeur_id: profile?.id,
         }))
 
-      if (notesToInsert.length === 0) {
-        showToast('Aucune note à enregistrer.')
-        return
+      // 2. Notes to delete (cleared/undefined inputs)
+      const eleveIdsToDelete = eleves
+        .filter(eleve => notes[eleve.id] === undefined || notes[eleve.id] === null || String(notes[eleve.id]) === '')
+        .map(eleve => eleve.id)
+
+      let success = true
+      let errorMsg = ''
+
+      // Execute delete for cleared notes
+      if (eleveIdsToDelete.length > 0) {
+        const { error: delErr } = await (supabase
+          .from('notes' as any) as any)
+          .delete()
+          .eq('evaluation_id', selectedEvaluation)
+          .in('eleve_id', eleveIdsToDelete)
+        
+        if (delErr) {
+          success = false
+          errorMsg = delErr.message
+        }
       }
 
-      const { error } = await (supabase
-        .from('notes' as any) as any)
-        .upsert(notesToInsert as any, {
-          onConflict: 'eleve_id,evaluation_id',
-          ignoreDuplicates: false,
-        })
+      // Execute upsert for valid notes
+      if (notesToInsert.length > 0 && success) {
+        const { error: upsertErr } = await (supabase
+          .from('notes' as any) as any)
+          .upsert(notesToInsert as any, {
+            onConflict: 'eleve_id,evaluation_id',
+            ignoreDuplicates: false,
+          })
+        
+        if (upsertErr) {
+          success = false
+          errorMsg = upsertErr.message
+        }
+      }
 
-      if (!error) {
-        showToast(`${notesToInsert.length} note(s) enregistrée(s) avec succès.`, 'success')
+      if (success) {
+        showToast('Notes enregistrées avec succès.', 'success')
         // REFRESH DATA to see new averages
         await loadNotes()
       } else {
-        showToast('Erreur : ' + error.message, 'error')
+        showToast('Erreur : ' + errorMsg, 'error')
       }
     } finally {
       setSaving(false)

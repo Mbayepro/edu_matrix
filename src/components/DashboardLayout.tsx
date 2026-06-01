@@ -258,14 +258,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-slate-900">
       {/* Logo Zone */}
       <div className="flex items-center gap-3 px-6 py-8">
-        <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 p-2.5 rounded-2xl shrink-0 shadow-lg shadow-emerald-500/20">
+        <div className="bg-emerald-600 p-2.5 rounded-xl shrink-0 shadow-sm">
           <GraduationCap className="w-6 h-6 text-white" />
         </div>
         <div className="min-w-0">
-          <p className="font-black text-lg text-white leading-none tracking-tight">EduMatrix</p>
+          <p className="font-bold text-lg text-white leading-none tracking-tight">EduMatrix</p>
           <div className="mt-1.5 flex items-center gap-2">
              <NetworkBadge />
           </div>
@@ -274,10 +274,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* School badge */}
       {ecole && (
-        <div className="mx-4 mb-4 bg-emerald-500/5 rounded-2xl px-4 py-3 border border-emerald-500/10">
-          <p className="text-[9px] text-emerald-500/60 uppercase font-black tracking-widest mb-1">Localisation</p>
-          <p className="text-xs text-slate-300 font-medium truncate flex items-center gap-2">
-            <span className="w-1 h-1 bg-amber-400 rounded-full" />
+        <div className="mx-4 mb-4 bg-slate-800 rounded-xl px-4 py-3 border border-slate-700">
+          <p className="text-xs text-slate-400 uppercase font-bold mb-1">Localisation</p>
+          <p className="text-sm text-slate-300 font-medium truncate flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
             {ecole.ville}
           </p>
         </div>
@@ -300,24 +300,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* User zone */}
       <div className="px-4 pb-6 mt-auto">
-        <div className="flex items-center gap-3 bg-slate-800/40 rounded-2xl px-4 py-4 border border-slate-700/30 backdrop-blur-sm">
-          <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-amber-400 rounded-full p-[2px] shrink-0">
-            <div className="w-full h-full bg-slate-900 rounded-full flex items-center justify-center text-sm font-black text-white">
-              {profile?.prenom?.[0]?.toUpperCase() ?? '?'}
-            </div>
+        <div className="flex items-center gap-3 bg-slate-800 rounded-xl px-4 py-4 border border-slate-700">
+          <div className="w-10 h-10 bg-emerald-600 rounded-full shrink-0 flex items-center justify-center text-sm font-bold text-white">
+            {profile?.prenom?.[0]?.toUpperCase() ?? '?'}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-white truncate">
               {profile?.prenom}
             </p>
-            <p className="text-[10px] text-emerald-500 font-black uppercase tracking-tighter">
+            <p className="text-xs text-slate-400 font-medium">
               {roleLabel[profile?.role ?? ''] ?? profile?.role}
             </p>
           </div>
           <button
             onClick={handleSignOut}
             title="Déconnexion"
-            className="p-2 rounded-xl hover:bg-red-500/10 text-slate-500 hover:text-red-400 transition-all duration-200"
+            className="p-2 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-all"
           >
             <LogOut className="w-4 h-4" />
           </button>
@@ -327,11 +325,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   )
 
   return (
-    <div className="min-h-screen mesh-gradient flex relative overflow-hidden">
+    <div className="min-h-screen flex relative overflow-hidden bg-slate-950">
       <PremiumBackground />
 
       {/* ── Sidebar desktop ── */}
-      <aside className="hidden lg:flex flex-col w-64 premium-glass shrink-0 fixed top-0 left-0 bottom-0 z-30 border-r border-white/5">
+      <aside className="hidden lg:flex flex-col w-64 shrink-0 fixed top-0 left-0 bottom-0 z-30 border-r border-slate-800">
         <SidebarContent />
       </aside>
 
@@ -339,10 +337,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-xl"
+            className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm"
             onClick={() => setSidebarOpen(false)}
           />
-          <aside className="absolute left-0 top-0 bottom-0 w-72 premium-glass flex flex-col z-50 shadow-2xl">
+          <aside className="absolute left-0 top-0 bottom-0 w-72 flex flex-col z-50 shadow-2xl bg-slate-900">
             <button
               onClick={() => setSidebarOpen(false)}
               className="absolute top-4 right-4 p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white"
@@ -358,9 +356,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex-1 flex flex-col lg:ml-64 min-w-0">
 
         {/* Top bar */}
-        <header className="sticky top-0 z-20 premium-glass px-4 lg:px-8 py-4 flex items-center gap-4 border-b border-white/5">
+        <header className="sticky top-0 z-20 bg-slate-900 px-4 lg:px-8 py-4 flex items-center gap-4 border-b border-slate-800 shadow-sm">
           <button
-            className="lg:hidden p-2.5 rounded-2xl bg-slate-50 hover:bg-emerald-50 text-slate-600 hover:text-emerald-600 transition-all duration-200"
+            className="lg:hidden p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="w-5 h-5" />
@@ -368,13 +366,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
  
           {/* Page Title & Date */}
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-black text-white tracking-tight leading-none mb-1">
+            <h2 className="text-xl font-bold text-white tracking-tight mb-1">
               {visibleNav.find(
                 (n) => pathname === n.href || (n.href !== '/dashboard' && pathname.startsWith(n.href))
               )?.label ?? 'EduMatrix'}
             </h2>
             <div className="flex items-center gap-2">
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest hidden sm:block">
+              <p className="text-xs text-slate-400 font-medium hidden sm:block capitalize">
                 {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
               </p>
             </div>
@@ -382,15 +380,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
  
           {/* Action icons */}
           <div className="flex items-center gap-2">
-            <button className="relative p-2.5 rounded-2xl bg-white/5 hover:bg-emerald-500/20 text-slate-400 hover:text-emerald-400 transition-all group border border-white/5">
+            <button className="relative p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all border border-slate-700">
               <Bell className="w-5 h-5" />
-              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-amber-500 rounded-full border-2 border-slate-900 animate-bounce" />
+              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-emerald-500 rounded-full border-2 border-slate-800" />
             </button>
           </div>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-4 lg:p-6 animate-fade-in">
+        <main className="flex-1 p-4 lg:p-6 bg-slate-950">
           <ToastProvider>
             {children}
             <QuickGuide />

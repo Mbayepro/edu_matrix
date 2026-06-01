@@ -494,7 +494,7 @@ export default function ElevesPage() {
                           </Link>
                           <button
                             onClick={() => setViewing(e.id)}
-                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-500 hover:text-blue-400 hover:border-blue-500/30 hover:bg-white/10 transition-all group/btn"
+                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-500 hover:text-emerald-400 hover:border-emerald-500/30 hover:bg-white/10 transition-all group/btn"
                             title="Profil Complet"
                           >
                             <Eye className="w-4 h-4" />

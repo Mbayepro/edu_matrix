@@ -155,7 +155,7 @@ export default function EmargementPage() {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <div className="w-8 h-8 rounded-lg bg-indigo-600/10 flex items-center justify-center">
-              <BookOpen className="w-4 h-4 text-indigo-400" />
+              <BookOpen className="w-4 h-4 text-emerald-400" />
             </div>
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">Cahier de Textes</h1>
           </div>
@@ -168,7 +168,7 @@ export default function EmargementPage() {
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-8 space-y-6">
             <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
-              <div className="w-1.5 h-6 bg-indigo-600 rounded-full" />
+              <div className="w-1.5 h-6 bg-emerald-600 rounded-full" />
 Nouvel Émargement
             </h2>
 
@@ -212,7 +212,7 @@ Nouvel Émargement
             <button
               onClick={handleEmarger}
               disabled={submitting}
-              className="w-full py-4 bg-indigo-600 text-white rounded-2xl text-sm font-black uppercase tracking-widest transition-all hover:bg-slate-900 shadow-xl shadow-indigo-600/20 disabled:bg-slate-300"
+              className="w-full py-4 bg-emerald-600 text-white rounded-2xl text-sm font-black uppercase tracking-widest transition-all hover:bg-slate-900 shadow-xl shadow-indigo-600/20 disabled:bg-slate-300"
             >
               {submitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Valider mon Émargement'}
             </button>
@@ -223,7 +223,7 @@ Nouvel Émargement
         <div className="space-y-6">
           <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-6">
             <h3 className="text-sm font-black text-slate-900 flex items-center gap-2 mb-6">
-              <History className="w-4 h-4 text-indigo-400" />
+              <History className="w-4 h-4 text-emerald-400" />
               Récents émargements
             </h3>
 
@@ -242,7 +242,7 @@ Nouvel Émargement
                         <div className="w-6 h-6 rounded bg-white flex items-center justify-center shadow-sm">
                           <CheckCircle className="w-3 h-3 text-emerald-500" />
                         </div>
-                        <span className="text-[10px] font-black uppercase text-indigo-400">{h.classe_nom}</span>
+                        <span className="text-[10px] font-black uppercase text-emerald-400">{h.classe_nom}</span>
                       </div>
                       <span className="text-[9px] font-bold text-slate-400">{new Date(h.date_heure).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
@@ -254,7 +254,7 @@ Nouvel Émargement
             )}
           </div>
 
-          <div className="bg-indigo-600 rounded-[2rem] p-6 text-white overflow-hidden relative group">
+          <div className="bg-emerald-600 rounded-[2rem] p-6 text-white overflow-hidden relative group">
             <div className="relative z-10 space-y-4">
               <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
                 <CheckCircle className="w-5 h-5" />

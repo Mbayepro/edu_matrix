@@ -57,7 +57,7 @@ export default function OfflineBanner() {
           ? 'bg-emerald-600 text-white'
           : offline
             ? 'bg-slate-900 text-white'
-            : 'bg-blue-600 text-white'
+            : 'bg-emerald-600 text-white'
         }`}
       style={{ maxWidth: 'calc(100vw - 2rem)' }}
     >
