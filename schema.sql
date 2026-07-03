@@ -148,6 +148,7 @@ CREATE TABLE IF NOT EXISTS public.evaluations (
   coef         NUMERIC NOT NULL DEFAULT 1,
   bareme       NUMERIC NOT NULL DEFAULT 20,
   libelle      TEXT, -- 1er Devoir, Devoir 2, etc.
+  annee_scolaire TEXT NOT NULL DEFAULT '2024-2025',
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -193,6 +194,7 @@ CREATE TABLE IF NOT EXISTS public.notes (
   evaluation_id  UUID NOT NULL REFERENCES public.evaluations(id) ON DELETE CASCADE,
   professeur_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   note          NUMERIC(5,2) NOT NULL CHECK (note >= 0 AND note <= 20),
+  annee_scolaire TEXT NOT NULL DEFAULT '2024-2025',
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(eleve_id, evaluation_id)
 );
@@ -290,8 +292,12 @@ CREATE INDEX IF NOT EXISTS idx_paiements_mois           ON public.paiements(mois
 -- VUES SQL pour le calcul des moyennes
 -- ─────────────────────────────────────────
 
+DROP VIEW IF EXISTS public.v_bulletins_complets CASCADE;
+DROP VIEW IF EXISTS public.v_moyennes_generales CASCADE;
+DROP VIEW IF EXISTS public.v_moyennes_matieres CASCADE;
+
 -- Vue pour les moyennes par matière et par élève
-CREATE OR REPLACE VIEW public.v_moyennes_matieres AS
+CREATE OR REPLACE VIEW public.v_moyennes_matieres WITH (security_invoker = true) AS
 SELECT 
   e.id as eleve_id,
   e.prenom,
@@ -305,6 +311,7 @@ SELECT
   m.id as matiere_id,
   m.nom as matiere_nom,
   ev.trimestre,
+  ev.annee_scolaire,
   COALESCE(cm.coefficient, 1) as coefficient,
   -- Calcul de la moyenne pondérée par les coefficients des évaluations
   CASE 
@@ -330,10 +337,10 @@ LEFT JOIN public.notes notes ON
   notes.eleve_id = e.id
 WHERE e.created_at IS NOT NULL
 GROUP BY e.id, e.prenom, e.nom, e.matricule, c.id, c.nom_classe, 
-         niv.id, niv.code, niv.cycle, s.code, m.id, m.nom, ev.trimestre, cm.coefficient;
+         niv.id, niv.code, niv.cycle, s.code, m.id, m.nom, ev.trimestre, ev.annee_scolaire, cm.coefficient;
 
 -- Vue pour les moyennes générales
-CREATE OR REPLACE VIEW public.v_moyennes_generales AS
+CREATE OR REPLACE VIEW public.v_moyennes_generales WITH (security_invoker = true) AS
 SELECT 
   eleve_id,
   prenom,
@@ -345,6 +352,7 @@ SELECT
   cycle,
   serie_code,
   trimestre,
+  annee_scolaire,
   -- Calcul de la moyenne générale pondérée par les coefficients des matières
   CASE 
     WHEN SUM(coefficient) > 0 THEN 
@@ -368,18 +376,18 @@ SELECT
 FROM public.v_moyennes_matieres
 WHERE moyenne_matiere > 0 -- Exclure les matières sans notes
 GROUP BY eleve_id, prenom, nom, matricule, classe_id, nom_classe, 
-         niveau_code, cycle, serie_code, trimestre;
+         niveau_code, cycle, serie_code, trimestre, annee_scolaire;
 
 -- Vue optimisée pour les bulletins complets avec adaptation par cycle
--- Vue optimisée pour les bulletins complets avec adaptation par cycle
 -- Utilise JSON pour une structure de données robuste et facile à consommer en JS
-CREATE OR REPLACE VIEW public.v_bulletins_complets AS
+CREATE OR REPLACE VIEW public.v_bulletins_complets WITH (security_invoker = true) AS
 WITH matieres_stats AS (
   -- Sous-requête pour calculer les moyennes par matière pour chaque élève/trimestre
   SELECT 
     e.id as eleve_id,
     c.id as classe_id,
     ev.trimestre,
+    ev.annee_scolaire,
     m.id as matiere_id,
     m.nom as matiere_nom,
     COALESCE(cm.coefficient, 1) as coefficient,
@@ -398,7 +406,7 @@ WITH matieres_stats AS (
   JOIN public.coefficients_matieres cm ON cm.matiere_id = m.id AND cm.niveau_id = niv.id 
     AND (cm.serie_id = s.id OR (cm.serie_id IS NULL AND s.id IS NULL))
   LEFT JOIN public.notes notes ON notes.evaluation_id = ev.id AND notes.eleve_id = e.id
-  GROUP BY e.id, c.id, ev.trimestre, m.id, m.nom, cm.coefficient
+  GROUP BY e.id, c.id, ev.trimestre, ev.annee_scolaire, m.id, m.nom, cm.coefficient
 )
 SELECT 
   e.id as eleve_id,
@@ -413,6 +421,7 @@ SELECT
   COALESCE(s.code, '') as serie_code,
   COALESCE(s.nom, '') as serie_nom,
   ms.trimestre,
+  ms.annee_scolaire,
   -- Détails des matières en format JSON
   jsonb_agg(
     jsonb_build_object(
@@ -445,7 +454,7 @@ JOIN public.niveaux niv ON c.niveau_id = niv.id
 LEFT JOIN public.series s ON c.serie_id = s.id
 JOIN matieres_stats ms ON ms.eleve_id = e.id AND ms.classe_id = c.id
 GROUP BY e.id, e.prenom, e.nom, e.matricule, c.id, c.nom_classe, 
-         niv.id, niv.code, niv.nom, niv.cycle, s.code, s.nom, ms.trimestre
+         niv.id, niv.code, niv.nom, niv.cycle, s.code, s.nom, ms.trimestre, ms.annee_scolaire
 ORDER BY e.nom, e.prenom, ms.trimestre;
 
 -- ─────────────────────────────────────────

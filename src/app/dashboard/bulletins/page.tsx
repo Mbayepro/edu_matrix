@@ -223,20 +223,20 @@ export default function BulletinsPage() {
             <div className="w-8 h-8 rounded-lg bg-emerald-600/10 flex items-center justify-center border border-emerald-500/20">
               <FileText className="w-4 h-4 text-emerald-400" />
             </div>
-            <h1 className="text-2xl font-black text-white tracking-tight">Bulletins Scolaires</h1>
+            <h1 className="text-xl md:text-2xl font-black text-white tracking-tight">Bulletins Scolaires</h1>
           </div>
-          <p className="text-sm text-slate-400 font-medium tracking-tight">
+          <p className="text-xs md:text-sm text-slate-400 font-medium tracking-tight">
             Sélectionnez une classe pour calculer les moyennes et générer les bulletins officiels.
           </p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
           {/* Cloud Indicator */}
-          <div className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all ${
+          <div className={`flex items-center gap-2 px-3 md:px-4 py-2 rounded-xl border-2 transition-all ${
             isOnline ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-white/5 border-white/5 text-slate-400'
           }`}>
             <Cloud className={`w-4 h-4 ${isOnline ? 'fill-emerald-400 animate-pulse' : 'fill-slate-400'}`} />
-            <span className="text-[10px] font-black uppercase tracking-widest">
+            <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest">
               {isOnline ? 'Prêt à imprimer' : 'Hors-ligne'}
             </span>
           </div>
@@ -244,23 +244,24 @@ export default function BulletinsPage() {
           {bulletins.length > 0 && (
             <button
               onClick={handleGenerateAll}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg bg-emerald-600 text-white hover:bg-emerald-500 shadow-emerald-600/20 hover:scale-105 active:scale-95"
+              className="flex items-center gap-2 px-4 md:px-6 py-2 md:py-2.5 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest transition-all shadow-lg bg-emerald-600 text-white hover:bg-emerald-500 shadow-emerald-600/20 hover:scale-105 active:scale-95"
             >
               {generating === 'all' ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-              Imprimer tous les bulletins
+              <span className="hidden sm:inline">Imprimer tous les bulletins</span>
+              <span className="sm:hidden">Imprimer</span>
             </button>
           )}
         </div>
       </div>
 
-      <div className="premium-glass rounded-[2rem] p-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="premium-glass rounded-[2rem] p-4 md:p-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           <div className="space-y-2">
             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Classe / Structure</label>
             <select 
               value={selectedClasse} 
               onChange={(e) => setSelectedClasse(e.target.value)} 
-              className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3.5 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all appearance-none"
+              className="w-full bg-white/5 border border-white/5 rounded-xl px-3 md:px-4 py-3 md:py-3.5 text-xs md:text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all appearance-none"
             >
               <option value="" className="bg-slate-900">Sélectionner</option>
               {classes.map(cls => <option key={cls.id} value={cls.id} className="bg-slate-900">{cls.nom_classe}</option>)}
@@ -271,7 +272,7 @@ export default function BulletinsPage() {
             <select 
               value={selectedTrimestre} 
               onChange={(e) => setSelectedTrimestre(Number(e.target.value) as 1|2|3)} 
-              className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3.5 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all appearance-none"
+              className="w-full bg-white/5 border border-white/5 rounded-xl px-3 md:px-4 py-3 md:py-3.5 text-xs md:text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all appearance-none"
             >
               {typePeriode === 'semestre' ? (
                 <>
@@ -292,22 +293,22 @@ export default function BulletinsPage() {
             <select 
               value={anneeScolaire} 
               onChange={(e) => setAnneeScolaire(e.target.value)} 
-              className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3.5 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all appearance-none"
+              className="w-full bg-white/5 border border-white/5 rounded-xl px-3 md:px-4 py-3 md:py-3.5 text-xs md:text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all appearance-none"
             >
               {anneesScolaires.map(an => <option key={an} value={an} className="bg-slate-900">{an}</option>)}
             </select>
           </div>
           {/* Toggle PIN Parent */}
-          <div className="flex items-center gap-3 pt-6">
+          <div className="flex items-center gap-3 pt-4 md:pt-6 sm:col-span-2 lg:col-span-1">
             <button
               onClick={() => setIncludePIN(v => !v)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest border-2 transition-all ${
+              className={`flex items-center gap-2 px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest border-2 transition-all ${
                 includePIN
                   ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
                   : 'bg-white/5 border-white/5 text-slate-400'
               }`}
             >
-              <KeyRound className="w-3.5 h-3.5" />
+              <KeyRound className="w-3 md:w-3.5 h-3 md:h-3.5" />
               PIN Parent {includePIN ? 'inclus' : 'masqué'}
             </button>
           </div>
@@ -352,36 +353,36 @@ export default function BulletinsPage() {
       )}
 
       {bulletins.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in duration-500">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 animate-in fade-in duration-500">
           {bulletins.map((bulletin) => (
-            <div key={bulletin.eleve.id} className="premium-glass rounded-[2rem] p-6 border border-white/5 hover:border-emerald-500/30 transition-all duration-300 hover:scale-[1.01] hover:shadow-xl hover:shadow-emerald-950/20 group">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 text-white flex items-center justify-center font-black uppercase">
+            <div key={bulletin.eleve.id} className="premium-glass rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-6 border border-white/5 hover:border-emerald-500/30 transition-all duration-300 hover:scale-[1.01] hover:shadow-xl hover:shadow-emerald-950/20 group">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/5 border border-white/10 text-white flex items-center justify-center font-black uppercase flex-shrink-0">
                     {bulletin.eleve.prenom[0]}{bulletin.eleve.nom[0]}
                   </div>
-                  <div>
-                    <h3 className="text-base font-black text-white">{bulletin.eleve.prenom} {bulletin.eleve.nom}</h3>
-                    <p className="text-[10px] font-black uppercase text-slate-500 tracking-wider mt-0.5">{bulletin.eleve.matricule || 'N/A'}</p>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-sm md:text-base font-black text-white truncate">{bulletin.eleve.prenom} {bulletin.eleve.nom}</h3>
+                    <p className="text-[9px] md:text-[10px] font-black uppercase text-slate-500 tracking-wider mt-0.5 truncate">{bulletin.eleve.matricule || 'N/A'}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
                   <div className="text-right">
-                    <p className="text-[10px] uppercase font-black text-slate-500">Moyenne</p>
-                    <div className="flex items-center gap-2">
+                    <p className="text-[9px] md:text-[10px] uppercase font-black text-slate-500">Moyenne</p>
+                    <div className="flex items-center gap-1 md:gap-2">
                       {bulletin.annual?.progression !== null && bulletin.annual?.progression !== undefined && (
-                        <div className={`flex items-center text-[10px] font-black ${bulletin.annual.progression >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        <div className={`flex items-center text-[9px] md:text-[10px] font-black ${bulletin.annual.progression >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                           {bulletin.annual.progression >= 0 ? '↑' : '↓'}
                           {Math.abs(bulletin.annual.progression).toFixed(2)}
                         </div>
                       )}
-                      <p className="text-xl font-black text-white">{bulletin.moyenne_generale.toFixed(2)}</p>
+                      <p className="text-lg md:text-xl font-black text-white">{bulletin.moyenne_generale.toFixed(2)}</p>
                     </div>
                     {bulletin.annual && (
                       <div className="mt-1 flex flex-col items-end gap-1">
-                        <p className="text-[9px] font-bold text-slate-400">Annuel: {bulletin.annual.moyenne_annuelle.toFixed(2)}</p>
+                        <p className="text-[8px] md:text-[9px] font-bold text-slate-400">Annuel: {bulletin.annual.moyenne_annuelle.toFixed(2)}</p>
                         {bulletin.annual.decision && bulletin.annual.decision !== 'En attente' && (
-                          <span className={`text-[8px] px-2 py-0.5 rounded-full font-black uppercase tracking-tighter border ${
+                          <span className={`text-[7px] md:text-[8px] px-1.5 md:px-2 py-0.5 rounded-full font-black uppercase tracking-tighter border ${
                             bulletin.annual.decision === 'Passage' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                             bulletin.annual.decision === 'Redoublement' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
                             'bg-rose-500/10 text-rose-400 border-rose-500/20'
@@ -394,9 +395,9 @@ export default function BulletinsPage() {
                   </div>
                   <button 
                     onClick={() => generateBulletinPDF(bulletin)} 
-                    className="p-3 rounded-xl transition-all shadow-lg bg-emerald-600 text-white hover:bg-emerald-500 hover:scale-105 active:scale-95 shadow-emerald-600/20"
+                    className="p-2 md:p-3 rounded-xl transition-all shadow-lg bg-emerald-600 text-white hover:bg-emerald-500 hover:scale-105 active:scale-95 shadow-emerald-600/20"
                   >
-                    <Download className="w-5 h-5" />
+                    <Download className="w-4 h-4 md:w-5 md:h-5" />
                   </button>
                 </div>
               </div>

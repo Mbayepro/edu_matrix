@@ -16,11 +16,22 @@ async function getImageData(url: string | null | undefined): Promise<string | nu
     return new Promise((resolve) => {
       const reader = new FileReader()
       reader.onloadend = () => resolve(reader.result as string)
-      reader.onerror = () => resolve(null)
+      reader.onerror = () => {
+        console.error('Erreur lecture image:', url)
+        resolve(null)
+      }
       reader.readAsDataURL(blob)
     })
   } catch (err) {
-    console.error('Erreur chargement image:', url, err)
+    const errorMessage = err instanceof Error ? err.message : String(err)
+    console.error('Erreur chargement image:', url, errorMessage)
+    
+    // Si c'est une erreur CORS, on retourne null silencieusement
+    if (errorMessage.includes('CORS') || errorMessage.includes('fetch')) {
+      console.warn('CORS ou fetch error - image ignorée:', url)
+      return null
+    }
+    
     return null
   }
 }
@@ -279,18 +290,30 @@ export async function generateSingleBulletinPDF(
   typePeriode: 'trimestre' | 'semestre',
   includePIN: boolean
 ) {
-  const doc = new jsPDF({ format: 'a4', unit: 'mm' })
-  
-  // Chargement des images en parallèle
-  const [logo, signature, tampon] = await Promise.all([
-    getImageData(ecole?.logo_url),
-    getImageData(ecole?.signature_url),
-    getImageData(ecole?.tampon_url)
-  ])
+  try {
+    const doc = new jsPDF({ format: 'a4', unit: 'mm' })
+    
+    // Chargement des images en parallèle avec timeout
+    const imagePromises = Promise.all([
+      getImageData(ecole?.logo_url),
+      getImageData(ecole?.signature_url),
+      getImageData(ecole?.tampon_url)
+    ])
+    
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Timeout chargement images')), 10000)
+    )
+    
+    const [logo, signature, tampon] = await Promise.race([imagePromises, timeoutPromise]) as [string | null, string | null, string | null]
 
-  drawBulletin(doc, bulletin, ecole, typePeriode, includePIN, { logo, signature, tampon })
-  const fileName = `Bulletin_${bulletin.eleve.prenom}_${bulletin.eleve.nom}_T${bulletin.trimestre}.pdf`
-  doc.save(fileName)
+    drawBulletin(doc, bulletin, ecole, typePeriode, includePIN, { logo, signature, tampon })
+    const fileName = `Bulletin_${bulletin.eleve.prenom}_${bulletin.eleve.nom}_T${bulletin.trimestre}.pdf`
+    doc.save(fileName)
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('Erreur génération PDF bulletin:', errorMessage)
+    throw new Error(`Échec de la génération du PDF: ${errorMessage}`)
+  }
 }
 
 /** Génère et télécharge le PDF de tous les bulletins d'une classe */
@@ -302,18 +325,31 @@ export async function generateAllBulletinsPDF(
   includePIN: boolean
 ) {
   if (bulletins.length === 0) return
-  const doc = new jsPDF({ format: 'a4', unit: 'mm' })
+  
+  try {
+    const doc = new jsPDF({ format: 'a4', unit: 'mm' })
 
-  // Chargement des images une seule fois pour tout le lot
-  const [logo, signature, tampon] = await Promise.all([
-    getImageData(ecole?.logo_url),
-    getImageData(ecole?.signature_url),
-    getImageData(ecole?.tampon_url)
-  ])
+    // Chargement des images une seule fois pour tout le lot avec timeout
+    const imagePromises = Promise.all([
+      getImageData(ecole?.logo_url),
+      getImageData(ecole?.signature_url),
+      getImageData(ecole?.tampon_url)
+    ])
+    
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Timeout chargement images')), 10000)
+    )
+    
+    const [logo, signature, tampon] = await Promise.race([imagePromises, timeoutPromise]) as [string | null, string | null, string | null]
 
-  bulletins.forEach((bulletin, idx) => {
-    if (idx > 0) doc.addPage()
-    drawBulletin(doc, bulletin, ecole, typePeriode, includePIN, { logo, signature, tampon })
-  })
-  doc.save(`Bulletins_${classeNom}_T${bulletins[0].trimestre}.pdf`)
+    bulletins.forEach((bulletin, idx) => {
+      if (idx > 0) doc.addPage()
+      drawBulletin(doc, bulletin, ecole, typePeriode, includePIN, { logo, signature, tampon })
+    })
+    doc.save(`Bulletins_${classeNom}_T${bulletins[0].trimestre}.pdf`)
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('Erreur génération PDF bulletins:', errorMessage)
+    throw new Error(`Échec de la génération des PDFs: ${errorMessage}`)
+  }
 }

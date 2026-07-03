@@ -230,14 +230,19 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
     const existingNote = notes.find(n => n.eleve_id === eleveId && n.evaluation_id === evalId);
     const noteId = existingNote?.id || crypto.randomUUID();
 
+    const today = new Date();
+    const year = today.getFullYear();
+    const currentAnneeScolaire = today.getMonth() >= 8 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
+
     const noteData: Note = { 
       id: noteId, 
       ecole_id: ecoleId!,
       eleve_id: eleveId, 
       evaluation_id: evalId, 
       note: num,
-      professeur_id: profile?.id
-    } as Note;
+      professeur_id: profile?.id,
+      annee_scolaire: currentAnneeScolaire
+    } as any;
 
     try {
       // 1. Optimistic & Local
@@ -273,14 +278,19 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
     const existingNote = notes.find(n => n.eleve_id === eleveId && n.evaluation_id === evalId);
     const noteId = existingNote?.id || crypto.randomUUID();
 
+    const today = new Date();
+    const year = today.getFullYear();
+    const currentAnneeScolaire = today.getMonth() >= 8 ? `${year}-${year + 1}` : `${year - 1}-${year}`;
+
     const noteData: Note = { 
       id: noteId, 
       ecole_id: ecoleId!,
       eleve_id: eleveId, 
       evaluation_id: evalId, 
       note: num, 
-      professeur_id: profile?.id 
-    } as Note;
+      professeur_id: profile?.id,
+      annee_scolaire: currentAnneeScolaire 
+    } as any;
     setNotes(prev => {
       const filtered = prev.filter(n => n.id !== noteId);
       return [...filtered, noteData];

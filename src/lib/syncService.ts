@@ -39,7 +39,7 @@ export async function syncFromSupabase(ecoleId: string): Promise<void> {
     { name: 'coefficients_matieres', query: (supabase.from('coefficients_matieres' as any) as any).select('*').eq('ecole_id', ecoleId) },
     { name: 'evaluations', query: (supabase.from('evaluations' as any) as any).select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) },
     { name: 'eleves', query: (supabase.from('eleves' as any) as any).select('*').eq('ecole_id', ecoleId) }, // Les élèves restent tous chargés pour le moment
-    { name: 'notes', query: (supabase.from('notes' as any) as any).select('*').eq('ecole_id', ecoleId) }, // TODO: Ajouter colonne annee_scolaire dans notes
+    { name: 'notes', query: (supabase.from('notes' as any) as any).select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) }, // Filtrage par année scolaire pour optimiser le cache
     { name: 'presences', query: (supabase.from('presences' as any) as any).select('*').eq('ecole_id', ecoleId) }, 
     { name: 'profiles', query: (supabase.from('profiles' as any) as any).select('*').eq('ecole_id', ecoleId) },
     { name: 'frais_scolaires', query: (supabase.from('frais_scolaires' as any) as any).select('*').eq('ecole_id', ecoleId) },
