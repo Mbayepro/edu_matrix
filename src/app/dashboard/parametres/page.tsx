@@ -95,7 +95,7 @@ export default function SchoolSettingsPage() {
           tampon_url: form.tampon_url || null,
           signature_url: form.signature_url || null,
           calculation_method: form.calculation_method,
-          type_periode: form.type_periode,
+          // type_periode: form.type_periode, // Temporairement désactivé en attendant la mise à jour de la base de données
         } as any)
         .eq('id', ecole.id)
 
