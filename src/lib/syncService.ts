@@ -31,21 +31,21 @@ export async function syncFromSupabase(ecoleId: string): Promise<void> {
     : `${today.getFullYear() - 1}-${today.getFullYear()}`
 
   const tables = [
-    { name: 'ecoles', query: (supabase.from('ecoles' as any) as any).select('*').eq('id', ecoleId) },
-    { name: 'niveaux', query: (supabase.from('niveaux' as any) as any).select('*').eq('ecole_id', ecoleId) },
-    { name: 'series', query: (supabase.from('series' as any) as any).select('*').eq('ecole_id', ecoleId) },
-    { name: 'classes', query: (supabase.from('classes' as any) as any).select('*').eq('ecole_id', ecoleId) },
-    { name: 'matieres', query: (supabase.from('matieres' as any) as any).select('*').eq('ecole_id', ecoleId) },
-    { name: 'coefficients_matieres', query: (supabase.from('coefficients_matieres' as any) as any).select('*').eq('ecole_id', ecoleId) },
-    { name: 'evaluations', query: (supabase.from('evaluations' as any) as any).select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) },
-    { name: 'eleves', query: (supabase.from('eleves' as any) as any).select('*').eq('ecole_id', ecoleId) }, // Les élèves restent tous chargés pour le moment
-    { name: 'notes', query: (supabase.from('notes' as any) as any).select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) }, // Filtrage par année scolaire pour optimiser le cache
-    { name: 'presences', query: (supabase.from('presences' as any) as any).select('*').eq('ecole_id', ecoleId) }, 
-    { name: 'profiles', query: (supabase.from('profiles' as any) as any).select('*').eq('ecole_id', ecoleId) },
-    { name: 'frais_scolaires', query: (supabase.from('frais_scolaires' as any) as any).select('*').eq('ecole_id', ecoleId) },
-    { name: 'eleves_frais', query: (supabase.from('eleves_frais' as any) as any).select('*').eq('ecole_id', ecoleId) },
-    { name: 'paiements', query: (supabase.from('paiements' as any) as any).select('*').eq('ecole_id', ecoleId) },
-    { name: 'emargements', query: (supabase.from('emargements' as any) as any).select('*').eq('ecole_id', ecoleId) }
+    { name: 'ecoles', query: supabase.from('ecoles').select('*').eq('id', ecoleId) },
+    { name: 'niveaux', query: supabase.from('niveaux').select('*').eq('ecole_id', ecoleId) },
+    { name: 'series', query: supabase.from('series').select('*').eq('ecole_id', ecoleId) },
+    { name: 'classes', query: supabase.from('classes').select('*').eq('ecole_id', ecoleId) },
+    { name: 'matieres', query: supabase.from('matieres').select('*').eq('ecole_id', ecoleId) },
+    { name: 'coefficients_matieres', query: supabase.from('coefficients_matieres').select('*').eq('ecole_id', ecoleId) },
+    { name: 'evaluations', query: supabase.from('evaluations').select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) },
+    { name: 'eleves', query: supabase.from('eleves').select('*').eq('ecole_id', ecoleId) }, // Les élèves restent tous chargés pour le moment
+    { name: 'notes', query: supabase.from('notes').select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) }, // Filtrage par année scolaire pour optimiser le cache
+    { name: 'presences', query: supabase.from('presences').select('*').eq('ecole_id', ecoleId) }, 
+    { name: 'profiles', query: supabase.from('profiles').select('*').eq('ecole_id', ecoleId) },
+    { name: 'frais_scolaires', query: supabase.from('frais_scolaires').select('*').eq('ecole_id', ecoleId) },
+    { name: 'eleves_frais', query: supabase.from('eleves_frais').select('*').eq('ecole_id', ecoleId) },
+    { name: 'paiements', query: supabase.from('paiements').select('*').eq('ecole_id', ecoleId) },
+    { name: 'emargements', query: supabase.from('emargements').select('*').eq('ecole_id', ecoleId) }
   ]
 
   for (const t of tables) {
@@ -70,17 +70,17 @@ export async function syncFromSupabase(ecoleId: string): Promise<void> {
         const tableObj = db.table(t.name)
         if (tableObj) {
           // Séparer les actifs des supprimés (Soft Delete)
-          const toPut = data.filter((row: any) => !row.deleted_at)
-          const toDelete = data.filter((row: any) => row.deleted_at).map((row: any) => row.id)
+          const toPut = data.filter((row: { deleted_at?: string, id?: string, updated_at?: string }) => !row.deleted_at)
+          const toDelete = data.filter((row: { deleted_at?: string, id?: string, updated_at?: string }) => row.deleted_at).map((row: { deleted_at?: string, id?: string, updated_at?: string }) => row.id)
 
           if (toPut.length > 0) await tableObj.bulkPut(toPut)
-          if (toDelete.length > 0) await tableObj.bulkDelete(toDelete)
+          if (toDelete.length > 0) await tableObj.bulkDelete(toDelete as string[])
           
           console.info(`[EduMatrix Sync] 📥 ${t.name} : +${toPut.length} modifiés, -${toDelete.length} supprimés`)
 
           // 2. Mettre à jour le timestamp de synchro (prendre le plus récent des data reçus)
-          const latestUpdate = data.reduce((max: string, row: any) => 
-            !max || row.updated_at > max ? row.updated_at : max, '')
+          const latestUpdate = data.reduce((max: string, row: { deleted_at?: string, id?: string, updated_at?: string }) => 
+            !max || (row.updated_at && row.updated_at > max) ? row.updated_at || max : max, '')
           
           if (latestUpdate) {
             await db.sync_metadata.put({
@@ -160,7 +160,7 @@ async function executeAction(action: SyncAction): Promise<void> {
 
   switch (type) {
     case 'INSERT': {
-      const { error } = await (supabase as any).from(table).upsert(safePayload)
+      const { error } = await supabase.from(table).upsert(safePayload as never)
       if (error) throw new Error(error.message)
       break
     }
@@ -169,11 +169,11 @@ async function executeAction(action: SyncAction): Promise<void> {
       
       // BLOQUAGE DES CONFLITS : Contrôle de concurrence optimiste
       if (fields.updated_at) {
-        const { data: serverData } = await (supabase as any)
+        const { data: serverData } = await supabase
           .from(table)
           .select('updated_at')
           .eq('id', id)
-          .single() as any
+          .single() as unknown as { data: { updated_at: string | null } | null; error: unknown }
           
         if (serverData && serverData.updated_at) {
           const serverTime = new Date(serverData.updated_at).getTime()
@@ -188,18 +188,18 @@ async function executeAction(action: SyncAction): Promise<void> {
         }
       }
       
-      const { error } = await (supabase as any).from(table).update(fields).eq('id', id)
+      const { error } = await supabase.from(table).update(fields as never).eq('id', id)
       if (error) throw new Error(error.message)
       break
     }
     case 'DELETE': {
       const { id } = payload as { id: string }
       // On privilégie le Soft Delete si la colonne existe (mise à jour de deleted_at)
-      const { error } = await (supabase as any).from(table).update({ deleted_at: new Date().toISOString() }).eq('id', id)
+      const { error } = await supabase.from(table).update({ deleted_at: new Date().toISOString() } as never).eq('id', id)
       
       // Fallback au Hard Delete si erreur (ex: colonne deleted_at pas encore migrée partout)
       if (error) {
-        const { error: delError } = await (supabase as any).from(table).delete().eq('id', id)
+        const { error: delError } = await supabase.from(table).delete().eq('id', id)
         if (delError) throw new Error(delError.message)
       }
       break

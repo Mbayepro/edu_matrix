@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -42,30 +42,36 @@ export type Database = {
       classes: {
         Row: {
           created_at: string
+          deleted_at: string | null
           ecole_id: string
           id: string
           niveau: string
           niveau_id: string | null
           nom_classe: string
           serie_id: string | null
+          updated_at: string | null
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           ecole_id: string
           id?: string
           niveau: string
           niveau_id?: string | null
           nom_classe: string
           serie_id?: string | null
+          updated_at?: string | null
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           ecole_id?: string
           id?: string
           niveau?: string
           niveau_id?: string | null
           nom_classe?: string
           serie_id?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -84,6 +90,88 @@ export type Database = {
           },
           {
             foreignKeyName: "fk_classes_serie_id"
+            columns: ["serie_id"]
+            isOneToOne: false
+            referencedRelation: "series"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coefficients_matieres: {
+        Row: {
+          coefficient: number
+          created_at: string
+          deleted_at: string | null
+          ecole_id: string
+          id: string
+          is_obligatoire: boolean
+          matiere_id: string
+          niveau_id: string
+          serie_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          coefficient: number
+          created_at?: string
+          deleted_at?: string | null
+          ecole_id: string
+          id?: string
+          is_obligatoire?: boolean
+          matiere_id: string
+          niveau_id: string
+          serie_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          coefficient?: number
+          created_at?: string
+          deleted_at?: string | null
+          ecole_id?: string
+          id?: string
+          is_obligatoire?: boolean
+          matiere_id?: string
+          niveau_id?: string
+          serie_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coefficients_matieres_ecole_id_fkey"
+            columns: ["ecole_id"]
+            isOneToOne: false
+            referencedRelation: "ecoles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coefficients_matieres_matiere_id_fkey"
+            columns: ["matiere_id"]
+            isOneToOne: false
+            referencedRelation: "matieres"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coefficients_matieres_matiere_id_fkey"
+            columns: ["matiere_id"]
+            isOneToOne: false
+            referencedRelation: "v_moyennes_coefficients"
+            referencedColumns: ["matiere_id"]
+          },
+          {
+            foreignKeyName: "coefficients_matieres_matiere_id_fkey"
+            columns: ["matiere_id"]
+            isOneToOne: false
+            referencedRelation: "v_moyennes_matieres"
+            referencedColumns: ["matiere_id"]
+          },
+          {
+            foreignKeyName: "coefficients_matieres_niveau_id_fkey"
+            columns: ["niveau_id"]
+            isOneToOne: false
+            referencedRelation: "niveaux"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coefficients_matieres_serie_id_fkey"
             columns: ["serie_id"]
             isOneToOne: false
             referencedRelation: "series"
@@ -166,7 +254,9 @@ export type Database = {
       ecoles: {
         Row: {
           adresse: string | null
+          calculation_method: string | null
           created_at: string
+          deleted_at: string | null
           id: string
           logo_url: string | null
           nom: string
@@ -174,11 +264,15 @@ export type Database = {
           statut: string | null
           tampon_url: string | null
           telephone: string | null
+          type_periode: string
+          updated_at: string | null
           ville: string
         }
         Insert: {
           adresse?: string | null
+          calculation_method?: string | null
           created_at?: string
+          deleted_at?: string | null
           id?: string
           logo_url?: string | null
           nom: string
@@ -186,11 +280,15 @@ export type Database = {
           statut?: string | null
           tampon_url?: string | null
           telephone?: string | null
+          type_periode?: string
+          updated_at?: string | null
           ville: string
         }
         Update: {
           adresse?: string | null
+          calculation_method?: string | null
           created_at?: string
+          deleted_at?: string | null
           id?: string
           logo_url?: string | null
           nom?: string
@@ -198,6 +296,8 @@ export type Database = {
           statut?: string | null
           tampon_url?: string | null
           telephone?: string | null
+          type_periode?: string
+          updated_at?: string | null
           ville?: string
         }
         Relationships: []
@@ -209,13 +309,18 @@ export type Database = {
           created_at: string
           date_naissance: string | null
           decision_conseil: string | null
+          deleted_at: string | null
           ecole_id: string
           id: string
           matricule: string | null
           nom: string
           photo_url: string | null
+          pin_parent: string | null
+          points_merite: number | null
           prenom: string
           statut_paiement: string
+          telephone_parent: string | null
+          updated_at: string | null
         }
         Insert: {
           appreciation_trimestre?: string | null
@@ -223,13 +328,18 @@ export type Database = {
           created_at?: string
           date_naissance?: string | null
           decision_conseil?: string | null
+          deleted_at?: string | null
           ecole_id: string
           id?: string
           matricule?: string | null
           nom: string
           photo_url?: string | null
+          pin_parent?: string | null
+          points_merite?: number | null
           prenom: string
           statut_paiement?: string
+          telephone_parent?: string | null
+          updated_at?: string | null
         }
         Update: {
           appreciation_trimestre?: string | null
@@ -237,13 +347,18 @@ export type Database = {
           created_at?: string
           date_naissance?: string | null
           decision_conseil?: string | null
+          deleted_at?: string | null
           ecole_id?: string
           id?: string
           matricule?: string | null
           nom?: string
           photo_url?: string | null
+          pin_parent?: string | null
+          points_merite?: number | null
           prenom?: string
           statut_paiement?: string
+          telephone_parent?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -292,6 +407,7 @@ export type Database = {
       }
       eleves_frais: {
         Row: {
+          deleted_at: string | null
           ecole_id: string
           eleve_id: string
           frais_id: string
@@ -299,8 +415,10 @@ export type Database = {
           montant_a_payer: number | null
           montant_du: number
           montant_remise: number
+          updated_at: string | null
         }
         Insert: {
+          deleted_at?: string | null
           ecole_id: string
           eleve_id: string
           frais_id: string
@@ -308,8 +426,10 @@ export type Database = {
           montant_a_payer?: number | null
           montant_du: number
           montant_remise?: number
+          updated_at?: string | null
         }
         Update: {
+          deleted_at?: string | null
           ecole_id?: string
           eleve_id?: string
           frais_id?: string
@@ -317,6 +437,7 @@ export type Database = {
           montant_a_payer?: number | null
           montant_du?: number
           montant_remise?: number
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -367,6 +488,105 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "frais_scolaires"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      emargements: {
+        Row: {
+          classe_id: string | null
+          created_at: string | null
+          date_heure: string | null
+          deleted_at: string | null
+          duree_minutes: number | null
+          ecole_id: string | null
+          id: string
+          matiere_id: string | null
+          prof_id: string | null
+          sujet_cours: string
+          updated_at: string | null
+        }
+        Insert: {
+          classe_id?: string | null
+          created_at?: string | null
+          date_heure?: string | null
+          deleted_at?: string | null
+          duree_minutes?: number | null
+          ecole_id?: string | null
+          id?: string
+          matiere_id?: string | null
+          prof_id?: string | null
+          sujet_cours: string
+          updated_at?: string | null
+        }
+        Update: {
+          classe_id?: string | null
+          created_at?: string | null
+          date_heure?: string | null
+          deleted_at?: string | null
+          duree_minutes?: number | null
+          ecole_id?: string | null
+          id?: string
+          matiere_id?: string | null
+          prof_id?: string | null
+          sujet_cours?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emargements_classe_id_fkey"
+            columns: ["classe_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emargements_classe_id_fkey"
+            columns: ["classe_id"]
+            isOneToOne: false
+            referencedRelation: "v_bulletins_complets"
+            referencedColumns: ["classe_id"]
+          },
+          {
+            foreignKeyName: "emargements_classe_id_fkey"
+            columns: ["classe_id"]
+            isOneToOne: false
+            referencedRelation: "v_moyennes_coefficients"
+            referencedColumns: ["classe_id"]
+          },
+          {
+            foreignKeyName: "emargements_classe_id_fkey"
+            columns: ["classe_id"]
+            isOneToOne: false
+            referencedRelation: "v_moyennes_generales"
+            referencedColumns: ["classe_id"]
+          },
+          {
+            foreignKeyName: "emargements_classe_id_fkey"
+            columns: ["classe_id"]
+            isOneToOne: false
+            referencedRelation: "v_moyennes_matieres"
+            referencedColumns: ["classe_id"]
+          },
+          {
+            foreignKeyName: "emargements_matiere_id_fkey"
+            columns: ["matiere_id"]
+            isOneToOne: false
+            referencedRelation: "matieres"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emargements_matiere_id_fkey"
+            columns: ["matiere_id"]
+            isOneToOne: false
+            referencedRelation: "v_moyennes_coefficients"
+            referencedColumns: ["matiere_id"]
+          },
+          {
+            foreignKeyName: "emargements_matiere_id_fkey"
+            columns: ["matiere_id"]
+            isOneToOne: false
+            referencedRelation: "v_moyennes_matieres"
+            referencedColumns: ["matiere_id"]
           },
         ]
       }
@@ -586,11 +806,14 @@ export type Database = {
           coef: number
           created_at: string
           date: string
+          deleted_at: string | null
           ecole_id: string
           id: string
+          libelle: string | null
           matiere_id: string
           trimestre: number
           type: string
+          updated_at: string | null
         }
         Insert: {
           annee_scolaire?: string | null
@@ -599,11 +822,14 @@ export type Database = {
           coef?: number
           created_at?: string
           date: string
+          deleted_at?: string | null
           ecole_id: string
           id?: string
+          libelle?: string | null
           matiere_id: string
           trimestre: number
           type: string
+          updated_at?: string | null
         }
         Update: {
           annee_scolaire?: string | null
@@ -612,11 +838,14 @@ export type Database = {
           coef?: number
           created_at?: string
           date?: string
+          deleted_at?: string | null
           ecole_id?: string
           id?: string
+          libelle?: string | null
           matiere_id?: string
           trimestre?: number
           type?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -687,6 +916,7 @@ export type Database = {
       frais_scolaires: {
         Row: {
           created_at: string
+          deleted_at: string | null
           ecole_id: string
           frequence: string
           id: string
@@ -694,9 +924,11 @@ export type Database = {
           libelle: string
           montant: number
           niveau: string | null
+          updated_at: string | null
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           ecole_id: string
           frequence?: string
           id?: string
@@ -704,9 +936,11 @@ export type Database = {
           libelle: string
           montant: number
           niveau?: string | null
+          updated_at?: string | null
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           ecole_id?: string
           frequence?: string
           id?: string
@@ -714,6 +948,7 @@ export type Database = {
           libelle?: string
           montant?: number
           niveau?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -732,6 +967,7 @@ export type Database = {
           coefficient: number
           created_at: string
           cycle: string | null
+          deleted_at: string | null
           domaine: string | null
           ecole_id: string
           est_bonus: boolean | null
@@ -747,6 +983,7 @@ export type Database = {
           coefficient?: number
           created_at?: string
           cycle?: string | null
+          deleted_at?: string | null
           domaine?: string | null
           ecole_id: string
           est_bonus?: boolean | null
@@ -762,6 +999,7 @@ export type Database = {
           coefficient?: number
           created_at?: string
           cycle?: string | null
+          deleted_at?: string | null
           domaine?: string | null
           ecole_id?: string
           est_bonus?: boolean | null
@@ -801,6 +1039,7 @@ export type Database = {
           code: string
           created_at: string
           cycle: string
+          deleted_at: string | null
           ecole_id: string
           id: string
           is_active: boolean
@@ -812,6 +1051,7 @@ export type Database = {
           code: string
           created_at?: string
           cycle: string
+          deleted_at?: string | null
           ecole_id: string
           id?: string
           is_active?: boolean
@@ -823,6 +1063,7 @@ export type Database = {
           code?: string
           created_at?: string
           cycle?: string
+          deleted_at?: string | null
           ecole_id?: string
           id?: string
           is_active?: boolean
@@ -842,31 +1083,40 @@ export type Database = {
       }
       notes: {
         Row: {
+          annee_scolaire: string | null
           created_at: string
+          deleted_at: string | null
           ecole_id: string
           eleve_id: string
           evaluation_id: string
           id: string
           note: number
           professeur_id: string | null
+          updated_at: string | null
         }
         Insert: {
+          annee_scolaire?: string | null
           created_at?: string
+          deleted_at?: string | null
           ecole_id: string
           eleve_id: string
           evaluation_id: string
           id?: string
           note: number
           professeur_id?: string | null
+          updated_at?: string | null
         }
         Update: {
+          annee_scolaire?: string | null
           created_at?: string
+          deleted_at?: string | null
           ecole_id?: string
           eleve_id?: string
           evaluation_id?: string
           id?: string
           note?: number
           professeur_id?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -931,38 +1181,44 @@ export type Database = {
         Row: {
           created_at: string
           date_paiement: string
+          deleted_at: string | null
           ecole_id: string
           eleve_id: string
           frais_id: string
           id: string
           mode: string | null
+          mois: string | null
           montant: number
           reference: string | null
-          mois: string | null
+          updated_at: string | null
         }
         Insert: {
           created_at?: string
           date_paiement?: string
+          deleted_at?: string | null
           ecole_id: string
           eleve_id: string
           frais_id: string
           id?: string
           mode?: string | null
+          mois?: string | null
           montant: number
           reference?: string | null
-          mois?: string | null
+          updated_at?: string | null
         }
         Update: {
           created_at?: string
           date_paiement?: string
+          deleted_at?: string | null
           ecole_id?: string
           eleve_id?: string
           frais_id?: string
           id?: string
           mode?: string | null
+          mois?: string | null
           montant?: number
           reference?: string | null
-          mois?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -1020,26 +1276,38 @@ export type Database = {
         Row: {
           classe_id: string
           date: string
+          deleted_at: string | null
+          ecole_id: string | null
           eleve_id: string
           heure: string
           id: string
+          observation: string | null
           statut: string
+          updated_at: string | null
         }
         Insert: {
           classe_id: string
           date?: string
+          deleted_at?: string | null
+          ecole_id?: string | null
           eleve_id: string
           heure?: string
           id?: string
+          observation?: string | null
           statut?: string
+          updated_at?: string | null
         }
         Update: {
           classe_id?: string
           date?: string
+          deleted_at?: string | null
+          ecole_id?: string | null
           eleve_id?: string
           heure?: string
           id?: string
+          observation?: string | null
           statut?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -1117,29 +1385,35 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          deleted_at: string | null
           ecole_id: string | null
           id: string
           nom: string
           prenom: string
           role: string
+          updated_at: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           ecole_id?: string | null
           id?: string
           nom: string
           prenom: string
           role: string
+          updated_at?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           ecole_id?: string | null
           id?: string
           nom?: string
           prenom?: string
           role?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: [
@@ -1152,10 +1426,43 @@ export type Database = {
           },
         ]
       }
+      rapports_journaliers: {
+        Row: {
+          created_at: string
+          date: string
+          ecole_id: string
+          id: string
+          stats: Json
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          ecole_id: string
+          id?: string
+          stats: Json
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          ecole_id?: string
+          id?: string
+          stats?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rapports_journaliers_ecole_id_fkey"
+            columns: ["ecole_id"]
+            isOneToOne: false
+            referencedRelation: "ecoles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       series: {
         Row: {
           code: string
           created_at: string
+          deleted_at: string | null
           description: string | null
           ecole_id: string
           id: string
@@ -1166,6 +1473,7 @@ export type Database = {
         Insert: {
           code: string
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           ecole_id: string
           id?: string
@@ -1176,6 +1484,7 @@ export type Database = {
         Update: {
           code?: string
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           ecole_id?: string
           id?: string
@@ -1200,37 +1509,23 @@ export type Database = {
           annee_scolaire: string | null
           classe_id: string | null
           cycle: string | null
-          ecole_id: string | null
-          ecole_logo_url: string | null
-          ecole_nom: string | null
-          ecole_signature_url: string | null
-          ecole_tampon_url: string | null
           eleve_id: string | null
           matieres_details_json: Json | null
           matricule: string | null
           mention: string | null
           moyenne_generale: number | null
           niveau_code: string | null
-          niveau_cycle: string | null
           niveau_nom: string | null
           nom: string | null
           nom_classe: string | null
           nombre_matieres: number | null
           prenom: string | null
+          serie_code: string | null
+          serie_nom: string | null
           total_coefficients: number | null
-          total_coefficients_calcules: number | null
-          total_points: number | null
           trimestre: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "eleves_ecole_id_fkey"
-            columns: ["ecole_id"]
-            isOneToOne: false
-            referencedRelation: "ecoles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       v_moyennes_coefficients: {
         Row: {
@@ -1255,7 +1550,6 @@ export type Database = {
           annee_scolaire: string | null
           classe_id: string | null
           cycle: string | null
-          ecole_id: string | null
           eleve_id: string | null
           matricule: string | null
           mention: string | null
@@ -1265,53 +1559,34 @@ export type Database = {
           nom_classe: string | null
           nombre_matieres: number | null
           prenom: string | null
+          serie_code: string | null
           total_coefficients: number | null
-          total_coefficients_calcules: number | null
-          total_points: number | null
           trimestre: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "eleves_ecole_id_fkey"
-            columns: ["ecole_id"]
-            isOneToOne: false
-            referencedRelation: "ecoles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       v_moyennes_matieres: {
         Row: {
           annee_scolaire: string | null
           classe_id: string | null
           coefficient: number | null
-          composition_note: number | null
           cycle: string | null
-          domaine: string | null
-          ecole_id: string | null
+          derniere_evaluation: string | null
           eleve_id: string | null
-          est_bonus: boolean | null
           matiere_id: string | null
           matiere_nom: string | null
           matricule: string | null
-          mcc: number | null
           moyenne_matiere: number | null
           niveau_code: string | null
           nom: string | null
           nom_classe: string | null
           nombre_evaluations: number | null
+          premiere_evaluation: string | null
           prenom: string | null
+          serie_code: string | null
           trimestre: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "eleves_ecole_id_fkey"
-            columns: ["ecole_id"]
-            isOneToOne: false
-            referencedRelation: "ecoles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Functions: {
@@ -1319,8 +1594,19 @@ export type Database = {
         Args: { p_eleve_id: string; p_trimestre: number }
         Returns: number
       }
+      generate_pin: { Args: never; Returns: string }
+      get_absences_by_pin: { Args: { p_pin: string }; Returns: Json }
+      get_bulletin_by_pin: {
+        Args: { p_pin: string; p_trimestre: number }
+        Returns: Json
+      }
+      get_eleve_by_pin: { Args: { p_pin: string }; Returns: Json }
       get_my_ecole_id: { Args: never; Returns: string }
       get_my_role: { Args: never; Returns: string }
+      get_payment_coverage_status: {
+        Args: { p_eleve_id: string }
+        Returns: string
+      }
       recalculate_statut_paiement: {
         Args: { p_eleve_id: string }
         Returns: undefined

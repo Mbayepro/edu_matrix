@@ -1,0 +1,245 @@
+﻿src/app/dashboard/admin/ecoles/page.tsx:75:      const { error } = await (supabase.from('ecoles' as any) as any)
+src/app/dashboard/admin/ecoles/page.tsx:76:        .update({ statut: newStatut } as any)
+src/app/dashboard/admin/emploi-du-temps/page.tsx:75:      const { data: prof } = await (supabase.from('profiles').select('*').eq('user_id', user.id).single() as any)
+src/app/dashboard/admin/emploi-du-temps/page.tsx:80:        supabase.from('profiles' as any).select('*').eq('ecole_id', prof.ecole_id).eq('role', 'teacher').order('nom'),
+src/app/dashboard/admin/emploi-du-temps/page.tsx:81:        supabase.from('classes' as any).select('*').eq('ecole_id', prof.ecole_id).order('nom_classe'),
+src/app/dashboard/admin/emploi-du-temps/page.tsx:82:        supabase.from('matieres' as any).select('*').eq('ecole_id', prof.ecole_id).order('nom'),
+src/app/dashboard/admin/emploi-du-temps/page.tsx:87:      if ((tch as any)?.length) setSelectedTeacher((tch as any)[0].id)
+src/app/dashboard/admin/emploi-du-temps/page.tsx:88:      if ((cls as any)?.length) setSelectedClasse((cls as any)[0].id)
+src/app/dashboard/admin/emploi-du-temps/page.tsx:149:      const { error } = await (supabase.from('emploi_du_temps' as any) as any).insert({
+src/app/dashboard/admin/emploi-du-temps/page.tsx:175:    await (supabase.from('emploi_du_temps' as any) as any).delete().eq('id', id)
+src/app/dashboard/admin/enseignants/page.tsx:44:        .from('profiles').select('*').eq('user_id', user.id).single() as any) as any
+src/app/dashboard/admin/enseignants/page.tsx:103:      const { error } = await (supabase.from('enseignants_classes' as any) as any).insert({
+src/app/dashboard/admin/enseignants/page.tsx:127:    await (supabase.from('enseignants_classes' as any) as any).delete().eq('id', id)
+src/app/dashboard/admin/validation/page.tsx:37:        .single() as any)
+src/app/dashboard/admin/validation/page.tsx:63:              .single() as any)
+src/app/dashboard/admin/validation/page.tsx:82:      const { error } = await (supabase.from('ecoles' as any) as any)
+src/app/dashboard/admin/validation/page.tsx:83:        .update({ statut: 'actif' } as any)
+src/app/dashboard/attente/page.tsx:25:      const { data: prof } = await (supabase.from('profiles').select('*').eq('user_id', user.id).single() as any)
+src/app/dashboard/attente/page.tsx:35:          .single() as any)
+src/app/dashboard/bulletins/page.tsx:131:      setClasses(localClasses as any)
+src/app/dashboard/classes/page.tsx:97:        const { error } = await (supabase as any).from('classes').insert({
+src/app/dashboard/classes/page.tsx:113:          await addToSyncQueue('classes', 'INSERT', newClasse as any, ecoleId)
+src/app/dashboard/conseil-classe/page.tsx:67:      .eq('ecole_id', ecoleId as any)
+src/app/dashboard/conseil-classe/page.tsx:103:      appreciation: (b.eleve as any).appreciation_trimestre || '',
+src/app/dashboard/conseil-classe/page.tsx:104:      decision: (b.eleve as any).decision_conseil || ''
+src/app/dashboard/conseil-classe/page.tsx:112:      const { error } = await (supabase.from('eleves') as any)
+src/app/dashboard/eleves/nouveau/page.tsx:97:        await db.eleves.put(eleveData as any)
+src/app/dashboard/eleves/nouveau/page.tsx:101:      await addToSyncQueue('eleves', 'INSERT', eleveData as any, profile.ecole_id)
+src/app/dashboard/eleves/page.tsx:175:          classe: classe ? { nom_classe: classe.nom_classe, niveau: (classe as any).niveau } : undefined
+src/app/dashboard/eleves/page.tsx:213:      const { error: updateError } = await (supabase.from('eleves' as any) as any)
+src/app/dashboard/eleves/page.tsx:214:        .update({ photo_url: publicUrl } as any)
+src/app/dashboard/eleves/page.tsx:475:                          {(e.classe as any)?.nom_classe ?? 'NON ASSIGN├ë'}
+src/app/dashboard/eleves/page.tsx:568:                      {(e.classe as any)?.nom_classe ?? 'ÔÇö'}
+src/app/dashboard/eleves/print-cartes/page.tsx:27:      const { data: cls } = await supabase.from('classes' as any).select('*').eq('id', classeId as any).single() as { data: Classe | null; error: any }
+src/app/dashboard/eleves/print-cartes/page.tsx:30:        const { data: ec } = await supabase.from('ecoles' as any).select('*').eq('id', cls.ecole_id).single() as { data: Ecole | null; error: any }
+src/app/dashboard/eleves/print-cartes/page.tsx:35:        .from('eleves' as any)
+src/app/dashboard/eleves/print-cartes/page.tsx:37:        .eq('classe_id', classeId as any)
+src/app/dashboard/eleves/print-cartes/page.tsx:40:      setEleves(elv as any || [])
+src/app/dashboard/eleves/[id]/modifier/page.tsx:48:        (supabase.from('eleves').select('*').eq('id', eleveId).single() as any),
+src/app/dashboard/eleves/[id]/modifier/page.tsx:76:      const { error: updateError } = await (supabase.from('eleves') as any)
+src/app/dashboard/eleves/[id]/modifier/page.tsx:83:        } as any)
+src/app/dashboard/enseignants/page.tsx:43:        supabase.from('profiles' as any).select('*').eq('ecole_id', eid).eq('role', 'teacher').order('nom'),
+src/app/dashboard/enseignants/page.tsx:44:        supabase.from('classes' as any).select('*').eq('ecole_id', eid).order('nom_classe'),
+src/app/dashboard/enseignants/page.tsx:45:        supabase.from('matieres' as any).select('*').eq('ecole_id', eid).eq('is_active', true).order('nom'),
+src/app/dashboard/enseignants/page.tsx:47:          .from('enseignants_classes' as any)
+src/app/dashboard/enseignants/page.tsx:50:      ] as any[])
+src/app/dashboard/enseignants/page.tsx:80:      const { error } = await (supabase.from('enseignants_classes' as any) as any).insert({
+src/app/dashboard/enseignants/page.tsx:85:      } as any)
+src/app/dashboard/enseignants/page.tsx:94:    await (supabase.from('enseignants_classes' as any) as any).delete().eq('id', id)
+src/app/dashboard/enseignants/page.tsx:255:                                {(a.enseignant as any)?.prenom[0]?.toUpperCase()}
+src/app/dashboard/enseignants/page.tsx:259:                                  {(a.enseignant as any)?.prenom} {(a.enseignant as any)?.nom}
+src/app/dashboard/enseignants/page.tsx:267:                              {(a.classe as any)?.nom_classe}
+src/app/dashboard/enseignants/page.tsx:271:                            {(a.matiere as any)?.nom ? (
+src/app/dashboard/enseignants/page.tsx:272:                              <span className="text-sm font-black text-slate-600 uppercase tracking-tight">{(a.matiere as any)?.nom}</span>
+src/app/dashboard/enseignants/page.tsx:301:                            {(a.enseignant as any)?.prenom[0]?.toUpperCase()}
+src/app/dashboard/enseignants/page.tsx:305:                              {(a.enseignant as any)?.prenom} {(a.enseignant as any)?.nom}
+src/app/dashboard/enseignants/page.tsx:322:                          {(a.classe as any)?.nom_classe}
+src/app/dashboard/enseignants/page.tsx:325:                          {(a.matiere as any)?.nom ? (
+src/app/dashboard/enseignants/page.tsx:326:                            <span className="text-xs font-black text-slate-600 uppercase tracking-tight">{(a.matiere as any)?.nom}</span>
+src/app/dashboard/matieres/coefficients/page.tsx:63:      if (nRes.data && (nRes.data as any).length > 0) {
+src/app/dashboard/matieres/coefficients/page.tsx:64:        setSelectedNiveau((nRes.data[0] as any).id)
+src/app/dashboard/matieres/coefficients/page.tsx:111:      const { error } = await (supabase.from('niveaux' as any) as any).insert(standardNiveaux)
+src/app/dashboard/matieres/coefficients/page.tsx:128:      let deleteQuery = (supabase.from('coefficients_matieres' as any) as any)
+src/app/dashboard/matieres/coefficients/page.tsx:155:        const { error: insErr } = await (supabase.from('coefficients_matieres' as any) as any).insert(toInsert)
+src/app/dashboard/matieres/page.tsx:40:      const { data } = await (supabase.from('matieres' as any) as any)
+src/app/dashboard/matieres/page.tsx:55:      const { error } = await (supabase.from('matieres' as any) as any).insert({
+src/app/dashboard/matieres/page.tsx:74:      const { error } = await (supabase.from('matieres' as any) as any).update({
+src/app/dashboard/matieres/page.tsx:88:    await (supabase.from('matieres' as any) as any).update({ is_active: !m.is_active } as any).eq('id', m.id)
+src/app/dashboard/matieres/page.tsx:95:    const { error } = await (supabase.from('matieres' as any) as any).delete().eq('id', id)
+src/app/dashboard/notes/page.tsx:235:    let filteredData = (data as any) ?? []
+src/app/dashboard/notes/page.tsx:299:      const { data, error } = await (supabase.from('evaluations' as any) as any)
+src/app/dashboard/notes/page.tsx:312:        .single() as any
+src/app/dashboard/notes/page.tsx:356:          .from('notes' as any) as any)
+src/app/dashboard/notes/page.tsx:370:          .from('notes' as any) as any)
+src/app/dashboard/notes/page.tsx:371:          .upsert(notesToInsert as any, {
+src/app/dashboard/notes/page.tsx:398:      const { error } = await (supabase.from('evaluations' as any) as any).delete().eq('id', id)
+src/app/dashboard/notes/page.tsx:415:      const { error } = await (supabase.from('evaluations' as any) as any).update({ bareme: Number(newBareme) } as any).eq('id', ev.id)
+src/app/dashboard/notes/page.tsx:596:                  const isPrimary = (classes.find(c => c.id === selectedClasse) as any)?.niveau_info?.cycle === 'primaire'
+src/app/dashboard/notes/page.tsx:730:                                [eleve.id]: e.target.value === '' ? undefined as any : Number(e.target.value)
+src/app/dashboard/notes/page.tsx:812:                            [eleve.id]: e.target.value === '' ? undefined as any : Number(e.target.value)
+src/app/dashboard/notes/page.tsx:877:                    onChange={(e) => setNewEval(prev => ({ ...prev, type: e.target.value as any }))}
+src/app/dashboard/page.tsx:194:        const ecoleData = await db.ecoles.get(schoolId) as any
+src/app/dashboard/page.tsx:491:                            <p className="text-xs text-slate-400 font-medium mt-0.5">{(e.classe as any)?.nom_classe}</p>
+src/app/dashboard/paiements/page.tsx:96:      .map(p => (p as any).mois)
+src/app/dashboard/paiements/page.tsx:174:      setFrais(data.filter((f: LocalFraisScolaire) => f.is_active) as any)
+src/app/dashboard/paiements/page.tsx:193:          await table.bulkPut(remoteData as any)
+src/app/dashboard/paiements/page.tsx:194:          data = remoteData as any
+src/app/dashboard/paiements/page.tsx:197:      setElevesFrais(data as any)
+src/app/dashboard/paiements/page.tsx:207:      setPaiements(data.sort((a: LocalPaiement, b: LocalPaiement) => new Date(b.date_paiement).getTime() - new Date(a.date_paiement).getTime()) as any)
+src/app/dashboard/paiements/page.tsx:212:      setClasses(cls as any)
+src/app/dashboard/paiements/page.tsx:245:        const { error } = await (supabase as any).from('paiements').insert({
+src/app/dashboard/paiements/page.tsx:254:          mois: (newPaiement as any).mois // Inclusion du mois si la colonne existe
+src/app/dashboard/paiements/page.tsx:267:             const updatedAcompte = (ef as any).montant_paye ? (ef as any).montant_paye + m : m
+src/app/dashboard/paiements/page.tsx:268:             await efTable.update(ef.id, { montant_paye: updatedAcompte } as any)
+src/app/dashboard/paiements/page.tsx:283:          await addToSyncQueue('paiements', 'INSERT', newPaiement as any, ecoleId)
+src/app/dashboard/paiements/page.tsx:289:             const updatedAcompte = (ef as any).montant_paye ? (ef as any).montant_paye + m : m
+src/app/dashboard/paiements/page.tsx:290:             await efTable.update(ef.id, { montant_paye: updatedAcompte } as any)
+src/app/dashboard/paiements/page.tsx:449:            await addToSyncQueue('eleves_frais', 'INSERT', newEF as any, ecoleId)
+src/app/dashboard/paiements/page.tsx:485:        await efTable.update(ef.id, { derniere_relance_le: today } as any)
+src/app/dashboard/paiements/page.tsx:786:                          {(e.classe as any)?.nom_classe ?? 'NON ASSIGN├ë'} ┬À <span className="text-slate-400 font-black">{e.matricule}</span>
+src/app/dashboard/paiements/page.tsx:1010:                              {fLibelle} {(p as any).mois ? `ÔÇö ${(p as any).mois}` : ''}
+src/app/dashboard/parametres/equipe/page.tsx:86:    const { error } = await (supabase.from('profiles' as any) as any)
+src/app/dashboard/parametres/equipe/page.tsx:87:      .update({ ecole_id: null } as any)
+src/app/dashboard/parametres/frais/page.tsx:112:        const { error } = await (supabase.from('frais_scolaires' as any) as any).update(fraisData as any).eq('id', editingFrais.id)
+src/app/dashboard/parametres/frais/page.tsx:122:        const { error } = await (supabase.from('frais_scolaires' as any) as any).insert(fraisData as any)
+src/app/dashboard/parametres/frais/page.tsx:142:    const { error } = await (supabase.from('frais_scolaires' as any) as any)
+src/app/dashboard/parametres/frais/page.tsx:143:      .update({ is_active: !frais.is_active } as any)
+src/app/dashboard/parametres/frais/page.tsx:158:    const { error } = await (supabase.from('frais_scolaires' as any) as any)
+src/app/dashboard/parametres/frais/page.tsx:378:                    onChange={(e) => setFormData(prev => ({ ...prev, frequence: e.target.value as any }))}
+src/app/dashboard/parametres/page.tsx:60:        .single() as any)
+src/app/dashboard/parametres/page.tsx:88:      const { error } = await (supabase.from('ecoles' as any) as any)
+src/app/dashboard/parametres/page.tsx:99:        } as any)
+src/app/dashboard/parametres/page.tsx:123:      const { error: uploadErr } = await (supabase.storage.from('eleves-photos' as any) as any)
+src/app/dashboard/parametres/page.tsx:128:      const { data: { publicUrl } } = (supabase.storage.from('eleves-photos' as any) as any)
+src/app/dashboard/presences/page.tsx:168:        await db.presences.put(presenceData as any)
+src/app/dashboard/presences/page.tsx:174:        await addToSyncQueue('presences', 'INSERT', presenceData as any, ecoleId)
+src/app/dashboard/prof/page.tsx:60:    return data as any[];
+src/app/dashboard/prof/page.tsx:73:        .single() as any);
+src/app/dashboard/prof/session/[id]/page.tsx:66:        points_merite: (e as any).points_merite || 0
+src/app/dashboard/prof/session/[id]/page.tsx:74:        .eq('enseignant_id', profile?.id as any) as any
+src/app/dashboard/prof/session/[id]/page.tsx:139:        if (db) await db.presences.put(presenceData as any)
+src/app/dashboard/prof/session/[id]/page.tsx:140:        await addToSyncQueue('presences', 'INSERT', presenceData as any, ecoleId)
+src/app/dashboard/prof/session/[id]/page.tsx:150:             await addToSyncQueue('eleves', 'UPDATE', fullEleve as any, ecoleId)
+src/app/dashboard/prof/session/[id]/page.tsx:268:                        onClick={() => updateStudent(eleve.id, { statut: st.val as any })}
+src/app/dashboard/superadmin/page.tsx:114:      const { error } = await (supabase.from('ecoles' as any) as any)
+src/app/dashboard/superadmin/page.tsx:115:        .update({ statut: nouveauStatut } as any)
+src/app/dashboard/superadmin/page.tsx:144:      const { error } = await (supabase.from('ecoles' as any) as any)
+src/app/dashboard/superadmin/page.tsx:168:      const { error } = await (supabase.from('ecoles' as any) as any)
+src/app/dashboard/superadmin/page.tsx:172:        } as any)
+src/app/dashboard/teacher/page.tsx:60:        .from('profiles').select('*').eq('user_id', user.id).single() as any)
+src/app/p/[pin]/page.tsx:28:      const { data: eleveData, error: err } = await (supabase.rpc('get_eleve_by_pin', { p_pin: pinCode } as any) as any)
+src/app/p/[pin]/page.tsx:40:      const { data: absencesData, error: absErr } = await (supabase.rpc('get_absences_by_pin', { p_pin: pinCode } as any) as any)
+src/components/AttendanceScanner.tsx:39:      let query = (supabase as any).from('eleves').select('*')
+src/components/AttendanceScanner.tsx:86:      const { data } = await (supabase as any)
+src/components/AttendanceScanner.tsx:136:        const { error } = await (supabase as any)
+src/components/AttendanceScanner.tsx:143:            await db.presences.put(presenceData as any)
+src/components/AttendanceScanner.tsx:144:            await addToSyncQueue('presences', 'INSERT', presenceData as any, ecoleId)
+src/components/AttendanceScanner.tsx:148:          await db.presences.put(presenceData as any)
+src/components/AttendanceScanner.tsx:153:            await db.presences.put(presenceData as any)
+src/components/AttendanceScanner.tsx:154:            await addToSyncQueue('presences', 'INSERT', presenceData as any, ecoleId)
+src/components/AttendanceScanner.tsx:159:      await db.presences.put(presenceData as any)
+src/components/AttendanceScanner.tsx:160:      await addToSyncQueue('presences', 'INSERT', presenceData as any, ecoleId)
+src/components/BulletinGenerator.tsx:104:          const matieresManquantes = bulletin.matieres.filter(m => m.moyenne === null).map(m => (m as any).matiere_nom || m.nom || 'Inconnue');
+src/components/DashboardLayout.tsx:110:    return item.roles.includes(profile.role as any)
+src/components/ExcelImportModal.tsx:44:          processData(results.data as any[])
+src/components/ExcelImportModal.tsx:127:        const { error: insertErr } = await (supabase.from('eleves' as any) as any).insert(chunk as any)
+src/components/GradesEntry.tsx:179:        await db.evaluations.put(evalData as any);
+src/components/GradesEntry.tsx:185:        await addToSyncQueue('evaluations', 'INSERT', evalData as any, ecoleId);
+src/components/GradesEntry.tsx:211:        await addToSyncQueue('evaluations', 'DELETE', { id } as any, ecoleId);
+src/components/GradesEntry.tsx:229:          await addToSyncQueue('notes', 'DELETE', { id: existing.id } as any, ecoleId);
+src/components/GradesEntry.tsx:252:    } as any;
+src/components/GradesEntry.tsx:257:        await db.notes.put(noteData as any);
+src/components/GradesEntry.tsx:267:        await addToSyncQueue('notes', action, noteData as any, ecoleId);
+src/components/GradesEntry.tsx:301:    } as any;
+src/components/GradesEntry.tsx:421:                    onChange={e => setNewEval({...newEval, type: e.target.value as any})}
+src/components/InstallButton.tsx:17:                        !(window as any).MSStream;
+src/components/InstallButton.tsx:21:    const isAppInstalled = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
+src/components/InstallButton.tsx:27:    if ((window as any).deferredPrompt) {
+src/components/InstallButton.tsx:28:      setDeferredPrompt((window as any).deferredPrompt);
+src/components/InstallButton.tsx:35:      (window as any).deferredPrompt = e; // On le garde aussi de mani├¿re globale
+src/components/InstallButton.tsx:44:      (window as any).deferredPrompt = null;
+src/components/LoginForm.tsx:40:        .single() as any)
+src/components/LoginForm.tsx:66:          .single() as any)
+src/components/SignupForm.tsx:32:  const invitedRole = (searchParams.get('role') as any) || 'director'
+src/components/StudentCard.tsx:32:    const bareme = (n.evaluation as any)?.bareme || 20
+src/components/StudentCard.tsx:158:          .from('eleves' as any)
+src/components/StudentCard.tsx:161:          .single() as any,
+src/components/StudentCard.tsx:163:          .from('notes' as any)
+src/components/StudentCard.tsx:165:          .eq('eleve_id', eleveId) as any,
+src/components/StudentCard.tsx:167:          .from('presences' as any)
+src/components/StudentCard.tsx:171:          .limit(20) as any
+src/components/StudentCard.tsx:177:          const { data: ecoleData } = await supabase.from('ecoles' as any).select('*').eq('id', eleveData.ecole_id).single() as { data: Ecole | null; error: any }
+src/components/StudentCard.tsx:188:      setPresences(presData as any || [])
+src/components/StudentCard.tsx:204:  const isPrimary = (eleve as any).classe?.niveau_info?.cycle === 'primaire'
+src/components/StudentCard.tsx:227:  const classeNom = (eleve as any).classe?.nom_classe ?? 'ÔÇö'
+src/components/StudentCard.tsx:232:    ...presences.map(p => ({ type: 'presence', date: p.date, val: p.statut, label: (p as any).observation || p.statut })),
+src/components/StudentCard.tsx:264:              onClick={() => setActiveTab(tab.id as any)}
+src/components/StudentCard.tsx:293:                       <span className="text-3xl font-black text-amber-600">{(eleve as any).points_merite || 0}</span>
+src/components/SyncInitializer.tsx:25:        .single() as any)
+src/lib/bulletinPdfGenerator.ts:101:    ['Fili├¿re / S├®rie :', (bulletin.eleve as any).classe?.serie?.nom || 'Enseignement G├®n├®ral'],
+src/lib/bulletinPdfGenerator.ts:136:    (m as any).matiere_nom || (m as any).nom || 'Inconnue',
+src/lib/bulletinPdfGenerator.ts:173:  y = (doc as any).lastAutoTable.finalY + 6
+src/lib/bulletinPdfGenerator.ts:232:    y = (doc as any).lastAutoTable.finalY + 6
+src/lib/bulletinPdfGenerator.ts:246:  const appreciation = (bulletin.eleve as any).appreciation_trimestre || bulletin.mention
+src/lib/calculMoyennes.ts:186:      const isBonus = (coeff.matiere as any)?.est_bonus || false
+src/lib/calculMoyennes.ts:362:    const evalIds = ((evaluations as any[]) || []).map(ev => ev.id);
+src/lib/calculMoyennes.ts:368:        const sortedEv = [...(evaluations as any[])].sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+src/lib/calculMoyennes.ts:386:      supabase.from('classes' as any).select('*, serie:series(*)').eq('id', classe_id).single() as any,
+src/lib/calculMoyennes.ts:387:      supabase.from('ecoles' as any).select('*').eq('id', ecoleId).single() as any,
+src/lib/calculMoyennes.ts:388:      supabase.from('eleves' as any).select('*, classe:classes(*)').eq('classe_id', classe_id).order('nom, prenom') as any,
+src/lib/calculMoyennes.ts:390:        ? supabase.from('notes' as any).select('*').in('evaluation_id', evalIds) as any
+src/lib/calculMoyennes.ts:392:      supabase.from('presences' as any).select('*').eq('classe_id', classe_id) as any
+src/lib/calculMoyennes.ts:398:    const evaluationsMap = new Map(((evaluations as any[]) || []).map(e => [e.id, e]));
+src/lib/calculMoyennes.ts:413:    const classe = classeData as any
+src/lib/calculMoyennes.ts:415:    const ecole = ecoleData as any
+src/lib/calculMoyennes.ts:435:      } as any
+src/lib/db.ts:114:    this.ecoles      = this.table('ecoles') as any
+src/lib/db.ts:115:    this.eleves      = this.table('eleves') as any
+src/lib/db.ts:116:    this.classes     = this.table('classes') as any
+src/lib/db.ts:117:    this.matieres    = this.table('matieres') as any
+src/lib/db.ts:118:    this.notes       = this.table('notes') as any
+src/lib/db.ts:119:    this.evaluations = this.table('evaluations') as any
+src/lib/db.ts:120:    this.presences   = this.table('presences') as any
+src/lib/db.ts:121:    this.niveaux     = this.table('niveaux') as any
+src/lib/db.ts:122:    this.series      = this.table('series') as any
+src/lib/db.ts:123:    this.profiles    = this.table('profiles') as any
+src/lib/db.ts:124:    this.emargements = this.table('emargements') as any
+src/lib/db.ts:125:    this.frais_scolaires = this.table('frais_scolaires') as any
+src/lib/db.ts:126:    this.eleves_frais    = this.table('eleves_frais') as any
+src/lib/db.ts:127:    this.paiements       = this.table('paiements') as any
+src/lib/db.ts:128:    this.sync_queue      = this.table('sync_queue') as any
+src/lib/db.ts:129:    this.sync_metadata   = this.table('sync_metadata') as any
+src/lib/db.ts:130:    this.rapports_journaliers = this.table('rapports_journaliers') as any
+src/lib/db.ts:167:      eleves as any,
+src/lib/db.ts:168:      notes as any,
+src/lib/db.ts:169:      evaluations as any,
+src/lib/db.ts:170:      presences as any,
+src/lib/db.ts:171:      coefficients as any,
+src/lib/db.ts:179:      b.niveau = { cycle: isPrimaire ? 'primaire' : 'moyen', code: classe.niveau } as any
+src/lib/db.ts:195:    const totalDu = efs.reduce((sum, ef) => sum + (Number((ef as any).montant_a_payer) || (Number(ef.montant_du) - Number(ef.montant_remise))), 0)
+src/lib/offline.ts:101:        .single() as any)
+src/lib/offline.ts:104:        const { error } = await (supabase.from('presences' as any) as any).insert({
+src/lib/offline.ts:110:        } as any)
+src/lib/pdfRecuGenerator.ts:123:  const finalY = (doc as any).lastAutoTable?.finalY || 150
+src/lib/syncService.ts:34:    { name: 'ecoles', query: (supabase.from('ecoles' as any) as any).select('*').eq('id', ecoleId) },
+src/lib/syncService.ts:35:    { name: 'niveaux', query: (supabase.from('niveaux' as any) as any).select('*').eq('ecole_id', ecoleId) },
+src/lib/syncService.ts:36:    { name: 'series', query: (supabase.from('series' as any) as any).select('*').eq('ecole_id', ecoleId) },
+src/lib/syncService.ts:37:    { name: 'classes', query: (supabase.from('classes' as any) as any).select('*').eq('ecole_id', ecoleId) },
+src/lib/syncService.ts:38:    { name: 'matieres', query: (supabase.from('matieres' as any) as any).select('*').eq('ecole_id', ecoleId) },
+src/lib/syncService.ts:39:    { name: 'coefficients_matieres', query: (supabase.from('coefficients_matieres' as any) as any).select('*').eq('ecole_id', ecoleId) },
+src/lib/syncService.ts:40:    { name: 'evaluations', query: (supabase.from('evaluations' as any) as any).select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) },
+src/lib/syncService.ts:41:    { name: 'eleves', query: (supabase.from('eleves' as any) as any).select('*').eq('ecole_id', ecoleId) }, // Les ├®l├¿ves restent tous charg├®s pour le moment
+src/lib/syncService.ts:42:    { name: 'notes', query: (supabase.from('notes' as any) as any).select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) }, // Filtrage par ann├®e scolaire pour optimiser le cache
+src/lib/syncService.ts:43:    { name: 'presences', query: (supabase.from('presences' as any) as any).select('*').eq('ecole_id', ecoleId) }, 
+src/lib/syncService.ts:44:    { name: 'profiles', query: (supabase.from('profiles' as any) as any).select('*').eq('ecole_id', ecoleId) },
+src/lib/syncService.ts:45:    { name: 'frais_scolaires', query: (supabase.from('frais_scolaires' as any) as any).select('*').eq('ecole_id', ecoleId) },
+src/lib/syncService.ts:46:    { name: 'eleves_frais', query: (supabase.from('eleves_frais' as any) as any).select('*').eq('ecole_id', ecoleId) },
+src/lib/syncService.ts:47:    { name: 'paiements', query: (supabase.from('paiements' as any) as any).select('*').eq('ecole_id', ecoleId) },
+src/lib/syncService.ts:48:    { name: 'emargements', query: (supabase.from('emargements' as any) as any).select('*').eq('ecole_id', ecoleId) }
+src/lib/syncService.ts:163:      const { error } = await (supabase as any).from(table).upsert(safePayload)
+src/lib/syncService.ts:172:        const { data: serverData } = await (supabase as any)
+src/lib/syncService.ts:176:          .single() as any
+src/lib/syncService.ts:191:      const { error } = await (supabase as any).from(table).update(fields).eq('id', id)
+src/lib/syncService.ts:198:      const { error } = await (supabase as any).from(table).update({ deleted_at: new Date().toISOString() }).eq('id', id)
+src/lib/syncService.ts:202:        const { error: delError } = await (supabase as any).from(table).delete().eq('id', id)

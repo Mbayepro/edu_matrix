@@ -51,13 +51,15 @@ export interface LocalRapportJournalier {
   created_at: string
 }
 
+import type { Database } from '../types/supabase'
+
 /**
  * Une action en attente de synchronisation vers Supabase.
  * Stockée dans sync_queue quand l'utilisateur est hors-ligne.
  */
 export interface SyncAction {
   id?: number                              // auto-incrément Dexie
-  table: string                            // 'notes' | 'presences' | 'eleves' | ...
+  table: keyof Database['public']['Tables']                            // 'notes' | 'presences' | 'eleves' | ...
   action: 'INSERT' | 'UPDATE' | 'DELETE'
   payload: Record<string, unknown>        // données à envoyer
   ecole_id?: string
@@ -111,23 +113,23 @@ export class EduMatrixDB extends Dexie {
     })
 
     // Explicit table assignments to ensure properties are ALWAYS defined on the instance
-    this.ecoles      = this.table('ecoles') as any
-    this.eleves      = this.table('eleves') as any
-    this.classes     = this.table('classes') as any
-    this.matieres    = this.table('matieres') as any
-    this.notes       = this.table('notes') as any
-    this.evaluations = this.table('evaluations') as any
-    this.presences   = this.table('presences') as any
-    this.niveaux     = this.table('niveaux') as any
-    this.series      = this.table('series') as any
-    this.profiles    = this.table('profiles') as any
-    this.emargements = this.table('emargements') as any
-    this.frais_scolaires = this.table('frais_scolaires') as any
-    this.eleves_frais    = this.table('eleves_frais') as any
-    this.paiements       = this.table('paiements') as any
-    this.sync_queue      = this.table('sync_queue') as any
-    this.sync_metadata   = this.table('sync_metadata') as any
-    this.rapports_journaliers = this.table('rapports_journaliers') as any
+    this.ecoles      = this.table('ecoles')
+    this.eleves      = this.table('eleves')
+    this.classes     = this.table('classes')
+    this.matieres    = this.table('matieres')
+    this.notes       = this.table('notes')
+    this.evaluations = this.table('evaluations')
+    this.presences   = this.table('presences')
+    this.niveaux     = this.table('niveaux')
+    this.series      = this.table('series')
+    this.profiles    = this.table('profiles')
+    this.emargements = this.table('emargements')
+    this.frais_scolaires = this.table('frais_scolaires')
+    this.eleves_frais    = this.table('eleves_frais')
+    this.paiements       = this.table('paiements')
+    this.sync_queue      = this.table('sync_queue')
+    this.sync_metadata   = this.table('sync_metadata')
+    this.rapports_journaliers = this.table('rapports_journaliers')
   }
 
   // ─── Helpers Métier ────────────────────────────────────────────────────────
@@ -164,11 +166,11 @@ export class EduMatrixDB extends Dexie {
     const isPrimaire = (classe.niveau?.includes('CM') || classe.niveau?.includes('CE') || classe.niveau?.includes('CP') || classe.niveau?.includes('CI'))
     
     const bulletins = CalculateurMoyennes.evaluerBulletins(
-      eleves as any,
-      notes as any,
-      evaluations as any,
-      presences as any,
-      coefficients as any,
+      eleves,
+      notes,
+      evaluations,
+      presences,
+      coefficients,
       trimestre,
       anneeScolaire,
       isPrimaire
@@ -176,7 +178,7 @@ export class EduMatrixDB extends Dexie {
 
     // Fill missing Niveau/Serie info
     bulletins.forEach((b: BulletinData) => {
-      b.niveau = { cycle: isPrimaire ? 'primaire' : 'moyen', code: classe.niveau } as any
+      b.niveau = { cycle: isPrimaire ? 'primaire' : 'moyen', code: classe.niveau } as unknown as Niveau
     })
 
     return bulletins
@@ -192,7 +194,7 @@ export class EduMatrixDB extends Dexie {
       pTable.where('eleve_id').equals(eleveId).toArray()
     ])
 
-    const totalDu = efs.reduce((sum, ef) => sum + (Number((ef as any).montant_a_payer) || (Number(ef.montant_du) - Number(ef.montant_remise))), 0)
+    const totalDu = efs.reduce((sum, ef) => sum + (Number((ef as unknown as {montant_a_payer: number}).montant_a_payer) || (Number(ef.montant_du) - Number(ef.montant_remise))), 0)
     const totalPaye = paiements.reduce((sum, p) => sum + Number(p.montant), 0)
 
     let statut: 'payé' | 'partiel' | 'impayé' = 'impayé'
