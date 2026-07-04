@@ -228,6 +228,8 @@ export function drawBulletin(
       styles: { fontSize: 7, cellPadding: 1.5, halign: 'center' },
       headStyles: { fillColor: [241, 245, 249], textColor: [0, 0, 0], fontStyle: 'bold' },
     })
+
+    y = (doc as any).lastAutoTable.finalY + 6
   }
 
   // ── Assiduité & Appréciation ──────────────────────────────────────────────
