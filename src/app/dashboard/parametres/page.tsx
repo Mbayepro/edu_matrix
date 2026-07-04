@@ -121,7 +121,7 @@ export default function SchoolSettingsPage() {
       const path = `photos/branding_${ecole.id}_${type}_${Date.now()}.${ext}`
       
       const { error: uploadErr } = await (supabase.storage.from('eleves-photos' as any) as any)
-        .upload(path, file, { upsert: true })
+        .upload(path, file, { cacheControl: '3600', upsert: false })
         
       if (uploadErr) throw uploadErr
       
