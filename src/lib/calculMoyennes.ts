@@ -58,29 +58,32 @@ export class CalculateurMoyennes {
     niveau_id: string,
     serie_id?: string
   ): Promise<CoefficientMatiere[]> {
-    let query = supabase
-      .from('coefficients_matieres')
-      .select(`
-        *,
-        matiere:matieres(id, nom, code_matiere, cycle, est_bonus),
-        serie:series(id, code, nom)
-      `)
-      .eq('ecole_id', ecole_id)
-      .eq('niveau_id', niveau_id)
+    let coefficients: any[] = []
 
-    if (serie_id) {
-       query = query.or(`serie_id.eq.${serie_id},serie_id.is.null`)
-    } else {
-       query = query.is('serie_id', null)
+    if (niveau_id) {
+      let query = supabase
+        .from('coefficients_matieres')
+        .select(`
+          *,
+          matiere:matieres(id, nom, code_matiere, cycle, est_bonus),
+          serie:series(id, code, nom)
+        `)
+        .eq('ecole_id', ecole_id)
+        .eq('niveau_id', niveau_id)
+
+      if (serie_id) {
+         query = query.or(`serie_id.eq.${serie_id},serie_id.is.null`)
+      } else {
+         query = query.is('serie_id', null)
+      }
+
+      const { data, error } = await query
+      if (error) throw error
+      coefficients = data || []
     }
-
-    const { data, error } = await query
-
-    if (error) throw error
     
     // Si aucun coefficient spécifique n'est défini pour ce niveau, 
     // on utilise les coefficients par défaut de la table matieres
-    let coefficients: any[] = data || []
     if (coefficients.length === 0) {
       const { data: matieresDefault } = await supabase
         .from('matieres')

@@ -160,7 +160,7 @@ async function executeAction(action: SyncAction): Promise<void> {
 
   switch (type) {
     case 'INSERT': {
-      const { error } = await (supabase as any).from(table).insert(safePayload)
+      const { error } = await (supabase as any).from(table).upsert(safePayload)
       if (error) throw new Error(error.message)
       break
     }
