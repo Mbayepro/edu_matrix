@@ -198,11 +198,12 @@ export default function ElevesPage() {
     setUploading(eleveId)
     try {
       const ext  = file.name.split('.').pop()
-      const path = `photos/${eleveId}.${ext}`
+      const uniqueId = Date.now()
+      const path = `photos/${eleveId}_${uniqueId}.${ext}`
 
       const { error: uploadErr } = await supabase.storage
         .from('eleves-photos')
-        .upload(path, file, { upsert: true })
+        .upload(path, file, { upsert: false })
       if (uploadErr) throw uploadErr
 
       const { data: { publicUrl } } = supabase.storage

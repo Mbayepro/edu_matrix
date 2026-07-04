@@ -35,11 +35,12 @@ export default function PhotoInput({ value, onChange, storageId }: Props) {
     setUploading(true)
     try {
       const ext = file.name.split('.').pop()
-      const path = `photos/${storageId}.${ext}`
+      const uniqueId = Date.now()
+      const path = `photos/${storageId}_${uniqueId}.${ext}`
 
       const { error: uploadErr } = await supabase.storage
         .from('eleves-photos')
-        .upload(path, file, { upsert: true })
+        .upload(path, file, { upsert: false })
       if (uploadErr) throw uploadErr
 
       const { data: { publicUrl } } = supabase.storage

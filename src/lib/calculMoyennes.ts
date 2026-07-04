@@ -446,14 +446,20 @@ export class CalculateurMoyennes {
     const bulletins: BulletinData[] = eleves.map((eleve: any) => {
       const studentNotes = processedNotes.filter((n: any) => n.eleve_id === eleve.id)
 
-      // Calculer l'assiduité par trimestre
+      // Calculer l'assiduité par période (trimestre ou semestre)
       const studentPresences = (allPresences || []).filter((p: any) => {
         if (p.eleve_id !== eleve.id) return false
         const date = new Date(p.date)
         const month = date.getMonth() + 1
-        if (trimestre === 1) return month >= 9 && month <= 12  // Septembre à Décembre
-        if (trimestre === 2) return month >= 1 && month <= 3   // Janvier à Mars
-        if (trimestre === 3) return month >= 4 && month <= 8   // Avril à Août
+        
+        if (typePeriode === 'semestre') {
+          if (trimestre === 1) return month >= 9 || month <= 2   // Septembre à Février
+          if (trimestre === 2) return month >= 3 && month <= 8   // Mars à Août
+        } else {
+          if (trimestre === 1) return month >= 9 && month <= 12  // Septembre à Décembre
+          if (trimestre === 2) return month >= 1 && month <= 3   // Janvier à Mars
+          if (trimestre === 3) return month >= 4 && month <= 8   // Avril à Août
+        }
         return true
       })
 
