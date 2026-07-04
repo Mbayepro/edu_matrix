@@ -70,6 +70,12 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
 
   const [niveau, setNiveau] = useState<any>(null);
   const [serie, setSerie] = useState<any>(null);
+  const [toastMessage, setToastMessage] = useState<{title: string, type: 'success' | 'error'} | null>(null);
+
+  const showToast = (title: string, type: 'success' | 'error' = 'success') => {
+    setToastMessage({ title, type });
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   const { isOnline, pendingCount } = useNetwork();
 
@@ -178,6 +184,7 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
       if (ecoleId) {
         await addToSyncQueue('evaluations', 'INSERT', evalData as any, ecoleId);
       }
+      showToast("Évaluation créée avec succès !");
       
     } catch (e) {
       console.error('Erreur create eval:', e);
@@ -259,6 +266,7 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
         const action = existingNote ? 'UPDATE' : 'INSERT';
         await addToSyncQueue('notes', action, noteData as any, ecoleId);
       }
+      showToast("Note enregistrée avec succès !");
       
     } catch (e) {
       console.error('Erreur note change:', e);
@@ -480,14 +488,24 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
               <div className="h-24"></div>
             </div>
 
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-slate-100 pb-safe">
+            <div className="absolute bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-slate-100 pb-safe flex gap-2">
               <button 
                 onClick={() => setMobileEvalId(null)} 
-                className="w-full py-4 bg-slate-900 active:bg-slate-800 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-slate-900/20 transition-all active:scale-[0.98]">
-                Enregistrer & Terminer
+                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-emerald-600/20 transition-all active:scale-[0.98]">
+                ✓ Terminer la saisie
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className={`fixed bottom-4 right-4 z-[200] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-in slide-in-from-bottom-5 fade-in duration-300 ${toastMessage.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`}>
+          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+            {toastMessage.type === 'success' ? '✓' : '✕'}
+          </div>
+          <p className="font-bold text-sm">{toastMessage.title}</p>
         </div>
       )}
     </div>

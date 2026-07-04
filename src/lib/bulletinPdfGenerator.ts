@@ -133,17 +133,17 @@ export function drawBulletin(
 
   // ── Tableau des notes ─────────────────────────────────────────────────────
   const tableRows = bulletin.matieres.map(m => [
-    m.matiere_nom,
+    (m as any).matiere_nom || (m as any).nom || 'Inconnue',
     String(m.coefficient),
-    (m.moyenne_controles ?? 0).toFixed(2),
-    m.note_examen !== undefined ? m.note_examen.toFixed(2) : '—',
-    m.moyenne.toFixed(2),
-    (m.moyenne * m.coefficient).toFixed(2),
+    m.moyenne_controles !== null && m.moyenne_controles !== undefined ? m.moyenne_controles.toFixed(2) : '—',
+    m.note_examen !== null && m.note_examen !== undefined ? m.note_examen.toFixed(2) : '—',
+    m.moyenne !== null ? m.moyenne.toFixed(2) : '—',
+    m.moyenne !== null ? (m.moyenne * (m.coefficient || 1)).toFixed(2) : '—',
     m.appreciation || '',
   ])
 
-  const totalCoef = bulletin.matieres.reduce((a, m) => a + (m.is_bonus ? 0 : m.coefficient), 0)
-  const totalPts  = bulletin.matieres.reduce((a, m) => a + m.moyenne * m.coefficient, 0)
+  const totalCoef = bulletin.matieres.reduce((a, m) => a + (m.moyenne !== null ? (m.is_bonus ? 0 : m.coefficient || 1) : 0), 0)
+  const totalPts  = bulletin.matieres.reduce((a, m) => a + (m.moyenne !== null ? m.moyenne * (m.coefficient || 1) : 0), 0)
   tableRows.push(['TOTAUX', String(totalCoef), '', '', '', totalPts.toFixed(2), ''])
 
   autoTable(doc, {
@@ -182,7 +182,7 @@ export function drawBulletin(
   const avgLabel = typePeriode === 'semestre' ? 'SEMESTRE' : 'TRIMESTRE'
   
   doc.text(
-    `MOY. DU ${avgLabel} : ${bulletin.moyenne_generale.toFixed(2)} ${baremeLabel}   [${bulletin.mention}]`,
+    `MOY. DU ${avgLabel} : ${bulletin.moyenne_generale !== null ? bulletin.moyenne_generale.toFixed(2) : 'N/A'} ${baremeLabel}   [${bulletin.mention}]`,
     avgX + 3, y + 7
   )
 

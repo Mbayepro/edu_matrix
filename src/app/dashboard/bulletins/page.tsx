@@ -376,7 +376,9 @@ export default function BulletinsPage() {
                           {Math.abs(bulletin.annual.progression).toFixed(2)}
                         </div>
                       )}
-                      <p className="text-lg md:text-xl font-black text-white">{bulletin.moyenne_generale.toFixed(2)}</p>
+                      <p className="text-lg md:text-xl font-black text-white">
+                        {bulletin.moyenne_generale !== null ? bulletin.moyenne_generale.toFixed(2) : 'Non Évalué'}
+                      </p>
                     </div>
                     {bulletin.annual && (
                       <div className="mt-1 flex flex-col items-end gap-1">

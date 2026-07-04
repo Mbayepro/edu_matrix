@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { Database } from '../types/supabase';
 import BulletinMoyenSecondaire, { BulletinData } from './bulletins/BulletinMoyenSecondaire';
 import BulletinPrimaire from './bulletins/BulletinPrimaire';
+import { CalculateurMoyennes } from '../lib/calculMoyennes';
 
 type BulletinRow = Database['public']['Views']['v_bulletins_complets']['Row'];
 
@@ -25,74 +26,36 @@ export default function BulletinGenerator({ eleveId, classeId, trimestre, pinCod
       try {
         setLoading(true);
 
-        let rows;
+        let bulletins: any[] = [];
 
         if (pinCode) {
           // Utilisation de l'accès public sécurisé
-          const { data, error } = await (supabase.rpc('get_bulletin_by_pin', { 
-            p_pin: pinCode, 
-            p_trimestre: trimestre 
-          } as any) as any);
+          const { data, error } = await supabase.from('eleves').select('id, classe_id').eq('pin_parent', pinCode).single() as { data: { id: string, classe_id: string } | null, error: any };
+          if (error || !data) throw new Error("PIN invalide");
           
-          if (error) throw error;
-          rows = data;
+          const bulletin = await CalculateurMoyennes.genererBulletin(data.id, trimestre);
+          bulletins = [bulletin];
         } else {
-          let query = supabase
-            .from('v_bulletins_complets')
-            .select('*')
-            .eq('classe_id', classeId)
-            .eq('trimestre', trimestre);
-            
           if (eleveId) {
-            query = query.eq('eleve_id', eleveId);
+            const bulletin = await CalculateurMoyennes.genererBulletin(eleveId, trimestre);
+            bulletins = [bulletin];
+          } else {
+            bulletins = await CalculateurMoyennes.genererBulletinsClasse(classeId, trimestre);
           }
-
-          const { data, error } = await query;
-          if (error) throw error;
-          rows = data;
         }
 
-        if (!rows || rows.length === 0) {
-          console.error('Erreur SQL ou aucun résultat');
+        if (!bulletins || bulletins.length === 0) {
+          console.error('Aucun résultat trouvé');
           setLoading(false);
           return;
         }
 
-        const formattedArray = rows.map((bulletinRow: BulletinRow) => {
-          let parsedMatieres: any[] = [];
-          if (bulletinRow.matieres_details_json) {
-            parsedMatieres = bulletinRow.matieres_details_json as any[];
-          }
-
+        const formattedArray = bulletins.map((b: any) => {
           return {
-            eleve: {
-              id: bulletinRow.eleve_id || '',
-              nom: bulletinRow.nom || '',
-              prenom: bulletinRow.prenom || '',
-              matricule: bulletinRow.matricule || '',
-              pin_parent: (bulletinRow as any).pin_parent || null
-            },
-            classe: {
-              id: bulletinRow.classe_id || '',
-              nom_classe: bulletinRow.nom_classe || '',
-              niveau_code: bulletinRow.niveau_code || '',
-              niveau_nom: bulletinRow.niveau_nom || '',
-              cycle: bulletinRow.niveau_cycle || bulletinRow.cycle || 'primaire'
-            },
-            ecole: {
-              nom: bulletinRow.ecole_nom || 'Établissement Scolaire',
-              logo_url: bulletinRow.ecole_logo_url || null,
-              tampon_url: bulletinRow.ecole_tampon_url || null,
-              signature_url: bulletinRow.ecole_signature_url || null
-            },
-            trimestre: bulletinRow.trimestre,
-            matieres: parsedMatieres,
-            moyenne_generale: bulletinRow.moyenne_generale,
-            mention: bulletinRow.mention,
-            total_coefficients: bulletinRow.total_coefficients,
-            nombre_matieres: bulletinRow.nombre_matieres,
-            decision_conseil: "Passe en classe supérieure.",
-            annee_scolaire: bulletinRow.annee_scolaire || '2025 - 2026'
+            ...b,
+            nombre_matieres: b.matieres.length,
+            total_coefficients: b.matieres.reduce((sum: number, m: any) => sum + m.coefficient, 0),
+            decision_conseil: b.annual?.decision || "Passe en classe supérieure."
           } as BulletinData;
         });
 
@@ -104,7 +67,7 @@ export default function BulletinGenerator({ eleveId, classeId, trimestre, pinCod
       }
     }
     chargerDonnees();
-  }, [eleveId, classeId, trimestre]);
+  }, [eleveId, classeId, trimestre, pinCode]);
 
   if (loading) return <div>Chargement du bulletin en cours...</div>;
   if (!dataArray || dataArray.length === 0) return <div>Le bulletin est introuvable ou aucune note n'est saisie.</div>;
@@ -114,7 +77,7 @@ export default function BulletinGenerator({ eleveId, classeId, trimestre, pinCod
   };
 
   // On prend le cycle du premier élève pour le titre global (une classe = même cycle)
-  const estPrimaire = dataArray[0].classe.cycle === 'primaire';
+  const estPrimaire = dataArray[0].classe?.cycle === 'primaire';
 
   return (
     <div className="bg-slate-100 min-h-screen pb-12 print:bg-white print:pb-0">
@@ -137,9 +100,19 @@ export default function BulletinGenerator({ eleveId, classeId, trimestre, pinCod
 
       <div className="flex flex-col gap-8 print:gap-0">
         {dataArray.map((bulletin, index) => {
-          const isPrim = bulletin.classe.cycle === 'primaire';
+          const isPrim = bulletin.classe?.cycle === 'primaire';
+          const matieresManquantes = bulletin.matieres.filter(m => m.moyenne === null).map(m => (m as any).matiere_nom || m.nom || 'Inconnue');
           return (
             <div key={bulletin.eleve.id} className="shadow-2xl print:shadow-none bg-white w-fit mx-auto ring-1 ring-gray-200 print:ring-0 mb-8 print:mb-0 print:break-after-page">
+              {matieresManquantes.length > 0 && (
+                <div className="bg-amber-100 border-l-4 border-amber-500 text-amber-700 p-4 mb-4 max-w-[210mm] mx-auto print:hidden font-sans">
+                  <p className="font-bold flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                    Alerte : Matières non évaluées
+                  </p>
+                  <p className="text-sm mt-1">L'élève n'a pas de note dans : <strong>{matieresManquantes.join(', ')}</strong></p>
+                </div>
+              )}
               {isPrim ? (
                 <BulletinPrimaire data={bulletin} />
               ) : (

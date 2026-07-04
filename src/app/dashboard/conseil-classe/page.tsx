@@ -21,7 +21,9 @@ import {
   X,
   Save,
   Filter,
-  FileDown
+  FileDown,
+  MinusCircle,
+  TrendingDown
 } from 'lucide-react'
 import { useToast } from '@/contexts/ToastContext'
 import { Skeleton, SkeletonCard, SkeletonTable } from '@/components/Skeleton'
@@ -127,11 +129,12 @@ export default function ConseilClassePage() {
   }
 
   const isPrimary = (currentClasse?.niveaux?.cycle === 'primaire')
+  const validBulletins = bulletins.filter(b => b.moyenne_generale !== null);
   const stats = {
-    moyenneClasse: bulletins.length ? bulletins.reduce((a, b) => a + b.moyenne_generale, 0) / bulletins.length : 0,
-    reussite: bulletins.filter(b => b.moyenne_generale >= (isPrimary ? 5 * 2 : 10)).length,
-    echecs: bulletins.filter(b => b.moyenne_generale < (isPrimary ? 5 * 2 : 10)).length,
-    felicitations: bulletins.filter(b => b.moyenne_generale >= (isPrimary ? 7 * 2 : 14)).length,
+    moyenneClasse: validBulletins.length ? validBulletins.reduce((a, b) => a + (b.moyenne_generale || 0), 0) / validBulletins.length : 0,
+    reussite: validBulletins.filter(b => (b.moyenne_generale || 0) >= (isPrimary ? 5 * 2 : 10)).length,
+    echecs: validBulletins.filter(b => (b.moyenne_generale || 0) < (isPrimary ? 5 * 2 : 10)).length,
+    felicitations: validBulletins.filter(b => (b.moyenne_generale || 0) >= (isPrimary ? 7 * 2 : 14)).length,
   }
 
   const filteredBulletins = bulletins.filter(b => 
@@ -330,35 +333,51 @@ export default function ConseilClassePage() {
                       </td>
                       <td className="px-6 py-5">
                         {(() => {
+                          if (b.moyenne_generale === null) {
+                            return (
+                              <div className="flex items-center gap-2">
+                                <MinusCircle className="w-4 h-4 text-slate-400" />
+                                <span className="font-black text-lg text-slate-400">N/É</span>
+                              </div>
+                            );
+                          }
                           const val = isPrimary ? b.moyenne_generale / 2 : b.moyenne_generale;
                           const threshold = isPrimary ? 5 : 10;
                           return (
                             <div className="flex items-center gap-2">
-                              <span className={`text-lg font-black tracking-tighter ${val >= threshold ? 'text-emerald-600' : 'text-red-500'}`}>
+                              {val < threshold ? <TrendingDown className="w-4 h-4 text-rose-500" /> : <TrendingUp className="w-4 h-4 text-emerald-500" />}
+                              <span className={`font-black text-lg ${val < threshold ? 'text-rose-600' : 'text-emerald-600'}`}>
                                 {val.toFixed(2)}
                               </span>
                               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">/{isPrimary ? '10' : '20'}</span>
                             </div>
-                          );
+                          )
                         })()}
                       </td>
                       <td className="px-6 py-5">
-                        {b.moyenne_generale >= 12 ? (
-                            <div className="flex items-center gap-2 text-[10px] font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg w-fit border border-emerald-100/50 shadow-sm">
-                                <ArrowUpRight className="w-3 h-3" />
-                                <span className="tracking-widest uppercase">+0.4 PTS</span>
-                            </div>
+                        {b.moyenne_generale !== null ? (
+                          b.moyenne_generale >= 12 ? (
+                              <div className="flex items-center gap-2 text-[10px] font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg w-fit border border-emerald-100/50 shadow-sm">
+                                  <ArrowUpRight className="w-3 h-3" />
+                                  <span className="tracking-widest uppercase">+0.4 PTS</span>
+                              </div>
+                          ) : (
+                              <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 bg-slate-50 px-2.5 py-1 rounded-lg w-fit border border-slate-200 shadow-sm">
+                                  <ArrowDownRight className="w-3 h-3" />
+                                  <span className="tracking-widest uppercase">-0.1 PTS</span>
+                              </div>
+                          )
                         ) : (
-                            <div className="flex items-center gap-2 text-[10px] font-black text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg w-fit border border-amber-100/50 shadow-sm">
-                                <ArrowDownRight className="w-3 h-3" />
-                                <span className="tracking-widest uppercase">-0.2 PTS</span>
-                            </div>
+                           <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 bg-slate-50 px-2.5 py-1 rounded-lg w-fit border border-slate-200 shadow-sm">
+                               <MinusCircle className="w-3 h-3" />
+                               <span className="tracking-widest uppercase">N/A</span>
+                           </div>
                         )}
                       </td>
                       <td className="px-6 py-5">
                         <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-[0.15em] shadow-sm border ${
-                            b.moyenne_generale >= (isPrimary ? 7 : 14) ? 'bg-emerald-600 text-white border-indigo-700 shadow-indigo-200' :
-                            b.moyenne_generale >= (isPrimary ? 5 : 10) ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                            b.moyenne_generale !== null && b.moyenne_generale >= (isPrimary ? 7 : 14) ? 'bg-emerald-600 text-white border-indigo-700 shadow-indigo-200' :
+                            b.moyenne_generale !== null && b.moyenne_generale >= (isPrimary ? 5 : 10) ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
                             'bg-red-50 text-red-600 border-red-100'
                         }`}>
                             {b.mention}
@@ -406,7 +425,7 @@ export default function ConseilClassePage() {
                   <div>
                     <h4 className="text-base font-black text-slate-900 uppercase">{editingEleve.eleve.prenom} {editingEleve.eleve.nom}</h4>
                     <p className="text-xs font-black text-emerald-600 mt-0.5">
-                      MOYENNE: <span className="tracking-tighter">{(isPrimary ? editingEleve.moyenne_generale / 2 : editingEleve.moyenne_generale).toFixed(2)}/{isPrimary ? '10' : '20'}</span>
+                      MOYENNE: <span className="tracking-tighter">{editingEleve.moyenne_generale !== null ? (isPrimary ? editingEleve.moyenne_generale / 2 : editingEleve.moyenne_generale).toFixed(2) : 'N/A'}/{isPrimary ? '10' : '20'}</span>
                       <span className="mx-2 text-slate-300">•</span>
                       {editingEleve.mention.toUpperCase()}
                     </p>

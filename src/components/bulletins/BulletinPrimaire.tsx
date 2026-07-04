@@ -2,13 +2,11 @@ import React from 'react';
 import { BulletinData } from './BulletinMoyenSecondaire'; // À refactoriser avec les types autogénérés plus tard
 
 export default function BulletinPrimaire({ data }: { data: BulletinData }) {
-  // 1. Adaptation sur 10.
-  // Au primaire (Sénégal), les notes sont sur 10.
   const matieresAvecDomaines = data.matieres.map((m: any) => {
-    const moyenneSur10 = Number(m.moyenne);
-    const observation = m.appreciation || (moyenneSur10 >= 7 ? 'Acquis (A)' : 
+    const moyenneSur10 = m.moyenne !== null ? Number(m.moyenne) : null;
+    const observation = m.appreciation || (moyenneSur10 !== null ? (moyenneSur10 >= 7 ? 'Acquis (A)' : 
                         moyenneSur10 >= 4.5 ? 'En cours d\'acquisition (ECA)' :
-                        'Non Acquis (NA)');
+                        'Non Acquis (NA)') : 'Non Évalué');
 
     return {
       ...m,
@@ -33,10 +31,16 @@ export default function BulletinPrimaire({ data }: { data: BulletinData }) {
 
   // Calculs par domaines
   Object.values(domaines).forEach((d: any) => {
-    const sumMoyennes = d.activites.reduce((sum: number, act: any) => sum + act.moyenneSur10, 0);
-    const moyenneDomaine = sumMoyennes / d.activites.length;
-    d.moyenne = moyenneDomaine;
-    d.total = moyenneDomaine * d.coefficientDomaine;
+    const validActivities = d.activites.filter((act: any) => act.moyenneSur10 !== null);
+    if (validActivities.length > 0) {
+      const sumMoyennes = validActivities.reduce((sum: number, act: any) => sum + act.moyenneSur10, 0);
+      const moyenneDomaine = sumMoyennes / validActivities.length;
+      d.moyenne = moyenneDomaine;
+      d.total = moyenneDomaine * d.coefficientDomaine;
+    } else {
+      d.moyenne = null;
+      d.total = null;
+    }
   });
 
   return (
@@ -125,13 +129,13 @@ export default function BulletinPrimaire({ data }: { data: BulletinData }) {
             <tbody>
               {domaine.activites.map((act: any) => {
                 const coef = act.coefficient || 1;
-                const totalPoints = act.moyenneSur10 * coef;
+                const totalPoints = act.moyenneSur10 !== null ? act.moyenneSur10 * coef : null;
                 return (
                   <tr key={act.id} className="hover:bg-slate-50">
                     <td className="border border-slate-800 p-2 capitalize pl-6">• {act.nom}</td>
                     <td className="border border-slate-800 p-2 text-center">{coef}</td>
-                    <td className="border border-slate-800 p-2 text-center font-bold bg-slate-50">{act.moyenneSur10.toFixed(2)}</td>
-                    <td className="border border-slate-800 p-2 text-center font-bold bg-amber-50/30">{totalPoints.toFixed(2)}</td>
+                    <td className="border border-slate-800 p-2 text-center font-bold bg-slate-50">{act.moyenneSur10 !== null ? act.moyenneSur10.toFixed(2) : 'Non Évalué'}</td>
+                    <td className="border border-slate-800 p-2 text-center font-bold bg-amber-50/30">{totalPoints !== null ? totalPoints.toFixed(2) : '-'}</td>
                     <td className="border border-slate-800 p-2 text-left text-xs italic text-slate-700">{act.observation}</td>
                   </tr>
                 );
@@ -144,16 +148,16 @@ export default function BulletinPrimaire({ data }: { data: BulletinData }) {
                   TOTAL DU DOMAINE
                 </td>
                 <td className="border border-slate-800 p-2 text-center font-bold">
-                  {domaine.activites.reduce((acc: number, act: any) => acc + (act.coefficient || 1), 0)}
+                  {domaine.activites.reduce((acc: number, act: any) => acc + (act.moyenneSur10 !== null ? (act.coefficient || 1) : 0), 0)}
                 </td>
                 <td className="border border-slate-800 p-2 text-center font-bold bg-slate-200">
-                  {domaine.moyenne.toFixed(2)}
+                  {domaine.moyenne !== null ? domaine.moyenne.toFixed(2) : '-'}
                 </td>
                 <td className="border border-slate-800 p-2 text-center text-xs font-bold bg-amber-100 uppercase">
-                   <span className="text-sm font-black">{domaine.total.toFixed(2)}</span>
+                   <span className="text-sm font-black">{domaine.total !== null ? domaine.total.toFixed(2) : '-'}</span>
                 </td>
                 <td className="border border-slate-800 p-2 bg-slate-200 text-xs italic">
-                  Moyenne: {(domaine.total / domaine.activites.reduce((acc: number, act: any) => acc + (act.coefficient || 1), 0)).toFixed(2)} / 10
+                  Moyenne: {domaine.moyenne !== null ? domaine.moyenne.toFixed(2) : '-'} / 10
                 </td>
               </tr>
             </tfoot>

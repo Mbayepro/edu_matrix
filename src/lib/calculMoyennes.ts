@@ -5,15 +5,15 @@ export interface MoyenneMatiere {
   matiere_id: string
   matiere_nom: string
   coefficient: number
-  moyenne: number // Note brute sur le barème (10 ou 20)
-  total_points: number // moyenne * coefficient (NON ARRONDI pour le calcul MG)
+  moyenne: number | null // Note brute sur le barème (10 ou 20)
+  total_points: number | null // moyenne * coefficient (NON ARRONDI pour le calcul MG)
   bareme: number
   appreciation?: string
   nombre_evaluations: number
   is_bonus?: boolean
   points_bonus?: number
-  moyenne_controles?: number // Moyenne des devoirs (CC)
-  note_examen?: number        // Note de la composition
+  moyenne_controles?: number | null // Moyenne des devoirs (CC)
+  note_examen?: number | null        // Note de la composition
   devoir1?: number
   devoir2?: number
   devoir3?: number
@@ -39,12 +39,14 @@ export interface BulletinData {
   trimestre: number
   annee_scolaire: string
   matieres: MoyenneMatiere[]
-  moyenne_generale: number
+  moyenne_generale: number | null
   mention: string
   rang?: number
   total_eleves?: number
   attendance?: AttendanceData
   annual?: AnnualData
+  classe?: any
+  ecole?: any
 }
 
 export class CalculateurMoyennes {
@@ -170,14 +172,31 @@ export class CalculateurMoyennes {
     const matieresCalculated: MoyenneMatiere[] = []
 
     for (const coeff of coefficients) {
-      const matiereNotes = studentNotes.filter((n: any) => getEvalFromNote(n)?.matiere_id === coeff.matiere_id)
-      if (matiereNotes.length === 0) continue
-
-      const isBonus = (coeff.matiere as any)?.est_bonus || false
-
       const getEffectiveCoef = (n: any) => {
         const ev = getEvalFromNote(n)
         return (ev?.coef && ev.coef > 0) ? Number(ev.coef) : Number(coeff.coefficient)
+      }
+
+      const matiereNotes = studentNotes.filter((n: any) => getEvalFromNote(n)?.matiere_id === coeff.matiere_id)
+      
+      const mainSubjectCoef = (matiereNotes.length > 0) ? getEffectiveCoef(matiereNotes[0]) : Number(coeff.coefficient)
+      const isBonus = (coeff.matiere as any)?.est_bonus || false
+
+      if (matiereNotes.length === 0) {
+        matieresCalculated.push({
+          matiere_id: coeff.matiere_id,
+          matiere_nom: coeff.matiere?.nom || 'Matière Inconnue',
+          coefficient: mainSubjectCoef,
+          moyenne: null,
+          total_points: null,
+          bareme: baremeMatiere,
+          appreciation: 'Non Évalué',
+          nombre_evaluations: 0,
+          is_bonus: isBonus,
+          moyenne_controles: null,
+          note_examen: null
+        });
+        continue;
       }
 
       const normaliser = (n: any) => {
@@ -195,24 +214,27 @@ export class CalculateurMoyennes {
         sumCCPoints += (normaliser(n) * c)
         sumCCCoefs  += c
       })
-      const moyCC20 = sumCCCoefs > 0 ? (sumCCPoints / sumCCCoefs) : 0
+      const moyCC20 = sumCCCoefs > 0 ? (sumCCPoints / sumCCCoefs) : null
 
       const comp20 = noteComp ? normaliser(noteComp) : null
       
-      let finalMoyenne20 = 0
-      if (comp20 === null) {
+      let finalMoyenne20: number | null = null
+      if (comp20 === null && moyCC20 === null) {
+        finalMoyenne20 = null
+      } else if (comp20 === null) {
         finalMoyenne20 = moyCC20
+      } else if (moyCC20 === null) {
+        finalMoyenne20 = comp20
       } else {
         finalMoyenne20 = (moyCC20 + comp20) / 2
       }
 
       const scaleFactor = isPrimaire ? 2 : 1
-      const finalMoyenneMatiere = Math.round((finalMoyenne20 / scaleFactor) * 100) / 100
-      const finalMoyCC = Math.round((moyCC20 / scaleFactor) * 100) / 100
-      const finalComp = noteComp ? (normaliser(noteComp) / scaleFactor) : undefined
+      const finalMoyenneMatiere = finalMoyenne20 !== null ? Math.round((finalMoyenne20 / scaleFactor) * 100) / 100 : null
+      const finalMoyCC = moyCC20 !== null ? Math.round((moyCC20 / scaleFactor) * 100) / 100 : null
+      const finalComp = noteComp ? (normaliser(noteComp) / scaleFactor) : null
       
-      const mainSubjectCoef = (matiereNotes.length > 0) ? getEffectiveCoef(matiereNotes[0]) : Number(coeff.coefficient)
-      const totalPointsMatiere = Math.round(finalMoyenneMatiere * mainSubjectCoef * 100) / 100
+      const totalPointsMatiere = finalMoyenneMatiere !== null ? Math.round(finalMoyenneMatiere * mainSubjectCoef * 100) / 100 : null
 
       const devoirsSorted = [...notesCC].sort((a: any, b: any) => {
          const evA = getEvalFromNote(a)
@@ -222,47 +244,51 @@ export class CalculateurMoyennes {
 
       const matiereResult: MoyenneMatiere = {
         matiere_id: coeff.matiere_id,
-        matiere_nom: coeff.matiere!.nom,
+        matiere_nom: coeff.matiere?.nom || 'Matière Inconnue',
         coefficient: mainSubjectCoef,
         moyenne: finalMoyenneMatiere,
         total_points: totalPointsMatiere,
         bareme: baremeMatiere,
-        appreciation: this.genererAppreciation(isPrimaire ? finalMoyenneMatiere * 2 : finalMoyenneMatiere),
+        appreciation: finalMoyenneMatiere !== null ? this.genererAppreciation(isPrimaire ? finalMoyenneMatiere * 2 : finalMoyenneMatiere) : 'Non Évalué',
         nombre_evaluations: matiereNotes.length,
         is_bonus: isBonus,
         moyenne_controles: finalMoyCC,
-        note_examen: finalComp ? Math.round(finalComp * 100) / 100 : undefined,
+        note_examen: finalComp !== null ? Math.round(finalComp * 100) / 100 : null,
         devoir1: devoirsSorted[0] ? Math.round((normaliser(devoirsSorted[0]) / scaleFactor) * 100) / 100 : undefined,
         devoir2: devoirsSorted[1] ? Math.round((normaliser(devoirsSorted[1]) / scaleFactor) * 100) / 100 : undefined,
         devoir3: devoirsSorted[2] ? Math.round((normaliser(devoirsSorted[2]) / scaleFactor) * 100) / 100 : undefined,
       }
 
-      if (isBonus) {
-        const pivot = isPrimaire ? 5 : 10
-        matiereResult.points_bonus = Math.max(0, finalMoyenneMatiere - pivot) * mainSubjectCoef
-        totalPointsEleve += matiereResult.points_bonus
-      } else {
-        totalPointsEleve += totalPointsMatiere
-        totalCoefficientsEleve += mainSubjectCoef
+      if (finalMoyenneMatiere !== null) {
+        if (isBonus) {
+          const pivot = isPrimaire ? 5 : 10
+          matiereResult.points_bonus = Math.max(0, finalMoyenneMatiere - pivot) * mainSubjectCoef
+          totalPointsEleve += matiereResult.points_bonus
+        } else {
+          totalPointsEleve += totalPointsMatiere!
+          totalCoefficientsEleve += mainSubjectCoef
+        }
       }
 
       matieresCalculated.push(matiereResult)
     }
 
-    const mg = totalCoefficientsEleve > 0 ? totalPointsEleve / totalCoefficientsEleve : 0
+    const mg = totalCoefficientsEleve > 0 ? totalPointsEleve / totalCoefficientsEleve : null
     
     const absences = studentPresences.filter((p: any) => p.statut === 'absent').length
     const retards = studentPresences.filter((p: any) => p.statut === 'retard').length
 
     return {
       eleve,
+      classe: eleve.classe,
+      ecole: null, // Will be hydrated later if needed, or we pass it
       niveau,
       serie,
       trimestre,
       annee_scolaire,
       matieres: matieresCalculated,
-      moyenne_generale: Math.round(mg * 100) / 100,
-      mention: this.determinerMention(isPrimaire ? mg * 2 : mg, niveau.cycle),
+      moyenne_generale: mg !== null ? Math.round(mg * 100) / 100 : null,
+      mention: mg !== null ? this.determinerMention(isPrimaire ? mg * 2 : mg, niveau.cycle) : 'Non Évalué',
       attendance: { absences, retards }
     }
   }
@@ -314,10 +340,7 @@ export class CalculateurMoyennes {
     trimestre: number,
     annee_scolaire?: string
   ): Promise<BulletinData[]> {
-    if (!annee_scolaire) {
-      const today = new Date();
-      annee_scolaire = today.getMonth() >= 8 ? `${today.getFullYear()}-${today.getFullYear() + 1}` : `${today.getFullYear() - 1}-${today.getFullYear()}`;
-    }
+    // We will compute annee_scolaire after loading evaluations if not provided.
 
     // 1. Déterminer l'école pour charger ses paramètres
     const { data: classeRaw } = await supabase.from('classes').select('ecole_id').eq('id', classe_id).single() as { data: { ecole_id: string } | null; error: unknown }
@@ -325,16 +348,29 @@ export class CalculateurMoyennes {
     const ecoleId = classeRaw.ecole_id
 
     // 2. Charger les évaluations correspondantes
+    // On charge TOUTES les évaluations de l'année pour la classe pour calculer l'historique annuel sans utiliser la vue SQL
     const { data: evaluations, error: evErr } = await supabase
       .from('evaluations')
       .select('*')
-      .eq('classe_id', classe_id)
-      .eq('trimestre', trimestre);
+      .eq('classe_id', classe_id);
 
     if (evErr) throw new Error("Erreur de chargement des évaluations.");
 
-    // S'il n'y a pas d'évaluation pour ce trimestre, on n'aura pas de notes ni de bulletins
     const evalIds = ((evaluations as any[]) || []).map(ev => ev.id);
+
+    // Determine annee_scolaire if not provided
+    if (!annee_scolaire) {
+      if (evaluations && evaluations.length > 0) {
+        // Find the most recently created evaluation
+        const sortedEv = [...(evaluations as any[])].sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+        annee_scolaire = sortedEv[0].annee_scolaire;
+      }
+      
+      if (!annee_scolaire) {
+        const today = new Date();
+        annee_scolaire = today.getMonth() >= 8 ? `${today.getFullYear()}-${today.getFullYear() + 1}` : `${today.getFullYear() - 1}-${today.getFullYear()}`;
+      }
+    }
 
     // Charger les autres données en parallèle
     const [
@@ -342,8 +378,7 @@ export class CalculateurMoyennes {
       { data: ecoleData, error: ecErr },
       { data: eleves, error: elErr },
       { data: rawNotes, error: ntErr },
-      { data: allPresences, error: prErr },
-      { data: pmData, error: pmErr }
+      { data: allPresences, error: prErr }
     ] = await Promise.all([
       supabase.from('classes' as any).select('*, serie:series(*)').eq('id', classe_id).single() as any,
       supabase.from('ecoles' as any).select('*').eq('id', ecoleId).single() as any,
@@ -351,15 +386,8 @@ export class CalculateurMoyennes {
       evalIds.length > 0
         ? supabase.from('notes' as any).select('*').in('evaluation_id', evalIds) as any
         : Promise.resolve({ data: [], error: null }),
-      supabase.from('presences' as any).select('*').eq('classe_id', classe_id) as any,
-      supabase
-        .from('v_moyennes_generales')
-        .select('eleve_id, trimestre, moyenne_generale')
-        .eq('classe_id', classe_id)
-        .eq('annee_scolaire', annee_scolaire) as any
+      supabase.from('presences' as any).select('*').eq('classe_id', classe_id) as any
     ]);
-
-    const pastMoyennes = (pmData || []) as any[]
 
     if (clErr || ecErr || elErr || prErr || ntErr) throw new Error("Erreur lors de la récupération groupée des données.")
     
@@ -426,8 +454,6 @@ export class CalculateurMoyennes {
         return true
       })
 
-      const studentPast = pastMoyennes.filter(m => m.eleve_id === eleve.id)
-
       const bulletin = this.processStudentBulletin(
         eleve,
         studentNotes,
@@ -435,32 +461,56 @@ export class CalculateurMoyennes {
         coefficients,
         isPrimaire,
         trimestre,
-        annee_scolaire,
+        annee_scolaire!,
         niveau!,
         serie,
         (n) => n.evaluations || n.evaluation
       )
 
+      bulletin.classe = {
+        id: classe.id,
+        nom_classe: classe.nom_classe,
+        niveau_code: niveau?.code || '',
+        niveau_nom: niveau?.nom || '',
+        cycle: niveau?.cycle || 'primaire',
+        serie_code: serie?.code,
+        serie_nom: serie?.nom
+      };
+
+      bulletin.ecole = {
+        nom: ecole.nom,
+        logo_url: ecole.logo_url,
+        tampon_url: ecole.tampon_url,
+        signature_url: ecole.signature_url
+      };
+
+      // Calcul de l'historique trimestriel sans utiliser la vue SQL
+      const trimAverages = [null, null, null] as (number | null)[]
+      for (let t = 1; t <= 3; t++) {
+        if (t === trimestre) {
+          trimAverages[t - 1] = bulletin.moyenne_generale;
+          continue;
+        }
+        const studentNotesPast = processedNotes.filter((n: any) => n.eleve_id === eleve.id && n.evaluations?.trimestre === t)
+        if (studentNotesPast.length > 0) {
+          const pastBulletin = this.processStudentBulletin(
+            eleve, studentNotesPast, studentPresences, coefficients,
+            isPrimaire, t, annee_scolaire!, niveau!, serie, (n) => n.evaluations || n.evaluation
+          )
+          trimAverages[t - 1] = pastBulletin.moyenne_generale
+        }
+      }
+
       // Injecter les données annuelles et la progression
       const currentMG = bulletin.moyenne_generale
-      const prevMG = studentPast.find(m => m.trimestre === trimestre - 1)?.moyenne_generale
+      const prevMG = trimAverages[trimestre - 2]
       
       bulletin.annual = {
         moyenne_annuelle: 0,
         mention_annuelle: '',
-        moyennes_trimestrielles: [null, null, null],
-        progression: prevMG !== undefined ? currentMG - prevMG : null
+        moyennes_trimestrielles: trimAverages,
+        progression: prevMG !== undefined && prevMG !== null && currentMG !== null ? currentMG - prevMG : null
       }
-
-      const trimAverages = [null, null, null] as (number | null)[]
-      studentPast.forEach(m => {
-        if (m.trimestre >= 1 && m.trimestre <= 3) {
-          trimAverages[m.trimestre - 1] = m.moyenne_generale
-        }
-      })
-      // Inclure la moyenne actuelle
-      trimAverages[trimestre - 1] = currentMG
-      bulletin.annual.moyennes_trimestrielles = trimAverages
 
       const validAverages = trimAverages.filter(v => v !== null) as number[]
       if (validAverages.length > 0) {
@@ -492,10 +542,6 @@ export class CalculateurMoyennes {
     trimestre: number,
     annee_scolaire?: string
   ): Promise<BulletinData> {
-    if (!annee_scolaire) {
-      const today = new Date();
-      annee_scolaire = today.getMonth() >= 8 ? `${today.getFullYear()}-${today.getFullYear() + 1}` : `${today.getFullYear() - 1}-${today.getFullYear()}`;
-    }
     const { data: eleve } = await supabase.from('eleves').select('classe_id').eq('id', eleve_id).single() as { data: { classe_id: string } | null; error: unknown }
     if (!eleve) throw new Error("Élève introuvable")
     
@@ -506,12 +552,12 @@ export class CalculateurMoyennes {
   }
 
   private static calculerRangs(bulletins: BulletinData[]): BulletinData[] {
-    const sorted = [...bulletins].sort((a, b) => b.moyenne_generale - a.moyenne_generale)
+    const sorted = [...bulletins].sort((a, b) => (b.moyenne_generale ?? -1) - (a.moyenne_generale ?? -1))
     
     // Gérer les ex-æquo proprement
     let rank = 1
     for (let i = 0; i < sorted.length; i++) {
-      if (i > 0 && sorted[i].moyenne_generale < sorted[i-1].moyenne_generale) {
+      if (i > 0 && (sorted[i].moyenne_generale ?? -1) < (sorted[i-1].moyenne_generale ?? -1)) {
         rank = i + 1
       }
       sorted[i].rang = rank

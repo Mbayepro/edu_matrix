@@ -50,33 +50,33 @@ export interface BulletinData {
 }
 
 export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }) {
-  // Calculs stricts Sénégalais: Total(moyen * coef), sommes..  // Calculs Renaissance School: Moyenne Simple (Somme / Nombre)
   const matieresCalculated = data.matieres.map((m: any) => {
     const mcc = m.moyenne_controles ?? null;
     const compo = m.note_examen ?? null;
     const moyenne = m.moyenne;
     const isBonus = m.is_bonus === true;
-    const total = m.total_points ?? (moyenne * m.coefficient);
+    const total = m.total_points ?? (moyenne !== null ? moyenne * m.coefficient : null);
 
     return {
       ...m,
-      mccDisplay: mcc != null ? mcc.toFixed(2) : '-',
-      compoDisplay: compo != null ? compo.toFixed(2) : '-',
-      moyenneDisplay: moyenne ? moyenne.toFixed(2) : '-',
+      mccDisplay: mcc !== null ? mcc.toFixed(2) : '-',
+      compoDisplay: compo !== null ? compo.toFixed(2) : '-',
+      moyenneDisplay: moyenne !== null ? moyenne.toFixed(2) : 'Non Évalué',
       totalDisplay: (isBonus && m.points_bonus !== undefined) 
         ? m.points_bonus.toFixed(2) 
-        : (isBonus ? '-' : total.toFixed(2)),
+        : (isBonus ? '-' : (total !== null ? total.toFixed(2) : '-')),
       isBonus,
-      total,
+      total: total || 0,
       moyenneNum: moyenne
     };
   });
 
   const sumTotal = matieresCalculated.reduce((acc, curr) => acc + curr.total, 0);
-  const sumCoeff = matieresCalculated.filter(m => !m.isBonus).reduce((acc, curr) => acc + curr.coefficient, 0);
-  const mgRecomp = sumCoeff > 0 ? (sumTotal / sumCoeff) : 0;
+  const sumCoeff = matieresCalculated.filter(m => !m.isBonus && m.moyenneNum !== null).reduce((acc, curr) => acc + curr.coefficient, 0);
+  const mgRecomp = sumCoeff > 0 ? (sumTotal / sumCoeff) : null;
   
-  const getAppreciation = (moy: number) => {
+  const getAppreciation = (moy: number | null) => {
+    if (moy === null) return 'Non Évalué';
     if (moy < 10) return 'Insuffisant';
     if (moy < 12) return 'Passable';
     if (moy < 14) return 'Assez Bien';
@@ -201,7 +201,7 @@ export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }
         <div className="flex flex-col items-center">
              <span className="text-sm font-bold uppercase text-slate-600">Moyenne Générale</span>
              <span className="text-3xl font-black text-slate-900 border-b-4 border-double border-slate-800 px-4">
-                 {mgRecomp.toFixed(2)} / 20
+                 {mgRecomp !== null ? `${mgRecomp.toFixed(2)} / 20` : 'Non Évalué'}
              </span>
         </div>
         <div className="flex flex-col">
