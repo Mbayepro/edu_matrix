@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { ShieldAlert, Users, School, Activity, Search, Settings, Edit, Power, PowerOff, Save, Mail, Globe, Database, Building } from 'lucide-react'
+import { ShieldAlert, Users, School, Activity, Search, Settings, Edit, Power, PowerOff, Save, Mail, Globe, Database, Building, BarChart3, CreditCard } from 'lucide-react'
 import AdminStatCard from '@/components/admin/AdminStatCard'
 import StatutBadge from '@/components/admin/StatutBadge'
 import RoleBadge from '@/components/admin/RoleBadge'
@@ -11,8 +11,10 @@ import UserTable from '@/components/admin/UserTable'
 import ConfirmModal from '@/components/admin/ConfirmModal'
 import EcoleFilters from '@/components/admin/EcoleFilters'
 import UserFilters from '@/components/admin/UserFilters'
+import { useRouter } from 'next/navigation'
 
 export default function SuperAdminDashboard() {
+  const router = useRouter()
   const [stats, setStats] = useState({
     ecoles: 0,
     attente: 0,
@@ -304,11 +306,18 @@ export default function SuperAdminDashboard() {
           label="Utilisateurs totaux"
           value={stats.users}
         />
-        <AdminStatCard 
-          icon={<Activity className="w-6 h-6 text-purple-400" />}
-          label="Actifs aujourd'hui"
-          value={stats.activeToday}
-        />
+        <button
+          onClick={() => router.push('/dashboard/superadmin/statistiques')}
+          className="bg-slate-800 p-6 rounded-xl border border-slate-700 flex items-center gap-4 hover:bg-slate-700/50 transition-colors cursor-pointer"
+        >
+          <div className="p-3 bg-slate-900 rounded-lg border border-slate-700">
+            <BarChart3 className="w-6 h-6 text-emerald-400" />
+          </div>
+          <div>
+            <p className="text-slate-400 text-sm">Statistiques</p>
+            <p className="text-2xl font-bold text-white">Voir détails</p>
+          </div>
+        </button>
       </div>
 
       {/* Tabs */}
@@ -326,6 +335,13 @@ export default function SuperAdminDashboard() {
         >
           <Users className="w-4 h-4" />
           Utilisateurs
+        </button>
+        <button 
+          onClick={() => router.push('/dashboard/superadmin/abonnements')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors text-slate-400 hover:text-slate-300 hover:bg-slate-800/50`}
+        >
+          <CreditCard className="w-4 h-4" />
+          Abonnements
         </button>
         <button 
           onClick={() => setActiveTab('settings')}
