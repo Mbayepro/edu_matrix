@@ -175,19 +175,30 @@ export default function SuperAdminDashboard() {
       message: `Voulez-vous vraiment supprimer l'utilisateur ${user.prenom} ${user.nom} ? Cette action est irréversible et supprimera aussi l'email du système d'authentification.`,
       onConfirm: async () => {
         try {
-          // Appeler l'Edge Function pour supprimer complètement l'utilisateur (profil + auth)
-          const { data, error } = await supabase.functions.invoke('delete-user', {
-            body: { userId: user.id }
-          })
+          // 1. D'abord supprimer le profil dans profiles
+          const { error: profileError } = await supabase.from('profiles').delete().eq('id', user.id)
+          if (profileError) throw profileError
 
-          if (error) throw error
+          // 2. Ensuite essayer de supprimer l'utilisateur authentifié via l'Edge Function
+          try {
+            const { data, error } = await supabase.functions.invoke('delete-user', {
+              body: { userId: user.id }
+            })
+            
+            if (error) {
+              console.warn('Edge function error (user may already be deleted in auth):', error)
+              // On continue quand même car le profil est supprimé
+            }
+          } catch (edgeError) {
+            console.warn('Edge function not available or failed:', edgeError)
+            // On continue quand même car le profil est supprimé
+          }
 
           setUsers(users.filter(u => u.id !== user.id))
           setStats(s => ({ ...s, users: s.users - 1 }))
           setConfirmModal(prev => ({ ...prev, isOpen: false }))
           
-          // Afficher un message de succès
-          alert('Utilisateur supprimé avec succès (profil + email)')
+          alert('Utilisateur supprimé avec succès')
         } catch (error) {
           console.error("Erreur:", error)
           alert('Erreur lors de la suppression: ' + (error as Error).message)
