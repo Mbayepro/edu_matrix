@@ -9,6 +9,8 @@ import RoleBadge from '@/components/admin/RoleBadge'
 import EcoleTable from '@/components/admin/EcoleTable'
 import UserTable from '@/components/admin/UserTable'
 import ConfirmModal from '@/components/admin/ConfirmModal'
+import EcoleFilters from '@/components/admin/EcoleFilters'
+import UserFilters from '@/components/admin/UserFilters'
 
 export default function SuperAdminDashboard() {
   const [stats, setStats] = useState({
@@ -25,6 +27,12 @@ export default function SuperAdminDashboard() {
   // Search states
   const [ecoleSearch, setEcoleSearch] = useState('')
   const [userSearch, setUserSearch] = useState('')
+
+  // Filter states
+  const [statutFilter, setStatutFilter] = useState('')
+  const [villeFilter, setVilleFilter] = useState('')
+  const [roleFilter, setRoleFilter] = useState('')
+  const [ecoleFilter, setEcoleFilter] = useState('')
 
   // Modal states
   const [editModal, setEditModal] = useState<{ isOpen: boolean, ecole: any | null }>({ isOpen: false, ecole: null })
@@ -176,6 +184,74 @@ export default function SuperAdminDashboard() {
     })
   }
 
+  async function handleBulkToggleStatus(ecoleIds: string[], newStatus: string) {
+    setConfirmModal({
+      isOpen: true,
+      title: newStatus === 'suspendu' ? 'Suspendre les écoles' : 'Activer les écoles',
+      message: `Voulez-vous vraiment ${newStatus === 'suspendu' ? 'suspendre' : 'activer'} ${ecoleIds.length} école(s) ?`,
+      onConfirm: async () => {
+        try {
+          const { error } = await (supabase.from('ecoles' as any) as any)
+            .update({ statut: newStatus } as any)
+            .in('id', ecoleIds)
+
+          if (error) throw error
+          
+          setEcoles(ecoles.map(e => ecoleIds.includes(e.id) ? { ...e, statut: newStatus } : e))
+          
+          if (newStatus === 'suspendu') {
+            setStats(s => ({ ...s, ecoles: s.ecoles - ecoleIds.filter(id => {
+              const ecole = ecoles.find(e => e.id === id)
+              return ecole?.statut === 'actif'
+            }).length }))
+          } else {
+            setStats(s => ({ ...s, ecoles: s.ecoles + ecoleIds.filter(id => {
+              const ecole = ecoles.find(e => e.id === id)
+              return ecole?.statut !== 'actif'
+            }).length }))
+          }
+        } catch (error) {
+          console.error("Erreur:", error)
+        }
+      },
+      variant: newStatus === 'suspendu' ? 'warning' : 'info'
+    })
+  }
+
+  async function handleBulkDelete(ecoleIds: string[]) {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Supprimer les écoles',
+      message: `ATTENTION: La suppression de ${ecoleIds.length} école(s) est irréversible. Toutes les données liées seront supprimées.`,
+      onConfirm: async () => {
+        try {
+          const { error } = await (supabase.from('ecoles' as any) as any).delete().in('id', ecoleIds)
+          if (error) throw error
+          
+          setEcoles(ecoles.filter(e => !ecoleIds.includes(e.id)))
+          const activeCount = ecoleIds.filter(id => {
+            const ecole = ecoles.find(e => e.id === id)
+            return ecole?.statut === 'actif'
+          }).length
+          setStats(s => ({ ...s, ecoles: s.ecoles - activeCount }))
+        } catch (error) {
+          console.error("Erreur:", error)
+        }
+      },
+      variant: 'danger'
+    })
+  }
+
+  const clearEcoleFilters = () => {
+    setStatutFilter('')
+    setVilleFilter('')
+  }
+
+  const clearUserFilters = () => {
+    setRoleFilter('')
+    setEcoleFilter('')
+  }
+
   async function saveSystemSettings(e: React.FormEvent) {
     e.preventDefault()
     setSavingSettings(true)
@@ -267,12 +343,24 @@ export default function SuperAdminDashboard() {
               className="bg-slate-900 border border-slate-700 rounded-lg py-2.5 pl-9 pr-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-slate-600 w-full"
             />
           </div>
+          <EcoleFilters
+            statutFilter={statutFilter}
+            setStatutFilter={setStatutFilter}
+            villeFilter={villeFilter}
+            setVilleFilter={setVilleFilter}
+            hasActiveFilters={!!statutFilter || !!villeFilter}
+            onClear={clearEcoleFilters}
+          />
           <EcoleTable
             ecoles={ecoles}
             searchQuery={ecoleSearch}
+            statutFilter={statutFilter}
+            villeFilter={villeFilter}
             onEdit={(ecole) => setEditModal({ isOpen: true, ecole })}
             onToggleStatus={toggleStatut}
             onDelete={handleDelete}
+            onBulkToggleStatus={handleBulkToggleStatus}
+            onBulkDelete={handleBulkDelete}
           />
         </div>
       )}
@@ -289,9 +377,20 @@ export default function SuperAdminDashboard() {
               className="bg-slate-900 border border-slate-700 rounded-lg py-2.5 pl-9 pr-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-slate-600 w-full"
             />
           </div>
+          <UserFilters
+            roleFilter={roleFilter}
+            setRoleFilter={setRoleFilter}
+            ecoleFilter={ecoleFilter}
+            setEcoleFilter={setEcoleFilter}
+            hasActiveFilters={!!roleFilter || !!ecoleFilter}
+            onClear={clearUserFilters}
+            ecoles={ecoles}
+          />
           <UserTable
             users={users}
             searchQuery={userSearch}
+            roleFilter={roleFilter}
+            ecoleFilter={ecoleFilter}
             onDelete={handleDeleteUser}
           />
         </div>

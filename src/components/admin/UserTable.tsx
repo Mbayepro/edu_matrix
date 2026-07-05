@@ -10,22 +10,28 @@ interface User {
   role: 'superadmin' | 'director' | 'teacher'
   created_at: string
   ecole?: { nom: string }
+  ecole_id?: string
 }
 
 interface UserTableProps {
   users: User[]
   searchQuery: string
+  roleFilter: string
+  ecoleFilter: string
   onDelete: (user: User) => void
 }
 
-export default function UserTable({ users, searchQuery, onDelete }: UserTableProps) {
+export default function UserTable({ users, searchQuery, roleFilter, ecoleFilter, onDelete }: UserTableProps) {
   const [actionMenuId, setActionMenuId] = useState<string | null>(null)
 
-  const filteredUsers = users.filter(user =>
-    user.nom?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.prenom?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.ecole?.nom?.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.nom?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         user.prenom?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         user.ecole?.nom?.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesRole = !roleFilter || user.role === roleFilter
+    const matchesEcole = !ecoleFilter || user.ecole_id === ecoleFilter
+    return matchesSearch && matchesRole && matchesEcole
+  })
 
   return (
     <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden">
