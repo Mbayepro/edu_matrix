@@ -12,7 +12,7 @@ interface Niveau {
   code: string
   ordre: number
   cycle: 'primaire' | 'college' | 'lycee'
-  ecole_id: string
+  ecole_id?: string | null
   actif: boolean
   created_at: string
 }
