@@ -113,6 +113,7 @@ export default function SuperAdminDashboard() {
           } else if (nouveauStatut === 'actif' && ecole.statut !== 'actif') {
             setStats(s => ({ ...s, ecoles: s.ecoles + 1 }))
           }
+          setConfirmModal(prev => ({ ...prev, isOpen: false }))
         } catch (error) {
           console.error("Erreur:", error)
         }
@@ -135,6 +136,7 @@ export default function SuperAdminDashboard() {
           if (ecole.statut === 'actif') {
             setStats(s => ({ ...s, ecoles: s.ecoles - 1 }))
           }
+          setConfirmModal(prev => ({ ...prev, isOpen: false }))
         } catch (error) {
           console.error("Erreur:", error)
         }
@@ -176,6 +178,7 @@ export default function SuperAdminDashboard() {
           
           setUsers(users.filter(u => u.id !== user.id))
           setStats(s => ({ ...s, users: s.users - 1 }))
+          setConfirmModal(prev => ({ ...prev, isOpen: false }))
         } catch (error) {
           console.error("Erreur:", error)
         }
@@ -210,6 +213,7 @@ export default function SuperAdminDashboard() {
               return ecole?.statut !== 'actif'
             }).length }))
           }
+          setConfirmModal(prev => ({ ...prev, isOpen: false }))
         } catch (error) {
           console.error("Erreur:", error)
         }
@@ -234,6 +238,7 @@ export default function SuperAdminDashboard() {
             return ecole?.statut === 'actif'
           }).length
           setStats(s => ({ ...s, ecoles: s.ecoles - activeCount }))
+          setConfirmModal(prev => ({ ...prev, isOpen: false }))
         } catch (error) {
           console.error("Erreur:", error)
         }
