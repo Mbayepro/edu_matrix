@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { 
-  ShieldAlert, Users, School, Activity, 
-  Search, MoreVertical, CheckCircle, XCircle, Settings, Edit, Trash2, Power, PowerOff, Building, Save, Mail, Globe, Database
-} from 'lucide-react'
+import { ShieldAlert, Users, School, Activity, Search, Settings, Edit, Power, PowerOff, Save, Mail, Globe, Database, Building } from 'lucide-react'
+import AdminStatCard from '@/components/admin/AdminStatCard'
+import StatutBadge from '@/components/admin/StatutBadge'
+import RoleBadge from '@/components/admin/RoleBadge'
+import EcoleTable from '@/components/admin/EcoleTable'
+import UserTable from '@/components/admin/UserTable'
+import ConfirmModal from '@/components/admin/ConfirmModal'
 
 export default function SuperAdminDashboard() {
   const [stats, setStats] = useState({
@@ -23,11 +26,18 @@ export default function SuperAdminDashboard() {
   const [ecoleSearch, setEcoleSearch] = useState('')
   const [userSearch, setUserSearch] = useState('')
 
-  // States for actions menu and modal
-  const [actionMenuId, setActionMenuId] = useState<string | null>(null)
-  const [userActionMenuId, setUserActionMenuId] = useState<string | null>(null)
+  // Modal states
   const [editModal, setEditModal] = useState<{ isOpen: boolean, ecole: any | null }>({ isOpen: false, ecole: null })
   const [isSaving, setIsSaving] = useState(false)
+  
+  // Confirmation modal
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+    variant: 'danger' | 'warning' | 'info'
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {}, variant: 'danger' })
   
   // Settings states
   const [settings, setSystemSettings] = useState({
@@ -38,35 +48,12 @@ export default function SuperAdminDashboard() {
   })
   const [savingSettings, setSavingSettings] = useState(false)
 
-  // Close action menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = () => {
-      setActionMenuId(null)
-      setUserActionMenuId(null)
-    }
-    document.addEventListener('click', handleClickOutside)
-    return () => document.removeEventListener('click', handleClickOutside)
-  }, [])
-
-  // Filter data based on search inputs
-  const filteredEcoles = ecoles.filter(ecole => 
-    ecole.nom?.toLowerCase().includes(ecoleSearch.toLowerCase()) || 
-    ecole.ville?.toLowerCase().includes(ecoleSearch.toLowerCase())
-  )
-
-  const filteredUsers = users.filter(user => 
-    user.nom?.toLowerCase().includes(userSearch.toLowerCase()) ||
-    user.prenom?.toLowerCase().includes(userSearch.toLowerCase()) ||
-    user.ecole?.nom?.toLowerCase().includes(userSearch.toLowerCase())
-  )
-
   useEffect(() => {
     loadData()
   }, [])
 
   async function loadData() {
     try {
-      // Load stats
       const [ecolesCount, attenteCount, usersCount] = await Promise.all([
         supabase.from('ecoles').select('id', { count: 'exact', head: true }).eq('statut', 'actif'),
         supabase.from('ecoles').select('id', { count: 'exact', head: true }).eq('statut', 'en_attente'),
@@ -77,29 +64,19 @@ export default function SuperAdminDashboard() {
         ecoles: ecolesCount.count || 0,
         attente: attenteCount.count || 0,
         users: usersCount.count || 0,
-        activeToday: 0 // Placeholder
+        activeToday: 0
       })
 
-      // Load schools list
       const { data } = await supabase
         .from('ecoles')
-        .select(`
-          *,
-          profiles(count)
-        `)
+        .select('*, profiles(count)')
         .order('created_at', { ascending: false })
-
       setEcoles(data || [])
 
-      // Load users list
       const { data: usersData } = await supabase
         .from('profiles')
-        .select(`
-          *,
-          ecole:ecoles(nom)
-        `)
+        .select('*, ecole:ecoles(nom)')
         .order('created_at', { ascending: false })
-
       setUsers(usersData || [])
     } finally {
       setLoading(false)
@@ -108,55 +85,54 @@ export default function SuperAdminDashboard() {
 
   async function toggleStatut(ecole: any) {
     const nouveauStatut = ecole.statut === 'actif' ? 'suspendu' : 'actif'
-    if (!confirm(`Voulez-vous vraiment ${nouveauStatut === 'suspendu' ? 'suspendre' : 'activer'} l'école ${ecole.nom} ?`)) return
     
-    try {
-      const { error } = await (supabase.from('ecoles' as any) as any)
-        .update({ statut: nouveauStatut } as any)
-        .eq('id', ecole.id)
+    setConfirmModal({
+      isOpen: true,
+      title: nouveauStatut === 'suspendu' ? 'Suspendre l\'école' : 'Activer l\'école',
+      message: `Voulez-vous vraiment ${nouveauStatut === 'suspendu' ? 'suspendre' : 'activer'} l'école ${ecole.nom} ?`,
+      onConfirm: async () => {
+        try {
+          const { error } = await (supabase.from('ecoles' as any) as any)
+            .update({ statut: nouveauStatut } as any)
+            .eq('id', ecole.id)
 
-      if (error) throw error
-      
-      // Update local state
-      setEcoles(ecoles.map(e => e.id === ecole.id ? { ...e, statut: nouveauStatut } : e))
-      
-      // Update stats
-      if (nouveauStatut === 'suspendu' && ecole.statut === 'actif') {
-        setStats(s => ({ ...s, ecoles: s.ecoles - 1 }))
-      } else if (nouveauStatut === 'actif' && ecole.statut !== 'actif') {
-        setStats(s => ({ ...s, ecoles: s.ecoles + 1 }))
-      }
-    } catch (error) {
-      console.error("Erreur lors du changement de statut:", error)
-      alert("Une erreur est survenue")
-    }
+          if (error) throw error
+          
+          setEcoles(ecoles.map(e => e.id === ecole.id ? { ...e, statut: nouveauStatut } : e))
+          
+          if (nouveauStatut === 'suspendu' && ecole.statut === 'actif') {
+            setStats(s => ({ ...s, ecoles: s.ecoles - 1 }))
+          } else if (nouveauStatut === 'actif' && ecole.statut !== 'actif') {
+            setStats(s => ({ ...s, ecoles: s.ecoles + 1 }))
+          }
+        } catch (error) {
+          console.error("Erreur:", error)
+        }
+      },
+      variant: nouveauStatut === 'suspendu' ? 'warning' : 'info'
+    })
   }
 
   async function handleDelete(ecole: any) {
-    const confirmation = window.prompt(`ATTENTION: La suppression est irréversible. Toutes les données liées seront supprimées.\n\nTapez le nom de l'école "${ecole.nom}" pour confirmer:`)
-    
-    if (confirmation !== ecole.nom) {
-      if (confirmation !== null) alert("Le nom saisi ne correspond pas. Annulation de la suppression.")
-      return
-    }
-
-    try {
-      const { error } = await (supabase.from('ecoles' as any) as any)
-        .delete()
-        .eq('id', ecole.id)
-
-      if (error) throw error
-      
-      // Update local state
-      setEcoles(ecoles.filter(e => e.id !== ecole.id))
-      if (ecole.statut === 'actif') {
-        setStats(s => ({ ...s, ecoles: s.ecoles - 1 }))
-      }
-      alert("École supprimée avec succès")
-    } catch (error) {
-      console.error("Erreur lors de la suppression:", error)
-      alert("Erreur lors de la suppression de l'école")
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Supprimer l\'école',
+      message: `ATTENTION: La suppression de l'école "${ecole.nom}" est irréversible. Toutes les données liées seront supprimées.`,
+      onConfirm: async () => {
+        try {
+          const { error } = await (supabase.from('ecoles' as any) as any).delete().eq('id', ecole.id)
+          if (error) throw error
+          
+          setEcoles(ecoles.filter(e => e.id !== ecole.id))
+          if (ecole.statut === 'actif') {
+            setStats(s => ({ ...s, ecoles: s.ecoles - 1 }))
+          }
+        } catch (error) {
+          console.error("Erreur:", error)
+        }
+      },
+      variant: 'danger'
+    })
   }
 
   async function saveEcoleEdit(e: React.FormEvent) {
@@ -166,10 +142,7 @@ export default function SuperAdminDashboard() {
     setIsSaving(true)
     try {
       const { error } = await (supabase.from('ecoles' as any) as any)
-        .update({ 
-          nom: editModal.ecole.nom,
-          ville: editModal.ecole.ville
-        } as any)
+        .update({ nom: editModal.ecole.nom, ville: editModal.ecole.ville } as any)
         .eq('id', editModal.ecole.id)
 
       if (error) throw error
@@ -177,48 +150,39 @@ export default function SuperAdminDashboard() {
       setEcoles(ecoles.map(ec => ec.id === editModal.ecole.id ? editModal.ecole : ec))
       setEditModal({ isOpen: false, ecole: null })
     } catch (error) {
-      console.error("Erreur lors de la mise à jour:", error)
-      alert("Erreur lors de l'enregistrement")
+      console.error("Erreur:", error)
     } finally {
       setIsSaving(false)
     }
   }
 
   async function handleDeleteUser(user: any) {
-    if (!confirm(`Voulez-vous vraiment supprimer l'utilisateur ${user.prenom} ${user.nom} ? Cette action est irréversible.`)) return
-
-    try {
-      // In a real app, you should delete the auth.users entry via an Edge Function/Admin API
-      // Here we just delete the profile for simplicity, assuming cascade or trigger handles the rest
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', user.id)
-
-      if (error) throw error
-      
-      setUsers(users.filter(u => u.id !== user.id))
-      setStats(s => ({ ...s, users: s.users - 1 }))
-      alert("Utilisateur supprimé avec succès")
-    } catch (error) {
-      console.error("Erreur lors de la suppression de l'utilisateur:", error)
-      alert("Erreur lors de la suppression")
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Supprimer l\'utilisateur',
+      message: `Voulez-vous vraiment supprimer l'utilisateur ${user.prenom} ${user.nom} ? Cette action est irréversible.`,
+      onConfirm: async () => {
+        try {
+          const { error } = await supabase.from('profiles').delete().eq('id', user.id)
+          if (error) throw error
+          
+          setUsers(users.filter(u => u.id !== user.id))
+          setStats(s => ({ ...s, users: s.users - 1 }))
+        } catch (error) {
+          console.error("Erreur:", error)
+        }
+      },
+      variant: 'danger'
+    })
   }
 
   async function saveSystemSettings(e: React.FormEvent) {
     e.preventDefault()
     setSavingSettings(true)
-    
     try {
-      // In a real application, you would save this to a `system_settings` table in Supabase.
-      // For now, we simulate a network delay and show a success message.
       await new Promise(resolve => setTimeout(resolve, 800))
-      
-      alert("Paramètres système mis à jour avec succès.")
     } catch (error) {
-      console.error("Erreur lors de la sauvegarde des paramètres:", error)
-      alert("Erreur lors de la sauvegarde.")
+      console.error("Erreur:", error)
     } finally {
       setSavingSettings(false)
     }
@@ -243,24 +207,23 @@ export default function SuperAdminDashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <StatCard 
+        <AdminStatCard 
           icon={<School className="w-6 h-6 text-emerald-400" />}
           label="Écoles Actives"
           value={stats.ecoles}
         />
-        <a href="/dashboard/admin/validation" className="block">
-          <StatCard 
-            icon={<ShieldAlert className="w-6 h-6 text-amber-400" />}
-            label="En Attente"
-            value={stats.attente}
-          />
-        </a>
-        <StatCard 
+        <AdminStatCard 
+          icon={<ShieldAlert className="w-6 h-6 text-amber-400" />}
+          label="En Attente"
+          value={stats.attente}
+          href="/dashboard/admin/validation"
+        />
+        <AdminStatCard 
           icon={<Users className="w-6 h-6 text-emerald-400" />}
           label="Utilisateurs totaux"
           value={stats.users}
         />
-        <StatCard 
+        <AdminStatCard 
           icon={<Activity className="w-6 h-6 text-purple-400" />}
           label="Actifs aujourd'hui"
           value={stats.activeToday}
@@ -293,9 +256,7 @@ export default function SuperAdminDashboard() {
       </div>
 
       {activeTab === 'ecoles' && (
-        <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-        <div className="p-4 border-b border-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h2 className="font-semibold text-white">Dernières écoles inscrites</h2>
+        <div className="space-y-4">
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
             <input 
@@ -303,372 +264,58 @@ export default function SuperAdminDashboard() {
               placeholder="Rechercher une école..." 
               value={ecoleSearch}
               onChange={(e) => setEcoleSearch(e.target.value)}
-              className="bg-slate-900 border border-slate-700 rounded-lg py-1.5 pl-9 pr-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-slate-600 w-full"
+              className="bg-slate-900 border border-slate-700 rounded-lg py-2.5 pl-9 pr-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-slate-600 w-full"
             />
           </div>
+          <EcoleTable
+            ecoles={ecoles}
+            searchQuery={ecoleSearch}
+            onEdit={(ecole) => setEditModal({ isOpen: true, ecole })}
+            onToggleStatus={toggleStatut}
+            onDelete={handleDelete}
+          />
         </div>
-        
-        {/* Desktop View: Table */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-400">
-            <thead className="bg-slate-900/50 text-slate-300 font-medium">
-              <tr>
-                <th className="px-4 py-3">Nom</th>
-                <th className="px-4 py-3">Ville</th>
-                <th className="px-4 py-3">Statut</th>
-                <th className="px-4 py-3">Utilisateurs</th>
-                <th className="px-4 py-3">Date création</th>
-                <th className="px-4 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-700">
-              {filteredEcoles.map((ecole) => (
-                <tr key={ecole.id} className="hover:bg-slate-700/30 transition-colors">
-                  <td className="px-4 py-3 font-medium text-white">{ecole.nom}</td>
-                  <td className="px-4 py-3">{ecole.ville}</td>
-                  <td className="px-4 py-3">
-                    <StatutBadge statut={ecole.statut} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="bg-slate-700 px-2 py-0.5 rounded text-xs text-slate-300">
-                      {ecole.profiles[0]?.count || 0}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    {new Date(ecole.created_at).toLocaleDateString('fr-FR')}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="relative inline-block text-left">
-                      <button 
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          setActionMenuId(actionMenuId === ecole.id ? null : ecole.id)
-                        }}
-                        className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"
-                      >
-                        <MoreVertical className="w-4 h-4" />
-                      </button>
-
-                      {/* Dropdown Menu */}
-                      {actionMenuId === ecole.id && (
-                        <div className="absolute right-0 top-full mt-1 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden py-1">
-                          <button 
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              setEditModal({ isOpen: true, ecole })
-                              setActionMenuId(null)
-                            }}
-                            className="w-full px-4 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2"
-                          >
-                            <Edit className="w-4 h-4" />
-                            Modifier infos
-                          </button>
-                          
-                          <button 
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              toggleStatut(ecole)
-                              setActionMenuId(null)
-                            }}
-                            className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 ${ecole.statut === 'actif' ? 'text-amber-400 hover:bg-amber-500/10' : 'text-emerald-400 hover:bg-emerald-500/10'}`}
-                          >
-                            {ecole.statut === 'actif' ? <><PowerOff className="w-4 h-4" /> Suspendre</> : <><Power className="w-4 h-4" /> Activer</>}
-                          </button>
-                          
-                          <div className="h-px bg-slate-700 my-1"></div>
-                          
-                          <button 
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              handleDelete(ecole)
-                              setActionMenuId(null)
-                            }}
-                            className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 flex items-center gap-2"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Supprimer
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile View: Cards */}
-        <div className="md:hidden divide-y divide-slate-700">
-          {filteredEcoles.map((ecole) => (
-            <div key={ecole.id} className="p-4 space-y-4 hover:bg-slate-700/30 transition-colors">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-bold text-white">{ecole.nom}</h3>
-                  <p className="text-sm text-slate-400 flex items-center gap-1">
-                    <Building className="w-3 h-3" /> {ecole.ville || 'Ville non spécifiée'}
-                  </p>
-                </div>
-                <div className="relative inline-block text-left">
-                  <button 
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      setActionMenuId(actionMenuId === ecole.id ? null : ecole.id)
-                    }}
-                    className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors border border-slate-700"
-                  >
-                    <MoreVertical className="w-5 h-5" />
-                  </button>
-
-                  {/* Dropdown Menu */}
-                  {actionMenuId === ecole.id && (
-                    <div className="absolute right-0 top-full mt-1 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden py-1">
-                      <button 
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          setEditModal({ isOpen: true, ecole })
-                          setActionMenuId(null)
-                        }}
-                        className="w-full px-4 py-3 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-white flex items-center gap-2"
-                      >
-                        <Edit className="w-4 h-4" />
-                        Modifier infos
-                      </button>
-                      
-                      <button 
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          toggleStatut(ecole)
-                          setActionMenuId(null)
-                        }}
-                        className={`w-full px-4 py-3 text-left text-sm flex items-center gap-2 ${ecole.statut === 'actif' ? 'text-amber-400 hover:bg-amber-500/10' : 'text-emerald-400 hover:bg-emerald-500/10'}`}
-                      >
-                        {ecole.statut === 'actif' ? <><PowerOff className="w-4 h-4" /> Suspendre</> : <><Power className="w-4 h-4" /> Activer</>}
-                      </button>
-                      
-                      <div className="h-px bg-slate-700 my-1"></div>
-                      
-                      <button 
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          handleDelete(ecole)
-                          setActionMenuId(null)
-                        }}
-                        className="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 flex items-center gap-2"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Supprimer
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div className="flex flex-wrap items-center gap-3">
-                <StatutBadge statut={ecole.statut} />
-                <span className="bg-slate-700 px-2 py-1 rounded text-xs text-slate-300 flex items-center gap-1">
-                  <Users className="w-3 h-3" /> {ecole.profiles[0]?.count || 0} utilisateurs
-                </span>
-                <span className="text-xs text-slate-500">
-                  Inscrit le {new Date(ecole.created_at).toLocaleDateString('fr-FR')}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
       )}
 
       {activeTab === 'users' && (
-        <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-          <div className="p-4 border-b border-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <h2 className="font-semibold text-white">Tous les utilisateurs</h2>
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-              <input 
-                type="text" 
-                placeholder="Rechercher par nom ou école..." 
-                value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
-                className="bg-slate-900 border border-slate-700 rounded-lg py-1.5 pl-9 pr-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-slate-600 w-full"
-              />
-            </div>
+        <div className="space-y-4">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            <input 
+              type="text" 
+              placeholder="Rechercher par nom ou école..." 
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+              className="bg-slate-900 border border-slate-700 rounded-lg py-2.5 pl-9 pr-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-slate-600 w-full"
+            />
           </div>
-          
-          {/* Desktop View: Table */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-400">
-              <thead className="bg-slate-900/50 text-slate-300 font-medium">
-                <tr>
-                  <th className="px-4 py-3">Utilisateur</th>
-                  <th className="px-4 py-3">Rôle</th>
-                  <th className="px-4 py-3">École</th>
-                  <th className="px-4 py-3">Date d'inscription</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-700">
-                {filteredUsers.length > 0 ? filteredUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-slate-700/30 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold shrink-0">
-                          {user.prenom?.charAt(0)}{user.nom?.charAt(0)}
-                        </div>
-                        <div className="truncate max-w-[150px]">
-                          <p className="font-medium text-white">{user.prenom} {user.nom}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <RoleBadge role={user.role} />
-                    </td>
-                    <td className="px-4 py-3 truncate max-w-[120px]">{user.ecole?.nom || <span className="text-slate-500 italic">Aucune</span>}</td>
-                    <td className="px-4 py-3">
-                      {new Date(user.created_at).toLocaleDateString('fr-FR')}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="relative inline-block text-left">
-                        <button 
-                          onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            setUserActionMenuId(userActionMenuId === user.id ? null : user.id)
-                          }}
-                          className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"
-                        >
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
-
-                        {/* Dropdown Menu */}
-                        {userActionMenuId === user.id && (
-                          <div className="absolute right-0 top-full mt-1 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden py-1">
-                            <button 
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault()
-                                e.stopPropagation()
-                                handleDeleteUser(user)
-                                setUserActionMenuId(null)
-                              }}
-                              className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 flex items-center gap-2"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              Supprimer le compte
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
-                      Aucun utilisateur trouvé
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile View: Cards */}
-          <div className="md:hidden divide-y divide-slate-700">
-            {filteredUsers.length > 0 ? filteredUsers.map((user) => (
-              <div key={user.id} className="p-4 space-y-4 hover:bg-slate-700/30 transition-colors">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold shrink-0">
-                      {user.prenom?.charAt(0)}{user.nom?.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-bold text-white">{user.prenom} {user.nom}</p>
-                      <p className="text-xs text-slate-400">{user.ecole?.nom || 'Sans établissement'}</p>
-                    </div>
-                  </div>
-                  <div className="relative inline-block text-left">
-                    <button 
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        setUserActionMenuId(userActionMenuId === user.id ? null : user.id)
-                      }}
-                      className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors border border-slate-700"
-                    >
-                      <MoreVertical className="w-5 h-5" />
-                    </button>
-
-                    {/* Dropdown Menu */}
-                    {userActionMenuId === user.id && (
-                      <div className="absolute right-0 top-full mt-1 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden py-1">
-                        <button 
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            handleDeleteUser(user)
-                            setUserActionMenuId(null)
-                          }}
-                          className="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 flex items-center gap-2"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Supprimer le compte
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <RoleBadge role={user.role} />
-                  <span className="text-xs text-slate-500">
-                    Inscrit le {new Date(user.created_at).toLocaleDateString('fr-FR')}
-                  </span>
-                </div>
-              </div>
-            )) : (
-              <div className="p-8 text-center text-slate-500">
-                Aucun utilisateur trouvé
-              </div>
-            )}
-          </div>
+          <UserTable
+            users={users}
+            searchQuery={userSearch}
+            onDelete={handleDeleteUser}
+          />
         </div>
       )}
 
       {activeTab === 'settings' && (
-        <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden animate-in fade-in duration-300">
-          <div className="p-4 border-b border-slate-700">
+        <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden animate-in fade-in duration-300">
+          <div className="p-6 border-b border-slate-800">
             <h2 className="font-semibold text-white">Paramètres globaux de la plateforme</h2>
-            <p className="text-sm text-slate-400 mt-1">Configuration générale pour EduMatrix. Ces changements affectent toutes les écoles.</p>
+            <p className="text-sm text-slate-400 mt-1">Configuration générale pour EduMatrix.</p>
           </div>
           
           <form onSubmit={saveSystemSettings} className="p-6 space-y-8">
-            {/* Section Sécurité & Accès */}
             <div className="space-y-4">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-700 pb-2">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-2">
                 <ShieldAlert className="w-5 h-5 text-emerald-400" />
                 Sécurité & Accès
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50 flex items-start justify-between gap-4">
+                <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 flex items-start justify-between gap-4">
                   <div>
                     <label className="font-medium text-white block mb-1">Inscriptions ouvertes</label>
-                    <p className="text-xs text-slate-400">Autoriser les nouveaux directeurs à soumettre des demandes de création d'écoles.</p>
+                    <p className="text-xs text-slate-400">Autoriser les nouveaux directeurs à soumettre des demandes.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
                     <input 
@@ -681,10 +328,10 @@ export default function SuperAdminDashboard() {
                   </label>
                 </div>
 
-                <div className="bg-rose-900/10 p-4 rounded-xl border border-rose-500/20 flex items-start justify-between gap-4">
+                <div className="bg-red-900/10 p-4 rounded-xl border border-red-500/20 flex items-start justify-between gap-4">
                   <div>
-                    <label className="font-medium text-rose-400 block mb-1">Mode Maintenance</label>
-                    <p className="text-xs text-slate-400">Bloquer l'accès à toute la plateforme. Seuls les Super Admins pourront se connecter.</p>
+                    <label className="font-medium text-red-400 block mb-1">Mode Maintenance</label>
+                    <p className="text-xs text-slate-400">Bloquer l'accès à toute la plateforme.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
                     <input 
@@ -693,15 +340,14 @@ export default function SuperAdminDashboard() {
                       checked={settings.maintenanceMode}
                       onChange={(e) => setSystemSettings({...settings, maintenanceMode: e.target.checked})}
                     />
-                    <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-500"></div>
+                    <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-500"></div>
                   </label>
                 </div>
               </div>
             </div>
 
-            {/* Section Configuration Technique */}
             <div className="space-y-4 pt-4">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-700 pb-2">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-2">
                 <Database className="w-5 h-5 text-emerald-400" />
                 Configuration Technique
               </h3>
@@ -709,45 +355,38 @@ export default function SuperAdminDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="text-sm font-medium text-slate-300 mb-1.5 flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-slate-400" /> Email système principal
+                    <Mail className="w-4 h-4 text-slate-400" /> Email système
                   </label>
                   <input 
                     type="email" 
                     value={settings.systemEmail}
                     onChange={(e) => setSystemSettings({...settings, systemEmail: e.target.value})}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500 transition-colors"
                   />
-                  <p className="text-xs text-slate-500 mt-1.5">Adresse utilisée pour les notifications système envoyées aux directeurs.</p>
                 </div>
                 
                 <div>
                   <label className="text-sm font-medium text-slate-300 mb-1.5 flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-slate-400" /> Limite d'écoles (Quota)
+                    <Globe className="w-4 h-4 text-slate-400" /> Limite d'écoles
                   </label>
                   <input 
                     type="number" 
                     min="1"
                     value={settings.maxSchoolsAllowed}
                     onChange={(e) => setSystemSettings({...settings, maxSchoolsAllowed: parseInt(e.target.value) || 0})}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500 transition-colors"
                   />
-                  <p className="text-xs text-slate-500 mt-1.5">Nombre maximal d'établissements pouvant être inscrits sur l'infrastructure actuelle.</p>
                 </div>
               </div>
             </div>
 
-            {/* Submit Button */}
-            <div className="pt-6 border-t border-slate-700 flex justify-end">
+            <div className="pt-6 border-t border-slate-800 flex justify-end">
               <button 
                 type="submit" 
                 disabled={savingSettings}
-                className="px-6 py-2.5 bg-emerald-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white rounded-lg transition-colors font-medium flex items-center gap-2 shadow-lg shadow-emerald-500/20"
+                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-600/50 text-white rounded-lg transition-colors font-medium flex items-center gap-2"
               >
-                {savingSettings ? (
-                  <>Patientez...</>
-                ) : (
-                  <><Save className="w-4 h-4" /> Sauvegarder les paramètres</>
-                )}
+                {savingSettings ? 'Patientez...' : <><Save className="w-4 h-4" /> Sauvegarder</>}
               </button>
             </div>
           </form>
@@ -756,9 +395,9 @@ export default function SuperAdminDashboard() {
 
       {/* Edit Modal */}
       {editModal.isOpen && editModal.ecole && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-slate-700">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-slate-800">
               <h3 className="text-xl font-bold text-white">Modifier l'école</h3>
             </div>
             
@@ -769,7 +408,7 @@ export default function SuperAdminDashboard() {
                   type="text" 
                   value={editModal.ecole.nom}
                   onChange={e => setEditModal({ ...editModal, ecole: { ...editModal.ecole, nom: e.target.value } })}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500 transition-colors"
                   required
                 />
               </div>
@@ -779,7 +418,7 @@ export default function SuperAdminDashboard() {
                   type="text" 
                   value={editModal.ecole.ville || ''}
                   onChange={e => setEditModal({ ...editModal, ecole: { ...editModal.ecole, ville: e.target.value } })}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500 transition-colors"
                 />
               </div>
               
@@ -787,14 +426,14 @@ export default function SuperAdminDashboard() {
                 <button 
                   type="button" 
                   onClick={() => setEditModal({ isOpen: false, ecole: null })}
-                  className="flex-1 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors font-medium"
+                  className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors font-medium"
                 >
                   Annuler
                 </button>
                 <button 
                   type="submit" 
                   disabled={isSaving}
-                  className="flex-1 px-4 py-2.5 bg-emerald-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white rounded-lg transition-colors font-medium flex items-center justify-center"
+                  className="flex-1 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-emerald-600/50 text-white rounded-lg transition-colors font-medium"
                 >
                   {isSaving ? 'Enregistrement...' : 'Enregistrer'}
                 </button>
@@ -803,66 +442,17 @@ export default function SuperAdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        variant={confirmModal.variant}
+      />
     </div>
-  )
-}
-
-function StatCard({ icon, label, value }: { icon: any, label: string, value: number }) {
-  return (
-    <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 flex items-center gap-4">
-      <div className="p-3 bg-slate-900 rounded-lg border border-slate-700">
-        {icon}
-      </div>
-      <div>
-        <p className="text-slate-400 text-sm">{label}</p>
-        <p className="text-2xl font-bold text-white">{value}</p>
-      </div>
-    </div>
-  )
-}
-
-function StatutBadge({ statut }: { statut: string }) {
-  switch (statut) {
-    case 'actif':
-      return (
-        <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-xs inline-flex items-center gap-1">
-          <CheckCircle className="w-3 h-3" /> Actif
-        </span>
-      )
-    case 'suspendu':
-      return (
-        <span className="bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded text-xs inline-flex items-center gap-1">
-          <XCircle className="w-3 h-3" /> Suspendu
-        </span>
-      )
-    default:
-      return (
-        <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded text-xs inline-flex items-center gap-1">
-          En attente
-        </span>
-      )
-  }
-}
-
-function RoleBadge({ role }: { role: string }) {
-  const styles: Record<string, string> = {
-    superadmin: 'bg-purple-500/10 text-purple-400 border border-purple-500/20',
-    director: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
-    teacher: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
-    student: 'bg-slate-500/10 text-slate-400 border border-slate-500/20',
-  }
-
-  const labels: Record<string, string> = {
-    superadmin: 'Super Admin',
-    director: 'Directeur',
-    teacher: 'Enseignant',
-    student: 'Élève',
-  }
-
-  return (
-    <span className={`px-2 py-1 rounded text-xs font-medium ${styles[role] || styles.student}`}>
-      {labels[role] || role}
-    </span>
   )
 }
 
