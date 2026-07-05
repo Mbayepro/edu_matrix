@@ -172,17 +172,25 @@ export default function SuperAdminDashboard() {
     setConfirmModal({
       isOpen: true,
       title: 'Supprimer l\'utilisateur',
-      message: `Voulez-vous vraiment supprimer l'utilisateur ${user.prenom} ${user.nom} ? Cette action est irréversible.`,
+      message: `Voulez-vous vraiment supprimer l'utilisateur ${user.prenom} ${user.nom} ? Cette action est irréversible et supprimera aussi l'email du système d'authentification.`,
       onConfirm: async () => {
         try {
-          const { error } = await supabase.from('profiles').delete().eq('id', user.id)
+          // Appeler l'Edge Function pour supprimer complètement l'utilisateur (profil + auth)
+          const { data, error } = await supabase.functions.invoke('delete-user', {
+            body: { userId: user.id }
+          })
+
           if (error) throw error
-          
+
           setUsers(users.filter(u => u.id !== user.id))
           setStats(s => ({ ...s, users: s.users - 1 }))
           setConfirmModal(prev => ({ ...prev, isOpen: false }))
+          
+          // Afficher un message de succès
+          alert('Utilisateur supprimé avec succès (profil + email)')
         } catch (error) {
           console.error("Erreur:", error)
+          alert('Erreur lors de la suppression: ' + (error as Error).message)
         }
       },
       variant: 'danger'
