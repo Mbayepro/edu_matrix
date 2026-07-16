@@ -47,6 +47,7 @@ export interface BulletinData {
   nombre_matieres: number;
   decision_conseil?: string;
   annee_scolaire?: string;
+  total_eleves?: number;
 }
 
 export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }) {
@@ -143,7 +144,7 @@ export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }
         </div>
         <div className="w-1/3 text-right">
           <p className="mb-1"><span className="font-bold">Classe :</span> {data.classe.nom_classe}</p>
-          <p><span className="font-bold">Effectif :</span> N/A</p>
+          <p><span className="font-bold">Effectif :</span> {data.total_eleves || 'N/A'}</p>
         </div>
       </div>
 

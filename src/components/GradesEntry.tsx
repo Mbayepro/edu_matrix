@@ -124,8 +124,8 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
 
       // 2. Si on est en ligne, rafraîchir depuis Supabase
       if (navigator.onLine && ecoleId) {
-        // Déclencher un Sync de fond
-        await syncFromSupabase(ecoleId);
+        // Déclencher un Sync de fond ciblé
+        await syncFromSupabase(ecoleId, ['eleves', 'evaluations', 'notes', 'matieres', 'classes', 'niveaux', 'series']);
         
         // Recharger les données fraîches depuis Dexie (vu que syncFromSupabase les a mis à jour)
         if (db) {
@@ -234,6 +234,12 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
     const num = parseFloat(trimmed.replace(',', '.'));
     if (isNaN(num)) return;
 
+    const evaluation = evaluations.find(e => e.id === evalId);
+    if (evaluation && (num < 0 || num > evaluation.bareme)) {
+      showToast(`La note doit être comprise entre 0 et ${evaluation.bareme}`, 'error');
+      return;
+    }
+
     const existingNote = notes.find(n => n.eleve_id === eleveId && n.evaluation_id === evalId);
     const noteId = existingNote?.id || crypto.randomUUID();
 
@@ -282,6 +288,11 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
     }
     const num = parseFloat(trimmed.replace(',', '.'));
     if (isNaN(num)) return;
+    
+    const evaluation = evaluations.find(e => e.id === evalId);
+    if (evaluation && (num < 0 || num > evaluation.bareme)) {
+      return;
+    }
     
     const existingNote = notes.find(n => n.eleve_id === eleveId && n.evaluation_id === evalId);
     const noteId = existingNote?.id || crypto.randomUUID();

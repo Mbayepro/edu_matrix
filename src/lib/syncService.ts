@@ -17,7 +17,7 @@ import { getTodayDate } from './dateUtils'
  * Appelé au démarrage de l'application (si online) et après chaque reconnexion.
  * @param ecoleId  UUID de l'école courante
  */
-export async function syncFromSupabase(ecoleId: string): Promise<void> {
+export async function syncFromSupabase(ecoleId: string, tablesToSync?: string[]): Promise<void> {
   if (typeof window === 'undefined') return
   if (!navigator.onLine || !ecoleId) return
 
@@ -30,7 +30,7 @@ export async function syncFromSupabase(ecoleId: string): Promise<void> {
     ? `${today.getFullYear()}-${today.getFullYear() + 1}`
     : `${today.getFullYear() - 1}-${today.getFullYear()}`
 
-  const tables = [
+  let tables = [
     { name: 'ecoles', query: supabase.from('ecoles').select('*').eq('id', ecoleId) },
     { name: 'niveaux', query: supabase.from('niveaux').select('*').eq('ecole_id', ecoleId) },
     { name: 'series', query: supabase.from('series').select('*').eq('ecole_id', ecoleId) },
@@ -47,6 +47,10 @@ export async function syncFromSupabase(ecoleId: string): Promise<void> {
     { name: 'paiements', query: supabase.from('paiements').select('*').eq('ecole_id', ecoleId) },
     { name: 'emargements', query: supabase.from('emargements').select('*').eq('ecole_id', ecoleId) }
   ]
+
+  if (tablesToSync && tablesToSync.length > 0) {
+    tables = tables.filter(t => tablesToSync.includes(t.name))
+  }
 
   for (const t of tables) {
     try {
