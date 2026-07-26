@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { QRCodeCanvas } from 'qrcode.react'
+import { QRCodeSVG } from 'qrcode.react'
 import { supabase, Eleve, Note, Ecole, Presence } from '@/lib/supabase'
 import {
   User, Award, BookOpen, Loader2,
@@ -85,7 +85,6 @@ function PhysicalCard({ eleve, ecole, classeNom, isPrint = false }: {
   isPrint?: boolean
 }) {
   const qrData = eleve.id
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=H&data=${encodeURIComponent(qrData)}`
 
   return (
     <div
@@ -127,8 +126,8 @@ function PhysicalCard({ eleve, ecole, classeNom, isPrint = false }: {
             <BookOpen className="w-3 h-3 text-emerald-600" />
           </div>
         )}
-        <div className="bg-white p-1 rounded-lg border border-slate-200 shadow-sm">
-          <img src={qrUrl} alt="QR" className="w-[60px] h-[60px] object-contain" />
+        <div className="bg-white p-1 rounded-lg border border-slate-200 shadow-sm flex items-center justify-center">
+          <QRCodeSVG value={qrData} size={50} level="H" />
         </div>
       </div>
 

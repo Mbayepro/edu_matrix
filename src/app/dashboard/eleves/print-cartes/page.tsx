@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Eleve, Classe, Ecole } from '@/lib/supabase'
 import { Loader2, Printer, ArrowLeft } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Suspense } from 'react'
 
@@ -78,8 +79,6 @@ function PrintCartesContent() {
       <div className="max-w-4xl mx-auto flex flex-wrap gap-4 print:grid print:grid-cols-2 print:gap-x-8 print:gap-y-8 justify-center print:justify-center print:w-full print:m-0">
         {eleves.map((eleve, idx) => {
           const qrData = JSON.stringify({ id: eleve.id, matricule: eleve.matricule })
-          // Use qrserver api explicitly asking for high res
-          const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}`
 
           return (
             <div 
@@ -122,7 +121,9 @@ function PrintCartesContent() {
                ) : (
                  <div className="w-[35px] h-[35px] bg-emerald-50 rounded border border-emerald-100 mb-1" />
                )}
-               <img src={qrUrl} alt="QR" className="w-[50px] h-[50px] rounded border border-slate-200 p-0.5 bg-white shadow-sm" />
+               <div className="w-[50px] h-[50px] bg-white rounded border border-slate-200 p-0.5 shadow-sm flex items-center justify-center">
+                 <QRCodeSVG value={qrData} size={44} level="H" />
+               </div>
              </div>
 
              {/* Background decorative elements */}

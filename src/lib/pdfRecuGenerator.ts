@@ -210,3 +210,109 @@ export function sharePaiementRecu(
   }
 }
 
+/** Construit et imprime un ticket thermique (80mm) */
+export async function printThermalPaiementRecuPDF(
+  ecole: Ecole,
+  paiement: PaiementRecuInfo,
+  caissier?: Profile | null
+) {
+  // Format thermique standard 80mm de large. La hauteur est approximative (120mm) et s'ajustera.
+  const doc = new jsPDF({ format: [80, 150], unit: 'mm' })
+  const pageWidth = doc.internal.pageSize.getWidth()
+  
+  const datePaiement = new Date(paiement.date_paiement)
+  const dateStr = datePaiement.toLocaleDateString('fr-FR')
+  const timeStr = datePaiement.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  
+  let y = 5
+
+  // Centrer le texte
+  const textCenter = (text: string, yPos: number, options?: any) => {
+    doc.text(text, pageWidth / 2, yPos, { align: 'center', ...options })
+  }
+
+  // En-tête de l'école
+  doc.setFont('helvetica', 'bold').setFontSize(14).setTextColor(0, 0, 0)
+  textCenter(ecole.nom.toUpperCase(), y += 5)
+  
+  doc.setFont('helvetica', 'normal').setFontSize(8)
+  if (ecole.adresse) textCenter(ecole.adresse, y += 4)
+  if (ecole.telephone) textCenter(`Tel: ${ecole.telephone}`, y += 4)
+  
+  y += 2
+  ;(doc as any).setLineDash([1, 1], 0)
+  doc.line(5, y, pageWidth - 5, y)
+  ;(doc as any).setLineDash([], 0)
+
+  // Titre Reçu
+  y += 6
+  doc.setFont('helvetica', 'bold').setFontSize(10)
+  textCenter('TICKET DE PAIEMENT', y)
+  doc.setFontSize(8).setFont('helvetica', 'normal')
+  textCenter(`Date : ${dateStr} à ${timeStr}`, y += 4)
+  textCenter(`Réf: REF-${paiement.id.substring(0, 8).toUpperCase()}`, y += 4)
+  
+  y += 2
+  ;(doc as any).setLineDash([1, 1], 0)
+  doc.line(5, y, pageWidth - 5, y)
+  ;(doc as any).setLineDash([], 0)
+  
+  // Infos élève
+  y += 6
+  doc.setFont('helvetica', 'bold').setFontSize(9)
+  doc.text('ELEVE :', 5, y)
+  doc.setFont('helvetica', 'normal')
+  doc.text(`${paiement.eleve_prenom} ${paiement.eleve_nom}`, 5, y += 4)
+  doc.text(`Classe: ${paiement.classe_nom}`, 5, y += 4)
+  if (paiement.eleve_matricule) {
+    doc.text(`Matricule: ${paiement.eleve_matricule}`, 5, y += 4)
+  }
+
+  y += 2
+  ;(doc as any).setLineDash([1, 1], 0)
+  doc.line(5, y, pageWidth - 5, y)
+  ;(doc as any).setLineDash([], 0)
+
+  // Détails paiement
+  y += 6
+  doc.setFont('helvetica', 'bold').setFontSize(9)
+  doc.text('MOTIF :', 5, y)
+  doc.setFont('helvetica', 'normal')
+  
+  // Le motif peut être long, on le coupe si besoin ou on le laisse sur 2 lignes
+  const splitMotif = doc.splitTextToSize(paiement.frais_libelle, pageWidth - 10)
+  doc.text(splitMotif, 5, y += 4)
+  y += (splitMotif.length - 1) * 4
+
+  doc.text(`Mode: ${paiement.mode_paiement}`, 5, y += 4)
+  
+  y += 4
+  doc.setFont('helvetica', 'bold').setFontSize(12)
+  doc.text('TOTAL:', 5, y)
+  doc.text(`${paiement.montant.toLocaleString('fr-FR')} F`, pageWidth - 5, y, { align: 'right' })
+  
+  y += 2
+  ;(doc as any).setLineDash([1, 1], 0)
+  doc.line(5, y, pageWidth - 5, y)
+  ;(doc as any).setLineDash([], 0)
+
+  // Pied de page
+  y += 6
+  doc.setFont('helvetica', 'normal').setFontSize(7)
+  textCenter(`Caissier: ${caissier ? `${caissier.prenom} ${caissier.nom}` : 'N/A'}`, y)
+  textCenter('Merci de votre confiance.', y += 4)
+  
+  // Ajustement de la taille de la page (Optionnel, mais utile)
+  // JsPdf ne permet pas de cropper la page après création facilement, 
+  // mais la plupart des imprimantes thermiques arrêtent d'imprimer à la fin du contenu.
+  
+  const blob = doc.output('blob')
+  const url  = URL.createObjectURL(blob)
+  const win  = window.open(url, '_blank')
+  if (win) {
+    win.addEventListener('load', () => {
+      setTimeout(() => { win.print() }, 300)
+    })
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 60_000)
+}

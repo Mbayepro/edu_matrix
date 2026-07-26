@@ -1,4 +1,6 @@
 import React from 'react';
+import { QRCodeSVG } from 'qrcode.react';
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 
 export interface MatiereDetails {
   id: string;
@@ -84,6 +86,17 @@ export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }
     if (moy < 16) return 'Bien';
     return 'Très Bien';
   };
+
+  // Préparation des données pour le graphique Radar (Top 6 matières par coefficient)
+  const radarData = matieresCalculated
+    .filter(m => m.moyenneNum !== null && !m.isBonus)
+    .sort((a, b) => b.coefficient - a.coefficient)
+    .slice(0, 6)
+    .map(m => ({
+      subject: m.nom.length > 5 ? m.nom.substring(0, 5).toUpperCase() + '.' : m.nom.toUpperCase(),
+      note: m.moyenneNum,
+      fullMark: 20,
+    }));
 
   return (
     <div className="w-[210mm] min-h-[297mm] mx-auto bg-white p-8 relative print:p-0 print:w-full font-serif text-sm">
@@ -198,16 +211,26 @@ export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }
       </div>
 
       {/* Résultats Globaux */}
-      <div className="flex border-2 border-slate-800 p-4 mb-6 z-10 relative bg-slate-50 gap-4 justify-between items-center rounded-sm">
-        <div className="flex flex-col items-center">
+      <div className="flex border-2 border-slate-800 p-2 mb-6 z-10 relative bg-slate-50 gap-4 justify-between items-center rounded-sm">
+        <div className="flex flex-col items-center justify-center pl-6">
              <span className="text-sm font-bold uppercase text-slate-600">Moyenne Générale</span>
-             <span className="text-3xl font-black text-slate-900 border-b-4 border-double border-slate-800 px-4">
+             <span className="text-3xl font-black text-slate-900 border-b-4 border-double border-slate-800 px-4 mt-2 mb-4">
                  {mgRecomp !== null ? `${mgRecomp.toFixed(2)} / 20` : 'Non Évalué'}
              </span>
-        </div>
-        <div className="flex flex-col">
              <span className="text-sm font-bold uppercase text-slate-600">Mention</span>
              <span className="text-xl font-bold italic">{data.mention || getAppreciation(mgRecomp)}</span>
+        </div>
+        
+        {/* Graphique Radar Pédagogique */}
+        <div className="w-1/2 h-[160px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+              <PolarGrid stroke="#cbd5e1" />
+              <PolarAngleAxis dataKey="subject" tick={{ fill: '#475569', fontSize: 10, fontWeight: 'bold' }} />
+              <PolarRadiusAxis angle={30} domain={[0, 20]} tick={false} axisLine={false} />
+              <Radar name="Élève" dataKey="note" stroke="#0f172a" strokeWidth={2} fill="#3b82f6" fillOpacity={0.15} />
+            </RadarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
@@ -246,13 +269,23 @@ export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }
       </div>
       
       {/* Footer Text & Transparency Message */}
-      <div className="absolute bottom-4 left-0 right-0 text-center space-y-1 z-10">
-        <p className="text-[10px] font-bold text-slate-800 uppercase tracking-tight">
-          💡 La méthode de calcul des moyennes est définie par l’établissement dans les paramètres pédagogiques.
-        </p>
-        <p className="text-[9px] text-slate-500 italic">
-          Généré le {new Date().toLocaleDateString('fr-FR')} par EduMatrix - Bulletin Scolaire Officiel • Système de calcul standardisé (Sénégal)
-        </p>
+      <div className="absolute bottom-4 left-0 right-0 z-10 flex justify-between items-end px-8">
+        <div className="space-y-1 text-left w-3/4">
+          <p className="text-[10px] font-bold text-slate-800 uppercase tracking-tight">
+            💡 La méthode de calcul des moyennes est définie par l’établissement dans les paramètres pédagogiques.
+          </p>
+          <p className="text-[9px] text-slate-500 italic">
+            Généré le {new Date().toLocaleDateString('fr-FR')} par EduMatrix - Bulletin Scolaire Officiel • Système de calcul standardisé
+          </p>
+        </div>
+        <div className="flex flex-col items-center">
+          <QRCodeSVG 
+            value={`EduMatrix - AUTH: ${data.eleve.matricule} - ${data.eleve.nom} - TRIM: ${data.trimestre} - MG: ${mgRecomp?.toFixed(2)}`} 
+            size={45} 
+            level="L"
+          />
+          <span className="text-[6px] uppercase font-bold text-slate-500 mt-1">Authentique</span>
+        </div>
       </div>
     </div>
   );
