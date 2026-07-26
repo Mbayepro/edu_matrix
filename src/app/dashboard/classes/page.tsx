@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react'
 import { useProfile } from '@/hooks/useProfile'
 import { useToast } from '@/contexts/ToastContext'
 import type { Classe, Profile } from '@/lib/supabase'
-import { BookOpen, Plus, Trash2, Loader2, Users, GraduationCap, Edit2, Check, X } from 'lucide-react'
+import { BookOpen, Plus, Trash2, Loader2, Users, GraduationCap, Edit2, Check, X, Settings2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useNetwork } from '@/hooks/useNetwork'
 import { db } from '@/lib/db'
@@ -19,19 +19,90 @@ interface ClasseAvecEleves extends Classe {
   nb_eleves?: number
 }
 
+function SeriesManagerModal({ isOpen, onClose, ecoleId, onUpdated }: { isOpen: boolean; onClose: () => void; ecoleId: string; onUpdated: () => void }) {
+  const [series, setSeries] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [form, setForm] = useState({ code: '', nom: '' })
+  const { showToast } = useToast()
+
+  useEffect(() => { if (isOpen) load() }, [isOpen])
+
+  async function load() {
+    setLoading(true)
+    const data = await db.series.where('ecole_id').equals(ecoleId).toArray()
+    setSeries(data)
+    setLoading(false)
+  }
+
+  async function handleAdd(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.code) return
+    const newSerie = { id: crypto.randomUUID(), ecole_id: ecoleId, code: form.code, nom: form.nom || form.code }
+    await (supabase as any).from('series').insert(newSerie)
+    await db.series.add(newSerie as any)
+    showToast('Série ajoutée', 'success')
+    setForm({ code: '', nom: '' })
+    await load()
+    onUpdated()
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('Supprimer cette série ?')) return
+    await (supabase as any).from('series').delete().eq('id', id)
+    await db.series.delete(id)
+    showToast('Série supprimée', 'success')
+    await load()
+    onUpdated()
+  }
+
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-slate-900 rounded-[2rem] p-8 max-w-md w-full border border-slate-700 shadow-2xl relative">
+        <button onClick={onClose} className="absolute top-6 right-6 text-slate-400 hover:text-white"><X className="w-6 h-6" /></button>
+        <h2 className="text-xl font-black text-white mb-6 uppercase tracking-widest">Gestion des Séries</h2>
+        
+        <form onSubmit={handleAdd} className="flex gap-2 mb-8">
+          <input type="text" placeholder="Ex: S2" value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white w-24 font-black" required />
+          <input type="text" placeholder="Nom complet (ex: Sciences Expr.)" value={form.nom} onChange={e => setForm(f => ({ ...f, nom: e.target.value }))} className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white flex-1" />
+          <button type="submit" className="bg-emerald-600 text-white rounded-xl px-4 py-3 hover:bg-emerald-500"><Plus className="w-5 h-5" /></button>
+        </form>
+
+        <div className="space-y-2 max-h-60 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-700">
+          {loading ? <Loader2 className="w-6 h-6 animate-spin text-emerald-500 mx-auto" /> : 
+           series.map(s => (
+             <div key={s.id} className="flex items-center justify-between bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
+               <div>
+                 <span className="font-black text-emerald-400 mr-2">{s.code}</span>
+                 <span className="text-slate-300 text-sm">{s.nom}</span>
+               </div>
+               <button onClick={() => handleDelete(s.id)} className="text-slate-500 hover:text-rose-400"><Trash2 className="w-4 h-4" /></button>
+             </div>
+           ))
+          }
+          {series.length === 0 && !loading && <p className="text-center text-slate-500 text-sm font-medium">Aucune série créée pour le lycée.</p>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function ClassesPage() {
   const router = useRouter()
   const { profile, loading: profileLoading } = useProfile()
   const ecoleId = profile?.ecole_id || null
 
   const [classes, setClasses] = useState<ClasseAvecEleves[]>([])
+  const [series, setSeries] = useState<any[]>([])
+  const [isSeriesModalOpen, setIsSeriesModalOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const { showToast } = useToast()
 
-  const [form, setForm] = useState({ nom_classe: '', niveau: '' })
-  const [editForm, setEditForm] = useState({ nom_classe: '', niveau: '' })
+  const [form, setForm] = useState({ nom_classe: '', niveau: '', serie_id: '' })
+  const [editForm, setEditForm] = useState({ nom_classe: '', niveau: '', serie_id: '' })
   const [cyclesCouverts, setCyclesCouverts] = useState<string[]>(['primaire'])
 
   const NIVEAUX = [
@@ -68,6 +139,9 @@ export default function ClassesPage() {
         nb_eleves: eleves.filter((e: LocalEleve) => e.classe_id === c.id).length,
       }))
       setClasses(withCounts)
+      
+      const sers = await db.series.where('ecole_id').equals(eid).toArray()
+      setSeries(sers)
 
       // 2. Background Pull if Online
       if (isOnline) {
@@ -78,6 +152,9 @@ export default function ClassesPage() {
           ...c,
           nb_eleves: updatedEleves.filter((e: LocalEleve) => e.classe_id === c.id).length,
         })))
+        
+        const updatedSers = await db.series.where('ecole_id').equals(eid).toArray()
+        setSeries(updatedSers)
       }
     } finally {
       setLoading(false)
@@ -94,6 +171,7 @@ export default function ClassesPage() {
       ecole_id: ecoleId,
       nom_classe: form.nom_classe.trim(),
       niveau: form.niveau,
+      serie_id: form.serie_id || null,
       created_at: new Date().toISOString()
     }
 
@@ -104,7 +182,8 @@ export default function ClassesPage() {
           id: newClasse.id,
           ecole_id: newClasse.ecole_id,
           nom_classe: newClasse.nom_classe,
-          niveau: newClasse.niveau
+          niveau: newClasse.niveau,
+          serie_id: newClasse.serie_id
         })
         
         if (error) throw error
@@ -121,7 +200,7 @@ export default function ClassesPage() {
         showToast('Classe créée (Hors-ligne) !', 'success')
       }
 
-      setForm({ nom_classe: '', niveau: '' })
+      setForm({ nom_classe: '', niveau: '', serie_id: '' })
       await loadClasses(ecoleId)
     } catch (err: any) {
       showToast('Erreur : ' + err.message, 'error')
@@ -135,6 +214,7 @@ export default function ClassesPage() {
       const updates = {
         nom_classe: editForm.nom_classe.trim(),
         niveau: editForm.niveau,
+        serie_id: editForm.serie_id || null
       }
 
       // 1. Update Locally
@@ -175,7 +255,7 @@ export default function ClassesPage() {
 
   function startEdit(c: ClasseAvecEleves) {
     setEditId(c.id)
-    setEditForm({ nom_classe: c.nom_classe, niveau: c.niveau })
+    setEditForm({ nom_classe: c.nom_classe, niveau: c.niveau, serie_id: c.serie_id || '' })
   }
 
   const inputCls = 'border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white w-full'
@@ -227,14 +307,24 @@ export default function ClassesPage() {
         <div className="premium-glass rounded-[2rem] p-8 group overflow-hidden relative border border-emerald-500/10">
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-500" />
           
-          <div className="flex items-center gap-3 mb-6 relative z-10">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
-              <Plus className="w-5 h-5" />
+          <div className="flex items-center justify-between mb-6 relative z-10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
+                <Plus className="w-5 h-5" />
+              </div>
+              <h2 className="text-base font-black uppercase tracking-widest text-white">Nouvelle Division</h2>
             </div>
-            <h2 className="text-base font-black uppercase tracking-widest text-white">Nouvelle Division</h2>
+            
+            <button 
+              onClick={() => setIsSeriesModalOpen(true)}
+              className="px-4 py-2 bg-emerald-500/10 text-emerald-400 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20 flex items-center gap-2"
+            >
+              <Settings2 className="w-4 h-4" />
+              Gérer les Séries
+            </button>
           </div>
 
-          <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end relative z-10">
+          <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end relative z-10">
             <div className="md:col-span-2">
               <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 ml-1">Nom de la Classe</label>
               <input
@@ -256,6 +346,17 @@ export default function ClassesPage() {
               >
                 <option value="" className="bg-slate-900">Sélectionner…</option>
                 {NIVEAUX.map(n => <option key={n} value={n} className="bg-slate-900">{n}</option>)}
+              </select>
+            </div>
+            <div className="md:col-span-1">
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 ml-1">Série (Lycée)</label>
+              <select
+                value={form.serie_id}
+                onChange={e => setForm(f => ({ ...f, serie_id: e.target.value }))}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all shadow-sm cursor-pointer appearance-none"
+              >
+                <option value="" className="bg-slate-900">Tronc Commun</option>
+                {series.map(s => <option key={s.id} value={s.id} className="bg-slate-900">{s.code}</option>)}
               </select>
             </div>
             <div className="md:col-span-1">
@@ -318,20 +419,37 @@ export default function ClassesPage() {
                             </div>
                             <div>
                               <span className="text-base font-black text-white uppercase tracking-tight group-hover:text-emerald-400 transition-colors">{c.nom_classe}</span>
-                              <p className="text-[10px] text-slate-500 font-bold tracking-widest uppercase mt-0.5">Section Scolaire</p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <p className="text-[10px] text-slate-500 font-bold tracking-widest uppercase">Section Scolaire</p>
+                                {c.serie_id && series.find(s => s.id === c.serie_id) && (
+                                  <span className="px-1.5 py-0.5 bg-violet-500/10 text-violet-400 text-[8px] font-black rounded border border-violet-500/20 uppercase">
+                                    Série {series.find(s => s.id === c.serie_id)?.code}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         )}
                       </td>
                       <td className="px-6 py-5">
                         {editId === c.id ? (
-                          <select
-                            value={editForm.niveau}
-                            onChange={e => setEditForm(f => ({ ...f, niveau: e.target.value }))}
-                            className="bg-slate-900 border-2 border-emerald-500/50 rounded-2xl px-4 py-3 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 transition-all appearance-none"
-                          >
-                            {NIVEAUX.map(n => <option key={n} value={n} className="bg-slate-900">{n}</option>)}
-                          </select>
+                          <div className="flex gap-2">
+                            <select
+                              value={editForm.niveau}
+                              onChange={e => setEditForm(f => ({ ...f, niveau: e.target.value }))}
+                              className="bg-slate-900 border-2 border-emerald-500/50 rounded-2xl px-4 py-3 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 transition-all appearance-none"
+                            >
+                              {NIVEAUX.map(n => <option key={n} value={n} className="bg-slate-900">{n}</option>)}
+                            </select>
+                            <select
+                              value={editForm.serie_id}
+                              onChange={e => setEditForm(f => ({ ...f, serie_id: e.target.value }))}
+                              className="bg-slate-900 border-2 border-emerald-500/50 rounded-2xl px-4 py-3 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 transition-all appearance-none w-24"
+                            >
+                              <option value="" className="bg-slate-900">Tronc Commun</option>
+                              {series.map(s => <option key={s.id} value={s.id} className="bg-slate-900">{s.code}</option>)}
+                            </select>
+                          </div>
                         ) : (
                           <span className="inline-flex items-center px-4 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20 group-hover:bg-white/5 transition-all">
                             {c.niveau}
@@ -482,6 +600,13 @@ export default function ClassesPage() {
           </>
         )}
       </div>
+
+      <SeriesManagerModal 
+        isOpen={isSeriesModalOpen} 
+        onClose={() => setIsSeriesModalOpen(false)} 
+        ecoleId={ecoleId!}
+        onUpdated={() => loadClasses(ecoleId!)}
+      />
     </div>
   )
 }
