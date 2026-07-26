@@ -320,25 +320,25 @@ export default function DashboardPage() {
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full lg:w-auto">
-            <div className="bg-slate-800 rounded-[2rem] p-8 text-center border border-slate-700">
-              <p className="text-5xl font-bold text-emerald-400 mb-2">
+            <Link href="/dashboard/presences" className="bg-slate-800 rounded-[2rem] p-8 text-center border border-slate-700 hover:bg-slate-700/50 hover:border-emerald-500/50 transition-all block group">
+              <p className="text-5xl font-bold text-emerald-400 mb-2 group-hover:scale-105 transition-transform">
                 {stats?.presencesAujourd ?? 0}
               </p>
-              <p className="text-sm text-slate-400 font-bold uppercase">Présences</p>
+              <p className="text-sm text-slate-400 font-bold uppercase group-hover:text-slate-300">Présences</p>
               <div className="mt-4 flex items-center justify-center gap-2">
-                 <div className="w-2 h-2 bg-emerald-500 rounded-full" />
+                 <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
                  <span className="text-xs font-bold text-emerald-500">Aujourd'hui</span>
               </div>
-            </div>
-            <div className="bg-slate-800 rounded-[2rem] p-8 text-center border border-slate-700">
-              <p className="text-5xl font-bold text-rose-400 mb-2">
+            </Link>
+            <Link href="/dashboard/paiements?tab=impayes" className="bg-slate-800 rounded-[2rem] p-8 text-center border border-slate-700 hover:bg-slate-700/50 hover:border-rose-500/50 transition-all block group">
+              <p className="text-5xl font-bold text-rose-400 mb-2 group-hover:scale-105 transition-transform">
                 {stats?.elevesImpayes ?? 0}
               </p>
-              <p className="text-sm text-slate-400 font-bold uppercase">Impayés</p>
+              <p className="text-sm text-slate-400 font-bold uppercase group-hover:text-slate-300">Impayés</p>
               <div className="mt-4 flex items-center justify-center gap-2">
-                 <span className="text-xs font-bold text-rose-400">À vérifier</span>
+                 <span className="text-xs font-bold text-rose-400 group-hover:text-rose-300">À vérifier</span>
               </div>
-            </div>
+            </Link>
           </div>
         </div>
       </div>

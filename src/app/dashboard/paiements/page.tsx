@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { supabase, Eleve, FraisScolaire, EleveFrais, Paiement } from '@/lib/supabase'
 import {
   Loader2,
@@ -46,10 +47,13 @@ interface EleveWithClasse extends Omit<Eleve, 'classe'> {
   classe?: { nom_classe: string }
 }
 
-export default function PaiementsPage() {
+function PaiementsContent() {
   const { profile, ecole, loading: profileLoading } = useProfile()
   const ecoleId = profile?.ecole_id || null
   const { showToast } = useToast()
+  const searchParams = useSearchParams()
+
+  const initialTab = searchParams.get('tab') === 'impayes' ? 'impayes' : 'tous'
 
   const [eleves, setEleves] = useState<EleveWithClasse[]>([])
   const [frais, setFrais] = useState<FraisScolaire[]>([])
@@ -65,7 +69,7 @@ export default function PaiementsPage() {
   const [saving, setSaving] = useState(false)
   const [shareOpenId, setShareOpenId] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
-  const [activeTab, setActiveTab] = useState<'tous' | 'impayes'>('tous')
+  const [activeTab, setActiveTab] = useState<'tous' | 'impayes'>(initialTab)
   const [editingPhoneId, setEditingPhoneId] = useState<string | null>(null)
   const [tempPhone, setTempPhone] = useState('')
   const [isAssigning, setIsAssigning] = useState(false)
@@ -83,21 +87,52 @@ export default function PaiementsPage() {
     return selectedFrais.frequence === 'mensuel' || lib.includes('mensu') || lib.includes('scolarit')
   }, [selectedFrais])
 
-  const getMoisImpayes = (eleveId: string, itemFraisId: string) => {
-    // 1. Trouver le frais pour vérifer s'il est mensuel
+  const getCurrentSchoolMonthIndex = () => {
+    const currentMonth = new Date().toLocaleString('fr-FR', { month: 'long' }).toLowerCase()
+    const index = SCHOOL_MONTHS.findIndex(m => m.toLowerCase() === currentMonth)
+    if (index === -1) {
+      const m = new Date().getMonth()
+      if (m === 7 || m === 8) return SCHOOL_MONTHS.length - 1
+      return 0
+    }
+    return index
+  }
+
+  const getMoisEnRetard = (eleveId: string, itemFraisId: string) => {
     const f = frais.find(fr => fr.id === itemFraisId)
     if (!f) return []
     const lib = (f.libelle || '').toLowerCase()
     if (f.frequence !== 'mensuel' && !lib.includes('mensu') && !lib.includes('scolarit')) return []
 
-    // 2. Lister les mois déjà payés pour ce frais
     const moisPayes = paiements
       .filter(p => p.eleve_id === eleveId && p.frais_id === itemFraisId)
       .map(p => (p as any).mois)
       .filter(Boolean)
 
-    // 3. Retourner les mois du calendrier non présents dans moisPayes
-    return SCHOOL_MONTHS.filter(m => !moisPayes.includes(m))
+    const currentIndex = getCurrentSchoolMonthIndex()
+    const pastMonths = SCHOOL_MONTHS.slice(0, currentIndex + 1)
+    return pastMonths.filter(m => !moisPayes.includes(m))
+  }
+
+  const isEleveEnRetard = (eleveId: string) => {
+    const efs = elevesFrais.filter(ef => ef.eleve_id === eleveId)
+    let isLate = false
+    
+    for (const ef of efs) {
+      const f = frais.find(fr => fr.id === ef.frais_id)
+      if (f) {
+        const lib = (f.libelle || '').toLowerCase()
+        if (f.frequence === 'mensuel' || lib.includes('mensu') || lib.includes('scolarit')) {
+          const retards = getMoisEnRetard(eleveId, ef.frais_id)
+          if (retards.length > 0) isLate = true
+        } else {
+          const aPayer = Number(ef.montant_a_payer) || (Number(ef.montant_du) - (Number(ef.montant_remise) || 0)) || 0
+          const paye = paiements.filter(p => p.eleve_id === eleveId && p.frais_id === ef.frais_id).reduce((s, p) => s + Number(p.montant), 0)
+          if (aPayer > paye) isLate = true
+        }
+      }
+    }
+    return isLate
   }
 
   const { isOnline } = useNetwork()
@@ -493,9 +528,7 @@ export default function PaiementsPage() {
 
   const filteredEleves = eleves.filter(e => {
     if (activeTab === 'impayes') {
-      const { reste } = getEleveBalance(e.id)
-      // Secours : si le calcul du solde (reste) est 0 mais que le statut dit "impayé", on le montre
-      return reste > 0 || e.statut_paiement === 'impayé' || e.statut_paiement === 'partiel'
+      return isEleveEnRetard(e.id)
     }
     return true
   })
@@ -718,10 +751,7 @@ export default function PaiementsPage() {
               }`}
             >
               <div className={`w-1.5 h-1.5 rounded-full ${activeTab === 'impayes' ? 'bg-rose-500 animate-pulse' : 'bg-slate-500'}`} />
-              Retardataires ({eleves.filter(e => {
-                const { reste } = getEleveBalance(e.id);
-                return reste > 0 || e.statut_paiement === 'impayé' || e.statut_paiement === 'partiel';
-              }).length})
+              Retardataires ({eleves.filter(e => isEleveEnRetard(e.id)).length})
             </button>
           </div>
 
@@ -802,23 +832,42 @@ export default function PaiementsPage() {
                       }`}>
                         {e.statut_paiement}
                       </span>
-                      {/* Affichage des mois impayés si frais mensuels assignés */}
+                      {/* Affichage des retards */}
                       {(() => {
-                        const mensuelFrais = elevesFrais.find(ef => {
-                          const fr = frais.find(f => f.id === ef.frais_id)
-                          return ef.eleve_id === e.id && (fr?.frequence === 'mensuel' || fr?.libelle?.toLowerCase().includes('scolarit'))
-                        })
-                        if (mensuelFrais) {
-                          const impayes = getMoisImpayes(e.id, mensuelFrais.frais_id)
-                          if (impayes.length > 0) {
-                            return (
-                              <div className="mt-1 flex flex-wrap gap-1 justify-end max-w-[150px]">
-                                <span className="text-[7px] font-black text-rose-400 uppercase w-full text-right bg-rose-500/10 px-1 rounded border border-rose-500/20">
-                                  Dû: {impayes.slice(0, 3).join(', ')}{impayes.length > 3 ? '...' : ''}
-                                </span>
-                              </div>
-                            )
+                        const efs = elevesFrais.filter(ef => ef.eleve_id === e.id)
+                        let retardsMensuels: string[] = []
+                        let hasOtherRetard = false
+                        for (const ef of efs) {
+                          const f = frais.find(fr => fr.id === ef.frais_id)
+                          if (f) {
+                            const lib = (f.libelle || '').toLowerCase()
+                            if (f.frequence === 'mensuel' || lib.includes('mensu') || lib.includes('scolarit')) {
+                               retardsMensuels = [...retardsMensuels, ...getMoisEnRetard(e.id, ef.frais_id)]
+                            } else {
+                               const aPayer = Number(ef.montant_a_payer) || (Number(ef.montant_du) - (Number(ef.montant_remise) || 0)) || 0
+                               const paye = paiements.filter(p => p.eleve_id === e.id && p.frais_id === ef.frais_id).reduce((s, p) => s + Number(p.montant), 0)
+                               if (aPayer > paye) hasOtherRetard = true
+                            }
                           }
+                        }
+                        
+                        retardsMensuels = Array.from(new Set(retardsMensuels))
+
+                        if (retardsMensuels.length > 0 || hasOtherRetard) {
+                          return (
+                            <div className="mt-1 flex flex-wrap gap-1 justify-end max-w-[150px]">
+                              {retardsMensuels.length > 0 && (
+                                <span className="text-[7px] font-black text-rose-400 uppercase w-full text-right bg-rose-500/10 px-1 rounded border border-rose-500/20">
+                                  Retard: {retardsMensuels.slice(0, 3).join(', ')}{retardsMensuels.length > 3 ? '...' : ''}
+                                </span>
+                              )}
+                              {hasOtherRetard && retardsMensuels.length === 0 && (
+                                <span className="text-[7px] font-black text-amber-400 uppercase w-full text-right bg-amber-500/10 px-1 rounded border border-amber-500/20">
+                                  Frais en retard
+                                </span>
+                              )}
+                            </div>
+                          )
                         }
                         return null
                       })()}
@@ -1155,6 +1204,14 @@ export default function PaiementsPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function PaiementsPage() {
+  return (
+    <Suspense fallback={<div className="p-8">Chargement du module paiements...</div>}>
+      <PaiementsContent />
+    </Suspense>
   )
 }
 

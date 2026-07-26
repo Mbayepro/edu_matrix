@@ -198,7 +198,7 @@ export class EduMatrixDB extends Dexie {
     const totalPaye = paiements.reduce((sum, p) => sum + Number(p.montant), 0)
 
     let statut: 'payé' | 'partiel' | 'impayé' = 'impayé'
-    if (totalPaye >= totalDu && totalDu > 0) statut = 'payé'
+    if (totalPaye >= totalDu && totalPaye > 0) statut = 'payé'
     else if (totalPaye > 0) statut = 'partiel'
 
     await eTable.update(eleveId, { statut_paiement: statut })
