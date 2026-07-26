@@ -40,6 +40,7 @@ export default function SchoolSettingsPage() {
     signature_url: '',
     calculation_method: 'BLOCKS',
     type_periode: 'trimestre' as 'trimestre' | 'semestre',
+    cycles_couverts: ['primaire'] as string[],
   })
 
   useEffect(() => {
@@ -71,6 +72,7 @@ export default function SchoolSettingsPage() {
           signature_url: ec.signature_url ?? '',
           calculation_method: ec.calculation_method ?? 'BLOCKS',
           type_periode: ec.type_periode ?? 'trimestre',
+          cycles_couverts: ec.cycles_couverts ?? ['primaire'],
         })
       }
     } catch (err) {
@@ -95,6 +97,7 @@ export default function SchoolSettingsPage() {
           tampon_url: form.tampon_url || null,
           signature_url: form.signature_url || null,
           calculation_method: form.calculation_method,
+          cycles_couverts: form.cycles_couverts,
           // type_periode: form.type_periode, // Temporairement désactivé en attendant la mise à jour de la base de données
         } as any)
         .eq('id', ecole.id)
@@ -290,6 +293,33 @@ export default function SchoolSettingsPage() {
                   <span className="font-bold text-slate-700 block mb-1">Impact sur les bulletins :</span>
                   Le changement de période modifie l'affichage global de l'application (Saisie des notes, bulletins).
                 </p>
+              </div>
+            </div>
+
+            <div className="space-y-3 md:col-span-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Cycles Couverts</label>
+              <div className="flex flex-wrap gap-4">
+                {[
+                  { id: 'primaire', label: 'Primaire (CI - CM2)' },
+                  { id: 'moyen', label: 'Moyen (6ème - 3ème)' },
+                  { id: 'secondaire', label: 'Secondaire (2nde - Tle)' }
+                ].map(cycle => (
+                  <label key={cycle.id} className="flex items-center gap-2 cursor-pointer bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl hover:bg-purple-50 transition-colors">
+                    <input 
+                      type="checkbox" 
+                      className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                      checked={form.cycles_couverts.includes(cycle.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setForm(f => ({ ...f, cycles_couverts: [...f.cycles_couverts, cycle.id] }))
+                        } else {
+                          setForm(f => ({ ...f, cycles_couverts: f.cycles_couverts.filter(c => c !== cycle.id) }))
+                        }
+                      }}
+                    />
+                    <span className="text-sm font-bold text-slate-700">{cycle.label}</span>
+                  </label>
+                ))}
               </div>
             </div>
           </div>

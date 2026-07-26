@@ -32,11 +32,12 @@ export default function ClassesPage() {
 
   const [form, setForm] = useState({ nom_classe: '', niveau: '' })
   const [editForm, setEditForm] = useState({ nom_classe: '', niveau: '' })
+  const [cyclesCouverts, setCyclesCouverts] = useState<string[]>(['primaire'])
 
   const NIVEAUX = [
-    'CI', 'CP', 'CE1', 'CE2', 'CM1', 'CM2',
-    '6ème', '5ème', '4ème', '3ème',
-    '2nde', '1ère', 'Terminale',
+    ...(cyclesCouverts.includes('primaire') ? ['CI', 'CP', 'CE1', 'CE2', 'CM1', 'CM2'] : []),
+    ...(cyclesCouverts.includes('moyen') ? ['6ème', '5ème', '4ème', '3ème'] : []),
+    ...(cyclesCouverts.includes('secondaire') ? ['2nde', '1ère', 'Terminale'] : []),
   ]
 
   const { isOnline } = useNetwork()
@@ -54,6 +55,11 @@ export default function ClassesPage() {
     try {
       setLoading(true)
       // 1. Load from LOCAL (Dexie)
+      const ecole = await db.ecoles.get(eid)
+      if (ecole && ecole.cycles_couverts) {
+        setCyclesCouverts(ecole.cycles_couverts)
+      }
+
       const cls = await db.classes.where('ecole_id').equals(eid).toArray()
       const eleves = await db.eleves.where('ecole_id').equals(eid).toArray()
 

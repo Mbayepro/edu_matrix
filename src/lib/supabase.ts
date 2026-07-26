@@ -22,6 +22,7 @@ export interface Ecole {
   calculation_method?: 'BLOCKS' | 'WEIGHTED'
   type_periode?: 'trimestre' | 'semestre'
   statut: StatutEcole
+  cycles_couverts?: string[]
   created_at: string
   updated_at?: string
   deleted_at?: string | null
