@@ -9,7 +9,7 @@ import type { Profile, Ecole } from '@/lib/supabase'
 import {
   Users, BookOpen, AlertCircle, LayoutGrid,
   TrendingUp, UserCheck, Activity, ChevronRight, MessageCircle,
-  ShieldCheck, ArrowUpRight, ArrowDownRight, Clock, Sparkles, FileText, UsersRound, Settings
+  ShieldCheck, ArrowUpRight, ArrowDownRight, Clock, Sparkles, FileText, UsersRound, Settings, Zap
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -25,6 +25,7 @@ import { db } from '@/lib/db'
 import { syncFromSupabase, flushSyncQueue } from '@/lib/syncService'
 import { useNetwork } from '@/hooks/useNetwork'
 import { getTodayDate } from '@/lib/dateUtils'
+import FlashReportModal from '@/components/FlashReportModal'
 
 interface DashboardStats {
   totalEleves:      number
@@ -115,6 +116,7 @@ export default function DashboardPage() {
   const [presenceChart, setPresenceChart] = useState<{ jour: string; present: number; absent: number }[]>([])
   const [notesChart,    setNotesChart]    = useState<{ classe: string; moyenne: number }[]>([])
   const [loading,       setLoading]       = useState(true)
+  const [isFlashOpen,   setIsFlashOpen]   = useState(false)
 
   useEffect(() => {
     if (profile?.role === 'superadmin') {
@@ -317,6 +319,15 @@ export default function DashboardPage() {
               L&apos;établissement <span className="text-white font-bold">{ecole?.nom}</span> est synchronisé. <br/>
               <span className="text-slate-400 text-sm mt-2 block">Tableau de bord de direction</span>
             </p>
+            <div className="pt-4 flex justify-center lg:justify-start">
+              <button 
+                onClick={() => setIsFlashOpen(true)}
+                className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-amber-500/10 hover:bg-amber-500 hover:text-slate-900 border border-amber-500/50 text-amber-400 font-black transition-all shadow-[0_0_20px_rgba(245,158,11,0.2)] hover:shadow-[0_0_30px_rgba(245,158,11,0.4)]"
+              >
+                <Zap className="w-5 h-5" />
+                BILAN DU JOUR
+              </button>
+            </div>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full lg:w-auto">
@@ -564,6 +575,13 @@ export default function DashboardPage() {
         </div>
 
       </div>
+
+      <FlashReportModal 
+        isOpen={isFlashOpen} 
+        onClose={() => setIsFlashOpen(false)} 
+        ecoleId={ecoleId || ''} 
+        ecoleNom={ecole?.nom} 
+      />
     </div>
   )
 }

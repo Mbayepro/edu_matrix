@@ -210,15 +210,16 @@ export function sharePaiementRecu(
   }
 }
 
-/** Construit et imprime un ticket thermique (80mm) */
 export async function printThermalPaiementRecuPDF(
   ecole: Ecole,
   paiement: PaiementRecuInfo,
   caissier?: Profile | null
 ) {
-  // Format thermique standard 80mm de large. La hauteur est approximative (120mm) et s'ajustera.
-  const doc = new jsPDF({ format: [80, 150], unit: 'mm' })
+  // Format thermique 80mm. 
+  // On utilise une longueur de 160mm pour avoir assez de place.
+  const doc = new jsPDF({ format: [80, 160], unit: 'mm' })
   const pageWidth = doc.internal.pageSize.getWidth()
+  const marginX = 6 // Marge gauche/droite augmentée pour éviter les coupures à l'impression
   
   const datePaiement = new Date(paiement.date_paiement)
   const dateStr = datePaiement.toLocaleDateString('fr-FR')
@@ -226,14 +227,29 @@ export async function printThermalPaiementRecuPDF(
   
   let y = 5
 
-  // Centrer le texte
   const textCenter = (text: string, yPos: number, options?: any) => {
     doc.text(text, pageWidth / 2, yPos, { align: 'center', ...options })
   }
 
-  // En-tête de l'école
-  doc.setFont('helvetica', 'bold').setFontSize(14).setTextColor(0, 0, 0)
-  textCenter(ecole.nom.toUpperCase(), y += 5)
+  // --- LOGO (Optionnel, si disponible et chargeable) ---
+  if (ecole.logo_url) {
+    try {
+      const logoData = await getImageData(ecole.logo_url)
+      if (logoData) {
+        const format = ecole.logo_url.toLowerCase().endsWith('.png') ? 'PNG' : 'JPEG'
+        doc.addImage(logoData, format, (pageWidth - 20) / 2, y, 20, 20)
+        y += 22
+      }
+    } catch (e) { 
+      console.warn('Logo error skipped for thermal', e) 
+    }
+  } else {
+    y += 5
+  }
+
+  // --- EN-TÊTE ÉCOLE ---
+  doc.setFont('helvetica', 'bold').setFontSize(12).setTextColor(0, 0, 0)
+  textCenter(ecole.nom.toUpperCase(), y)
   
   doc.setFont('helvetica', 'normal').setFontSize(8)
   if (ecole.adresse) textCenter(ecole.adresse, y += 4)
@@ -241,70 +257,71 @@ export async function printThermalPaiementRecuPDF(
   
   y += 2
   ;(doc as any).setLineDash([1, 1], 0)
-  doc.line(5, y, pageWidth - 5, y)
+  doc.line(marginX, y, pageWidth - marginX, y)
   ;(doc as any).setLineDash([], 0)
 
-  // Titre Reçu
+  // --- TITRE REÇU ---
   y += 6
   doc.setFont('helvetica', 'bold').setFontSize(10)
-  textCenter('TICKET DE PAIEMENT', y)
+  textCenter('REÇU DE SCOLARITÉ', y)
   doc.setFontSize(8).setFont('helvetica', 'normal')
   textCenter(`Date : ${dateStr} à ${timeStr}`, y += 4)
   textCenter(`Réf: REF-${paiement.id.substring(0, 8).toUpperCase()}`, y += 4)
   
   y += 2
   ;(doc as any).setLineDash([1, 1], 0)
-  doc.line(5, y, pageWidth - 5, y)
+  doc.line(marginX, y, pageWidth - marginX, y)
   ;(doc as any).setLineDash([], 0)
   
-  // Infos élève
+  // --- INFOS ÉLÈVE ---
   y += 6
-  doc.setFont('helvetica', 'bold').setFontSize(9)
-  doc.text('ELEVE :', 5, y)
+  doc.setFont('helvetica', 'bold').setFontSize(8)
+  doc.text('ÉLÈVE :', marginX, y)
   doc.setFont('helvetica', 'normal')
-  doc.text(`${paiement.eleve_prenom} ${paiement.eleve_nom}`, 5, y += 4)
-  doc.text(`Classe: ${paiement.classe_nom}`, 5, y += 4)
+  doc.text(`${paiement.eleve_prenom} ${paiement.eleve_nom}`, marginX, y += 4)
+  doc.text(`Classe: ${paiement.classe_nom}`, marginX, y += 4)
   if (paiement.eleve_matricule) {
-    doc.text(`Matricule: ${paiement.eleve_matricule}`, 5, y += 4)
+    doc.text(`Matricule: ${paiement.eleve_matricule}`, marginX, y += 4)
   }
 
   y += 2
   ;(doc as any).setLineDash([1, 1], 0)
-  doc.line(5, y, pageWidth - 5, y)
+  doc.line(marginX, y, pageWidth - marginX, y)
   ;(doc as any).setLineDash([], 0)
 
-  // Détails paiement
+  // --- DÉTAILS PAIEMENT ---
   y += 6
-  doc.setFont('helvetica', 'bold').setFontSize(9)
-  doc.text('MOTIF :', 5, y)
+  doc.setFont('helvetica', 'bold').setFontSize(8)
+  doc.text('MOTIF / DÉSIGNATION :', marginX, y)
   doc.setFont('helvetica', 'normal')
   
-  // Le motif peut être long, on le coupe si besoin ou on le laisse sur 2 lignes
-  const splitMotif = doc.splitTextToSize(paiement.frais_libelle, pageWidth - 10)
-  doc.text(splitMotif, 5, y += 4)
+  const splitMotif = doc.splitTextToSize(paiement.frais_libelle, pageWidth - (marginX * 2))
+  doc.text(splitMotif, marginX, y += 4)
   y += (splitMotif.length - 1) * 4
 
-  doc.text(`Mode: ${paiement.mode_paiement}`, 5, y += 4)
+  doc.text(`Mode de paiement : ${paiement.mode_paiement}`, marginX, y += 4)
   
-  y += 4
-  doc.setFont('helvetica', 'bold').setFontSize(12)
-  doc.text('TOTAL:', 5, y)
-  doc.text(`${paiement.montant.toLocaleString('fr-FR')} F`, pageWidth - 5, y, { align: 'right' })
+  y += 6
+  // --- TOTAL ---
+  doc.setFillColor(240, 240, 240)
+  doc.rect(marginX, y - 4, pageWidth - (marginX * 2), 8, 'F') // Fond gris clair pour le total
+  doc.setFont('helvetica', 'bold').setFontSize(10)
+  doc.text('TOTAL PAYÉ :', marginX + 2, y + 1.5)
+  doc.text(`${paiement.montant.toLocaleString('fr-FR')} F`, pageWidth - marginX - 2, y + 1.5, { align: 'right' })
   
-  y += 2
+  y += 6
   ;(doc as any).setLineDash([1, 1], 0)
-  doc.line(5, y, pageWidth - 5, y)
+  doc.line(marginX, y, pageWidth - marginX, y)
   ;(doc as any).setLineDash([], 0)
 
-  // Pied de page
+  // --- PIED DE PAGE ---
   y += 6
   doc.setFont('helvetica', 'normal').setFontSize(7)
-  textCenter(`Caissier: ${caissier ? `${caissier.prenom} ${caissier.nom}` : 'N/A'}`, y)
-  textCenter('Merci de votre confiance.', y += 4)
-  
-  // Ajustement de la taille de la page (Optionnel, mais utile)
-  // JsPdf ne permet pas de cropper la page après création facilement, 
-  // mais la plupart des imprimantes thermiques arrêtent d'imprimer à la fin du contenu.
+  textCenter(`Caissier: ${caissier ? `${caissier.prenom} ${caissier.nom}` : 'Direction'}`, y)
+  y += 4
+  doc.setFont('helvetica', 'italic')
+  textCenter('Merci de votre confiance.', y)
+  textCenter('Conservez ce reçu précieusement.', y += 3)
   
   const blob = doc.output('blob')
   const url  = URL.createObjectURL(blob)

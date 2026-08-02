@@ -21,6 +21,46 @@ interface ScanResult {
   studentName?: string
   matricule?: string
   statutPaiement?: string
+  paymentWarning?: string
+}
+
+const SCHOOL_MONTHS = [
+  'Octobre', 'Novembre', 'Décembre', 'Janvier',
+  'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet'
+]
+
+function getCurrentSchoolMonthIndex(): number {
+  const date = new Date()
+  const m = date.getMonth()
+  const d = date.getDate()
+
+  let currentMonthName = ''
+  if (m === 9) currentMonthName = 'Octobre'
+  else if (m === 10) currentMonthName = 'Novembre'
+  else if (m === 11) currentMonthName = 'Décembre'
+  else if (m === 0) currentMonthName = 'Janvier'
+  else if (m === 1) currentMonthName = 'Février'
+  else if (m === 2) currentMonthName = 'Mars'
+  else if (m === 3) currentMonthName = 'Avril'
+  else if (m === 4) currentMonthName = 'Mai'
+  else if (m === 5) currentMonthName = 'Juin'
+  else if (m === 6) currentMonthName = 'Juillet'
+  
+  let index = SCHOOL_MONTHS.indexOf(currentMonthName)
+  
+  if (index === -1) {
+    if (m === 7 || m === 8) return SCHOOL_MONTHS.length - 1
+    return 0
+  }
+
+  // Règle du 5 du mois : si on est avant le 5, le mois courant n'est pas encore "en retard"
+  if (d < 5 && index > 0) {
+    index -= 1
+  } else if (d < 5 && index === 0) {
+    return -1 // Pas encore de retard possible avant le 5 octobre
+  }
+
+  return index
 }
 
 // ─────────────────────────────────────────
@@ -105,6 +145,58 @@ async function processAttendance(studentId: string, classeId: string, ecoleId: s
       }
     }
 
+    // 3.5 Check for payment warnings
+    let paymentWarning: string | undefined = undefined
+    try {
+      let efs: any[] = []
+      let frs: any[] = []
+      let pmts: any[] = []
+
+      if (isOnline) {
+        const [resEf, resFr, resPmts] = await Promise.all([
+          (supabase as any).from('eleves_frais').select('*').eq('eleve_id', realStudentId),
+          (supabase as any).from('frais_scolaires').select('*').eq('ecole_id', ecoleId),
+          (supabase as any).from('paiements').select('*').eq('eleve_id', realStudentId)
+        ])
+        efs = resEf.data || []
+        frs = resFr.data || []
+        pmts = resPmts.data || []
+      } else if (db) {
+        efs = await db.eleves_frais.where('eleve_id').equals(realStudentId).toArray()
+        frs = await db.frais_scolaires.where('ecole_id').equals(ecoleId).toArray()
+        pmts = await db.paiements.where('eleve_id').equals(realStudentId).toArray()
+      }
+
+      const currentIndex = getCurrentSchoolMonthIndex()
+      
+      if (currentIndex >= 0) {
+        let retardsMensuels: string[] = []
+        for (const ef of efs) {
+          const f = frs.find((fr: any) => fr.id === ef.frais_id)
+          if (f) {
+            const lib = (f.libelle || '').toLowerCase()
+            if (f.frequence === 'mensuel' || lib.includes('mensu') || lib.includes('scolarit')) {
+              const moisPayes = pmts
+                .filter((p: any) => p.frais_id === ef.frais_id)
+                .map((p: any) => p.mois)
+                .filter(Boolean)
+              
+              const pastMonths = SCHOOL_MONTHS.slice(0, currentIndex + 1)
+              const missing = pastMonths.filter(m => !moisPayes.includes(m))
+              retardsMensuels = [...retardsMensuels, ...missing]
+            }
+          }
+        }
+        
+        retardsMensuels = Array.from(new Set(retardsMensuels))
+        if (retardsMensuels.length > 0) {
+          paymentWarning = `Mensualité(s) impayée(s) : ${retardsMensuels.join(', ')}`
+        }
+      }
+    } catch (e) {
+      console.warn('Error calculating payment warning:', e)
+    }
+
     if (existing) {
       return {
         status: 'already',
@@ -112,6 +204,7 @@ async function processAttendance(studentId: string, classeId: string, ecoleId: s
         studentName: `${eleve.prenom} ${eleve.nom}`,
         matricule:   eleve.matricule ?? undefined,
         statutPaiement: eleve.statut_paiement,
+        paymentWarning
       }
     }
 
@@ -202,6 +295,7 @@ async function processAttendance(studentId: string, classeId: string, ecoleId: s
       studentName: `${eleve.prenom} ${eleve.nom}`,
       matricule:   eleve.matricule ?? undefined,
       statutPaiement: eleve.statut_paiement,
+      paymentWarning
     }
   } catch (error) {
     console.error('Error in processAttendance:', error)
@@ -238,7 +332,7 @@ function ScanResultCard({ result, onReset }: { result: ScanResult; onReset: () =
           {result.statutPaiement && (
             <div className="mt-4 pt-4 border-t border-black/5 flex flex-col gap-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] uppercase font-black tracking-widest text-slate-400">Paiement</span>
+                <span className="text-[10px] uppercase font-black tracking-widest text-slate-400">Paiement Global</span>
                 <span className={`text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-widest ${
                   result.statutPaiement === 'payé' ? 'bg-emerald-100 text-emerald-700' :
                   result.statutPaiement === 'partiel' ? 'bg-amber-100 text-amber-700' :
@@ -247,6 +341,16 @@ function ScanResultCard({ result, onReset }: { result: ScanResult; onReset: () =
                   {result.statutPaiement}
                 </span>
               </div>
+              
+              {result.paymentWarning && (
+                <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 flex items-start gap-3 mt-2 animate-in slide-in-from-bottom-2">
+                  <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-black text-red-700">Retard de paiement</p>
+                    <p className="text-xs font-medium text-red-600/80 mt-0.5">{result.paymentWarning}</p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

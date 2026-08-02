@@ -149,10 +149,10 @@ export default function ConseilClassePage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-lg bg-emerald-600/10 flex items-center justify-center">
-              <School className="w-4 h-4 text-emerald-600" />
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+              <School className="w-4 h-4 text-emerald-400" />
             </div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Conseil de Classe</h1>
+            <h1 className="text-2xl font-black text-white tracking-tight">Conseil de Classe</h1>
           </div>
           <p className="text-sm text-slate-500 font-medium tracking-tight">
             Analyse des performances et prise de décisions académiques.
@@ -160,45 +160,45 @@ export default function ConseilClassePage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-slate-200 shadow-sm relative group overflow-hidden transition-all hover:border-emerald-200">
+          <div className="flex items-center gap-3 bg-slate-900 px-4 py-2 rounded-2xl border border-slate-700 shadow-sm relative group overflow-hidden transition-all hover:border-emerald-500/50">
             <select
               value={selectedClasse}
               onChange={(e) => setSelectedClasse(e.target.value)}
-              className="bg-transparent border-none focus:outline-none text-sm font-black text-slate-900 pr-8 cursor-pointer appearance-none relative z-10"
+              className="bg-transparent border-none focus:outline-none text-sm font-black text-white pr-8 cursor-pointer appearance-none relative z-10"
             >
-              <option value="">Choisir une classe</option>
-              {classes.map(c => <option key={c.id} value={c.id}>{c.nom_classe}</option>)}
+              <option value="" className="text-slate-900">Choisir une classe</option>
+              {classes.map(c => <option key={c.id} value={c.id} className="text-slate-900">{c.nom_classe}</option>)}
             </select>
-            <Users className="w-4 h-4 text-emerald-600 absolute right-4 pointer-events-none" />
+            <Users className="w-4 h-4 text-emerald-400 absolute right-4 pointer-events-none" />
           </div>
 
-          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-slate-200 shadow-sm relative group overflow-hidden transition-all hover:border-emerald-200">
+          <div className="flex items-center gap-3 bg-slate-900 px-4 py-2 rounded-2xl border border-slate-700 shadow-sm relative group overflow-hidden transition-all hover:border-emerald-500/50">
             <select
               value={selectedTrimestre}
               onChange={(e) => setSelectedTrimestre(Number(e.target.value) as 1 | 2 | 3)}
-              className="bg-transparent border-none focus:outline-none text-sm font-black text-slate-900 pr-8 cursor-pointer appearance-none relative z-10"
+              className="bg-transparent border-none focus:outline-none text-sm font-black text-white pr-8 cursor-pointer appearance-none relative z-10"
             >
-              <option value={1}>1er Trimestre</option>
-              <option value={2}>2ème Trimestre</option>
-              <option value={3}>3ème Trimestre</option>
+              <option value={1} className="text-slate-900">1er Trimestre</option>
+              <option value={2} className="text-slate-900">2ème Trimestre</option>
+              <option value={3} className="text-slate-900">3ème Trimestre</option>
             </select>
-            <TrendingUp className="w-4 h-4 text-emerald-600 absolute right-4 pointer-events-none" />
+            <TrendingUp className="w-4 h-4 text-emerald-400 absolute right-4 pointer-events-none" />
           </div>
 
-          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border border-slate-200 shadow-sm relative group overflow-hidden transition-all hover:border-emerald-200">
+          <div className="flex items-center gap-3 bg-slate-900 px-4 py-2 rounded-2xl border border-slate-700 shadow-sm relative group overflow-hidden transition-all hover:border-emerald-500/50">
             <input 
               type="text"
               value={anneeScolaire}
               onChange={(e) => setAnneeScolaire(e.target.value)}
-              className="bg-transparent border-none focus:outline-none text-sm font-black text-slate-900 pr-8 cursor-pointer w-24"
+              className="bg-transparent border-none focus:outline-none text-sm font-black text-white pr-8 cursor-pointer w-24"
             />
-            <TrendingUp className="w-4 h-4 text-emerald-600 absolute right-4 pointer-events-none" />
+            <TrendingUp className="w-4 h-4 text-emerald-400 absolute right-4 pointer-events-none" />
           </div>
 
           {selectedClasse && (
             <Link
               href={`/dashboard/bulletins?classe=${selectedClasse}&trimestre=${selectedTrimestre}`}
-              className="flex items-center gap-2 px-6 py-2 rounded-2xl bg-emerald-600 text-white text-xs font-black uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg shadow-emerald-600/20"
+              className="flex items-center gap-2 px-6 py-2 rounded-2xl bg-emerald-500 text-slate-900 text-xs font-black uppercase tracking-widest hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"
             >
               <FileText className="w-4 h-4" />
               Imprimer Bulletins
@@ -208,13 +208,38 @@ export default function ConseilClassePage() {
       </div>
 
       {!selectedClasse ? (
-        <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-32 text-center animate-in fade-in duration-500">
-            <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-8 relative">
-                <div className="absolute inset-0 bg-emerald-500/10 rounded-full animate-pulse" />
-                <Users className="w-10 h-10 text-slate-300 relative z-10" />
+        <div className="bg-slate-900 rounded-[2rem] border border-slate-800 shadow-xl p-12 lg:p-32 animate-in fade-in duration-500 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full -mr-32 -mt-32 blur-3xl" />
+            
+            <div className="max-w-2xl mx-auto text-center space-y-8">
+              <div className="w-24 h-24 bg-slate-800 rounded-full flex items-center justify-center mx-auto relative border border-slate-700">
+                  <div className="absolute inset-0 bg-emerald-500/10 rounded-full animate-pulse" />
+                  <Users className="w-10 h-10 text-emerald-400 relative z-10" />
+              </div>
+              
+              <div className="space-y-4">
+                <h3 className="text-3xl font-black text-white tracking-tight">Conseil de Classe</h3>
+                <p className="text-lg text-slate-400 font-medium">Pour préparer et gérer votre conseil de classe, suivez ces 3 étapes simples :</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left mt-12">
+                <div className="bg-slate-800/50 p-6 rounded-3xl border border-slate-700">
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-black mb-4">1</div>
+                  <h4 className="text-white font-bold mb-2">Choisissez une classe</h4>
+                  <p className="text-sm text-slate-400">Sélectionnez la classe et le trimestre en haut à droite pour charger les données.</p>
+                </div>
+                <div className="bg-slate-800/50 p-6 rounded-3xl border border-slate-700">
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-black mb-4">2</div>
+                  <h4 className="text-white font-bold mb-2">Analysez les résultats</h4>
+                  <p className="text-sm text-slate-400">Consultez les moyennes, la progression et les suggestions générées automatiquement.</p>
+                </div>
+                <div className="bg-slate-800/50 p-6 rounded-3xl border border-slate-700">
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-black mb-4">3</div>
+                  <h4 className="text-white font-bold mb-2">Prenez des décisions</h4>
+                  <p className="text-sm text-slate-400">Ajoutez vos appréciations globales et attribuez les félicitations ou sanctions pour chaque élève.</p>
+                </div>
+              </div>
             </div>
-            <h3 className="text-xl font-black text-slate-900 mb-2 tracking-tight">Conseil de Classe en attente</h3>
-            <p className="text-base text-slate-400 font-medium max-w-sm mx-auto">Veuillez sélectionner une classe pour démarrer l&apos;analyse et la prise de décisions.</p>
         </div>
       ) : loading ? (
         <div className="space-y-6">
@@ -230,67 +255,67 @@ export default function ConseilClassePage() {
         <div className="space-y-6 animate-in fade-in duration-500">
           {/* Stats Bar */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-slate-500/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-110" />
+            <div className="bg-slate-900 p-6 rounded-[2rem] border border-slate-800 shadow-xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-slate-500/10 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-110" />
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 ml-1">Moyenne Classe</p>
                 <div className="flex items-end gap-2">
-                    <span className="text-3xl font-black text-slate-900 tracking-tighter leading-none">
+                    <span className="text-3xl font-black text-white tracking-tighter leading-none">
                       {(isPrimary ? stats.moyenneClasse / 2 : stats.moyenneClasse).toFixed(2)}
                     </span>
-                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest">/{isPrimary ? '10' : '20'}</span>
+                    <span className="text-xs font-black text-slate-500 uppercase tracking-widest">/{isPrimary ? '10' : '20'}</span>
                 </div>
             </div>
 
-            <div className="bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-110" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600/60 mb-3 ml-1">Taux de Réussite</p>
+            <div className="bg-slate-900 p-6 rounded-[2rem] border border-slate-800 shadow-xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-110" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400/60 mb-3 ml-1">Taux de Réussite</p>
                 <div className="flex items-center gap-4">
-                    <span className="text-3xl font-black text-emerald-600 tracking-tighter leading-none">
+                    <span className="text-3xl font-black text-emerald-400 tracking-tighter leading-none">
                       {bulletins.length > 0 ? ((stats.reussite / bulletins.length) * 100).toFixed(0) : '0'}%
                     </span>
-                    <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-emerald-500 shadow-lg shadow-emerald-500/20" style={{ width: `${bulletins.length > 0 ? (stats.reussite / bulletins.length) * 100 : 0}%` }} />
+                    <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+                        <div className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" style={{ width: `${bulletins.length > 0 ? (stats.reussite / bulletins.length) * 100 : 0}%` }} />
                     </div>
                 </div>
             </div>
 
-            <div className="bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-110" />
+            <div className="bg-slate-900 p-6 rounded-[2rem] border border-slate-800 shadow-xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-110" />
                 <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400/60 mb-3 ml-1">Félicitations</p>
                 <div className="flex items-center justify-between">
                     <span className="text-3xl font-black text-emerald-400 tracking-tighter leading-none">{stats.felicitations}</span>
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-100 shadow-sm">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20 shadow-sm">
                       <Award className="w-5 h-5" />
                     </div>
                 </div>
             </div>
 
-            <div className="bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-110" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-red-600/60 mb-3 ml-1">En difficulté</p>
+            <div className="bg-slate-900 p-6 rounded-[2rem] border border-slate-800 shadow-xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/10 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-110" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-rose-400/60 mb-3 ml-1">En difficulté</p>
                 <div className="flex items-center justify-between">
-                    <span className="text-3xl font-black text-red-600 tracking-tighter leading-none">{stats.echecs}</span>
-                    <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-red-600 border border-red-100 shadow-sm">
-                        <AlertTriangle className="w-5 h-5 text-red-400" />
+                    <span className="text-3xl font-black text-rose-400 tracking-tighter leading-none">{stats.echecs}</span>
+                    <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-400 border border-rose-500/20 shadow-sm">
+                        <AlertTriangle className="w-5 h-5" />
                     </div>
                 </div>
             </div>
           </div>
 
           {/* Search Table */}
-          <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm overflow-hidden flex flex-col transition-all duration-500 hover:shadow-xl hover:shadow-emerald-900/5">
-            <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/10 flex flex-col sm:flex-row justify-between gap-6">
+          <div className="bg-slate-900 rounded-[2rem] border border-slate-800 shadow-xl overflow-hidden flex flex-col transition-all duration-500 hover:shadow-2xl">
+            <div className="px-8 py-6 border-b border-slate-800 bg-slate-800/30 flex flex-col sm:flex-row justify-between gap-6">
                 <div className="relative flex-1 max-w-md group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
                     <input 
                         type="text" 
                         placeholder="Rechercher un élève par nom ou matricule…"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-12 pr-6 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 focus:bg-white transition-all outline-none shadow-sm"
+                        className="w-full pl-12 pr-6 py-3.5 bg-slate-800 border border-slate-700 rounded-xl text-sm font-bold text-white placeholder-slate-500 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500/50 transition-all outline-none shadow-inner"
                     />
                 </div>
-                <button className="flex items-center justify-center gap-3 px-8 py-3.5 bg-slate-900 hover:bg-emerald-600 text-white rounded-xl text-sm font-black transition-all shadow-xl shadow-slate-900/10">
+                <button className="flex items-center justify-center gap-3 px-8 py-3.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-xl text-sm font-black transition-all">
                     <FileText className="w-4 h-4" />
                     Exporter PV Conseil
                 </button>
@@ -299,7 +324,7 @@ export default function ConseilClassePage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/30">
+                  <tr className="border-b border-slate-800 bg-slate-800/30">
                     <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Rang</th>
                     <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Élève</th>
                     <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Moyenne</th>
@@ -308,26 +333,26 @@ export default function ConseilClassePage() {
                     <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-slate-800">
                   {filteredBulletins.map((b) => (
-                    <tr key={b.eleve.id} className="group hover:bg-slate-50/80 transition-all duration-300">
+                    <tr key={b.eleve.id} className="group hover:bg-slate-800/50 transition-all duration-300">
                       <td className="px-8 py-5">
                         <span className={`inline-flex items-center justify-center w-10 h-10 rounded-xl font-black text-sm transition-transform group-hover:scale-110 ${
-                            b.rang === 1 ? 'bg-amber-100 text-amber-700 shadow-sm border border-amber-200/50' : 
-                            b.rang === 2 ? 'bg-slate-100 text-slate-600 shadow-sm border border-slate-200/50' :
-                            b.rang === 3 ? 'bg-orange-100 text-orange-700 shadow-sm border border-orange-200/50' : 'text-slate-400 border border-transparent'
+                            b.rang === 1 ? 'bg-amber-500/10 text-amber-500 shadow-sm border border-amber-500/20' : 
+                            b.rang === 2 ? 'bg-slate-800 text-slate-300 shadow-sm border border-slate-700' :
+                            b.rang === 3 ? 'bg-orange-500/10 text-orange-500 shadow-sm border border-orange-500/20' : 'text-slate-500 border border-transparent'
                         }`}>
                             {b.rang}
                         </span>
                       </td>
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200/60 flex items-center justify-center text-slate-400 font-black text-xs shadow-sm overflow-hidden group-hover:scale-110 group-hover:border-emerald-200 transition-all duration-500">
+                            <div className="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 font-black text-xs shadow-sm overflow-hidden group-hover:scale-110 group-hover:border-emerald-500/50 transition-all duration-500">
                                 {b.eleve.photo_url ? <img src={b.eleve.photo_url} className="w-full h-full object-cover" /> : b.eleve.prenom[0]}
                             </div>
                             <div>
-                                <p className="text-base font-black text-slate-900 leading-tight group-hover:text-emerald-600 transition-colors uppercase">{b.eleve.prenom} {b.eleve.nom}</p>
-                                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-0.5">{b.eleve.matricule}</p>
+                                <p className="text-base font-black text-white leading-tight group-hover:text-emerald-400 transition-colors uppercase">{b.eleve.prenom} {b.eleve.nom}</p>
+                                <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-0.5">{b.eleve.matricule}</p>
                             </div>
                         </div>
                       </td>
@@ -336,8 +361,8 @@ export default function ConseilClassePage() {
                           if (b.moyenne_generale === null) {
                             return (
                               <div className="flex items-center gap-2">
-                                <MinusCircle className="w-4 h-4 text-slate-400" />
-                                <span className="font-black text-lg text-slate-400">N/É</span>
+                                <MinusCircle className="w-4 h-4 text-slate-600" />
+                                <span className="font-black text-lg text-slate-600">N/É</span>
                               </div>
                             );
                           }
@@ -345,11 +370,11 @@ export default function ConseilClassePage() {
                           const threshold = isPrimary ? 5 : 10;
                           return (
                             <div className="flex items-center gap-2">
-                              {val < threshold ? <TrendingDown className="w-4 h-4 text-rose-500" /> : <TrendingUp className="w-4 h-4 text-emerald-500" />}
-                              <span className={`font-black text-lg ${val < threshold ? 'text-rose-600' : 'text-emerald-600'}`}>
+                              {val < threshold ? <TrendingDown className="w-4 h-4 text-rose-500" /> : <TrendingUp className="w-4 h-4 text-emerald-400" />}
+                              <span className={`font-black text-lg ${val < threshold ? 'text-rose-500' : 'text-emerald-400'}`}>
                                 {val.toFixed(2)}
                               </span>
-                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">/{isPrimary ? '10' : '20'}</span>
+                              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">/{isPrimary ? '10' : '20'}</span>
                             </div>
                           )
                         })()}
@@ -357,18 +382,18 @@ export default function ConseilClassePage() {
                       <td className="px-6 py-5">
                         {b.moyenne_generale !== null ? (
                           b.moyenne_generale >= 12 ? (
-                              <div className="flex items-center gap-2 text-[10px] font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg w-fit border border-emerald-100/50 shadow-sm">
+                              <div className="flex items-center gap-2 text-[10px] font-black text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg w-fit border border-emerald-500/20 shadow-sm">
                                   <ArrowUpRight className="w-3 h-3" />
                                   <span className="tracking-widest uppercase">+0.4 PTS</span>
                               </div>
                           ) : (
-                              <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 bg-slate-50 px-2.5 py-1 rounded-lg w-fit border border-slate-200 shadow-sm">
+                              <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 bg-slate-800 px-2.5 py-1 rounded-lg w-fit border border-slate-700 shadow-sm">
                                   <ArrowDownRight className="w-3 h-3" />
                                   <span className="tracking-widest uppercase">-0.1 PTS</span>
                               </div>
                           )
                         ) : (
-                           <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 bg-slate-50 px-2.5 py-1 rounded-lg w-fit border border-slate-200 shadow-sm">
+                           <div className="flex items-center gap-2 text-[10px] font-black text-slate-500 bg-slate-800 px-2.5 py-1 rounded-lg w-fit border border-slate-700 shadow-sm">
                                <MinusCircle className="w-3 h-3" />
                                <span className="tracking-widest uppercase">N/A</span>
                            </div>
@@ -376,9 +401,9 @@ export default function ConseilClassePage() {
                       </td>
                       <td className="px-6 py-5">
                         <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-[0.15em] shadow-sm border ${
-                            b.moyenne_generale !== null && b.moyenne_generale >= (isPrimary ? 7 : 14) ? 'bg-emerald-600 text-white border-indigo-700 shadow-indigo-200' :
-                            b.moyenne_generale !== null && b.moyenne_generale >= (isPrimary ? 5 : 10) ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                            'bg-red-50 text-red-600 border-red-100'
+                            b.moyenne_generale !== null && b.moyenne_generale >= (isPrimary ? 7 : 14) ? 'bg-emerald-500 text-slate-900 border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]' :
+                            b.moyenne_generale !== null && b.moyenne_generale >= (isPrimary ? 5 : 10) ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                            'bg-rose-500/10 text-rose-400 border-rose-500/20'
                         }`}>
                             {b.mention}
                         </span>
@@ -386,7 +411,7 @@ export default function ConseilClassePage() {
                       <td className="px-8 py-5 text-right">
                         <button 
                           onClick={() => handleEditDecision(b)}
-                          className="w-10 h-10 flex items-center justify-center bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 transition-all shadow-sm group/btn"
+                          className="w-10 h-10 flex items-center justify-center bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-emerald-400 hover:border-emerald-500/50 hover:bg-slate-700 transition-all shadow-sm group/btn"
                         >
                             <ChevronRight className="w-5 h-5 group-hover/btn:translate-x-0.5 transition-transform" />
                         </button>
@@ -402,31 +427,31 @@ export default function ConseilClassePage() {
 
       {/* Decision Modal */}
       {editingEleve && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-[2.5rem] p-10 w-full max-w-lg shadow-2xl animate-in zoom-in duration-300 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16" />
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xl flex items-center justify-center z-[100] p-4">
+          <div className="bg-slate-900 border border-slate-700/50 rounded-[2.5rem] p-10 w-full max-w-lg shadow-2xl animate-in zoom-in duration-300 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -mr-16 -mt-16 blur-2xl" />
             
             <div className="relative z-10">
               <div className="flex items-center gap-4 mb-8">
-                <div className="w-14 min-w-[56px] h-14 rounded-2xl bg-emerald-600/10 flex items-center justify-center text-emerald-600">
+                <div className="w-14 min-w-[56px] h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
                   <FileText className="w-7 h-7" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-slate-900 tracking-tight">Décision du Conseil</h3>
+                  <h3 className="text-xl font-black text-white tracking-tight">Décision du Conseil</h3>
                   <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Évaluation Trimestrielle</p>
                 </div>
               </div>
               
-              <div className="p-6 bg-slate-50/50 rounded-2xl border border-slate-100 mb-8">
+              <div className="p-6 bg-slate-800/50 rounded-2xl border border-slate-700 mb-8">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-slate-900 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-slate-900/10">
+                  <div className="w-14 h-14 rounded-2xl bg-slate-800 flex items-center justify-center text-white text-xl font-black border border-slate-700 shadow-inner">
                     {editingEleve.eleve.prenom[0]}
                   </div>
                   <div>
-                    <h4 className="text-base font-black text-slate-900 uppercase">{editingEleve.eleve.prenom} {editingEleve.eleve.nom}</h4>
-                    <p className="text-xs font-black text-emerald-600 mt-0.5">
+                    <h4 className="text-base font-black text-white uppercase">{editingEleve.eleve.prenom} {editingEleve.eleve.nom}</h4>
+                    <p className="text-xs font-black text-emerald-400 mt-0.5">
                       MOYENNE: <span className="tracking-tighter">{editingEleve.moyenne_generale !== null ? (isPrimary ? editingEleve.moyenne_generale / 2 : editingEleve.moyenne_generale).toFixed(2) : 'N/A'}/{isPrimary ? '10' : '20'}</span>
-                      <span className="mx-2 text-slate-300">•</span>
+                      <span className="mx-2 text-slate-600">•</span>
                       {editingEleve.mention.toUpperCase()}
                     </p>
                   </div>
@@ -439,7 +464,7 @@ export default function ConseilClassePage() {
                   <textarea 
                     value={decision.appreciation}
                     onChange={(e) => setDecision({...decision, appreciation: e.target.value})}
-                    className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all shadow-sm min-h-[120px]"
+                    className="w-full bg-slate-800 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-white placeholder-slate-500 focus:ring-4 focus:ring-emerald-500/10 focus:bg-slate-800 transition-all shadow-inner min-h-[120px] outline-none"
                     placeholder="Saisissez l'appréciation globale de l'élève…"
                   />
                 </div>
@@ -449,9 +474,9 @@ export default function ConseilClassePage() {
                   <select 
                     value={decision.decision}
                     onChange={(e) => setDecision({...decision, decision: e.target.value})}
-                    className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all"
+                    className="w-full bg-slate-800 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-slate-800 transition-all outline-none"
                   >
-                    <option value="">Sélectionner une décision</option>
+                    <option value="" className="text-slate-500">Sélectionner une décision</option>
                     <option value="felicitations">🎖️ Félicitations du Conseil</option>
                     <option value="encouragements">👏 Encouragements</option>
                     <option value="tableau_honneur">⭐ Tableau d'Honneur</option>
@@ -466,14 +491,14 @@ export default function ConseilClassePage() {
               <div className="flex flex-col sm:flex-row gap-3 mt-10">
                 <button 
                   onClick={() => setEditingEleve(null)}
-                  className="flex-1 px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all"
+                  className="flex-1 px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest text-slate-500 hover:text-white hover:bg-slate-800 transition-all"
                 >
                   Annuler
                 </button>
                 <button 
                   onClick={saveDecision}
                   disabled={saving}
-                  className="flex-[2] py-4 bg-slate-900 hover:bg-emerald-600 text-white rounded-xl text-sm font-black transition-all shadow-xl shadow-slate-900/10 flex items-center justify-center gap-3 disabled:opacity-50"
+                  className="flex-[2] py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-900 rounded-xl text-sm font-black transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] flex items-center justify-center gap-3 disabled:opacity-50"
                 >
                   {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                   Valider la Décision

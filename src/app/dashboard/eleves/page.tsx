@@ -5,11 +5,13 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Eleve, Classe } from '@/lib/supabase'
-import {
-  Search, Plus, ChevronLeft, ChevronRight,
-  Upload, User, Loader2, X, Eye, QrCode,
-  Users, UploadCloud, FileText, Printer, Edit
+import { 
+  Plus, Search, Filter, Edit2, Trash2, 
+  MoreVertical, Check, X, ShieldAlert,
+  Download, Upload as UploadIcon, AlertCircle, FileText, Camera, Link as LinkIcon,
+  Users, UploadCloud, Loader2, Printer, Upload, Edit, Eye, QrCode, ChevronLeft, ChevronRight
 } from 'lucide-react'
+import { compressImage } from '@/lib/imageCompression'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
@@ -197,13 +199,14 @@ export default function ElevesPage() {
 
     setUploading(eleveId)
     try {
-      const ext  = file.name.split('.').pop()
+      const compressedFile = await compressImage(file)
+      const ext  = compressedFile.name.split('.').pop()
       const uniqueId = Date.now()
       const path = `photos/${eleveId}_${uniqueId}.${ext}`
 
       const { error: uploadErr } = await supabase.storage
         .from('eleves-photos')
-        .upload(path, file, { upsert: false })
+        .upload(path, compressedFile, { upsert: false })
       if (uploadErr) throw uploadErr
 
       const { data: { publicUrl } } = supabase.storage
@@ -259,6 +262,20 @@ export default function ElevesPage() {
       showToast('Erreur lors de la génération du PDF.', 'error')
     } finally {
       setGeneratingPDF(false)
+    }
+  }
+
+  const copyParentLink = async (pin: string | null | undefined) => {
+    if (!pin) {
+      showToast('Code PIN introuvable pour cet élève.', 'error')
+      return
+    }
+    const url = `${window.location.origin}/p/${pin}`
+    try {
+      await navigator.clipboard.writeText(url)
+      showToast("Lien de l'espace parent copié !", 'success')
+    } catch (err) {
+      showToast("Impossible de copier le lien.", 'error')
     }
   }
 
@@ -507,6 +524,13 @@ export default function ElevesPage() {
                           >
                             <QrCode className="w-4 h-4" />
                           </button>
+                          <button
+                            onClick={() => copyParentLink(e.pin_parent)}
+                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-500 hover:text-blue-400 hover:border-blue-500/30 hover:bg-white/10 transition-all group/btn"
+                            title="Copier le lien Espace Parent"
+                          >
+                            <LinkIcon className="w-4 h-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -559,6 +583,18 @@ export default function ElevesPage() {
                         className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-500"
                       >
                         <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setViewingQR(e.id)}
+                        className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-500"
+                      >
+                        <QrCode className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => copyParentLink(e.pin_parent)}
+                        className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-500"
+                      >
+                        <LinkIcon className="w-4 h-4" />
                       </button>
                     </div>
                   </div>

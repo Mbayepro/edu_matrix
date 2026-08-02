@@ -8,6 +8,7 @@
 import { useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/contexts/ToastContext'
+import { compressImage } from '@/lib/imageCompression'
 import { Upload, Link as LinkIcon, Loader2, User, Camera, X } from 'lucide-react'
 
 interface Props {
@@ -34,13 +35,14 @@ export default function PhotoInput({ value, onChange, storageId }: Props) {
 
     setUploading(true)
     try {
-      const ext = file.name.split('.').pop()
+      const compressedFile = await compressImage(file)
+      const ext = compressedFile.name.split('.').pop()
       const uniqueId = Date.now()
       const path = `photos/${storageId}_${uniqueId}.${ext}`
 
       const { error: uploadErr } = await supabase.storage
         .from('eleves-photos')
-        .upload(path, file, { upsert: false })
+        .upload(path, compressedFile, { upsert: false })
       if (uploadErr) throw uploadErr
 
       const { data: { publicUrl } } = supabase.storage

@@ -118,20 +118,13 @@ export function StudentList({
             </div>
           </div>
           <div className="flex flex-col items-end gap-1.5">
-            <span className={`text-[9px] font-black uppercase tracking-[0.15em] px-3 py-1.5 rounded-lg border shadow-sm ${
-              e.statut_paiement === 'payé'
-                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                : e.statut_paiement === 'partiel'
-                ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-            }`}>
-              {e.statut_paiement}
-            </span>
-            {/* Affichage des retards */}
+            {/* Affichage détaillé des statuts d'inscription et de mensualité */}
             {(() => {
               const efs = elevesFrais.filter(ef => ef.eleve_id === e.id)
               let retardsMensuels: string[] = []
-              let hasOtherRetard = false
+              let isInscriptionPaid = true
+              let hasInscriptionFee = false
+
               for (const ef of efs) {
                 const f = frais.find(fr => fr.id === ef.frais_id)
                 if (f) {
@@ -141,30 +134,38 @@ export function StudentList({
                   } else {
                      const aPayer = Number(ef.montant_a_payer) || (Number(ef.montant_du) - (Number(ef.montant_remise) || 0)) || 0
                      const paye = paiements.filter(p => p.eleve_id === e.id && p.frais_id === ef.frais_id).reduce((s, p) => s + Number(p.montant), 0)
-                     if (aPayer > paye) hasOtherRetard = true
+                     if (lib.includes('inscription')) {
+                         hasInscriptionFee = true
+                         if (aPayer > paye) isInscriptionPaid = false
+                     }
                   }
                 }
               }
               
               retardsMensuels = Array.from(new Set(retardsMensuels))
 
-              if (retardsMensuels.length > 0 || hasOtherRetard) {
-                return (
-                  <div className="mt-1 flex flex-wrap gap-1 justify-end max-w-[150px]">
-                    {retardsMensuels.length > 0 && (
-                      <span className="text-[7px] font-black text-rose-400 uppercase w-full text-right bg-rose-500/10 px-1 rounded border border-rose-500/20">
-                        Retard: {retardsMensuels.slice(0, 3).join(', ')}{retardsMensuels.length > 3 ? '...' : ''}
-                      </span>
-                    )}
-                    {hasOtherRetard && retardsMensuels.length === 0 && (
-                      <span className="text-[7px] font-black text-amber-400 uppercase w-full text-right bg-amber-500/10 px-1 rounded border border-amber-500/20">
-                        Frais en retard
-                      </span>
-                    )}
-                  </div>
-                )
-              }
-              return null
+              return (
+                <div className="flex flex-col gap-1 items-end w-full max-w-[140px]">
+                  {hasInscriptionFee && (
+                    <span className={`w-full text-right text-[8px] font-black uppercase tracking-[0.1em] px-2 py-1 rounded-md border shadow-sm truncate ${
+                      isInscriptionPaid 
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                        : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                    }`}>
+                      Inscrip: {isInscriptionPaid ? 'Payée' : 'Impayée'}
+                    </span>
+                  )}
+                  <span className={`w-full text-right text-[8px] font-black uppercase tracking-[0.1em] px-2 py-1 rounded-md border shadow-sm truncate ${
+                    retardsMensuels.length === 0
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                      : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                  }`}>
+                    {retardsMensuels.length === 0 
+                      ? 'Mois: À Jour' 
+                      : `Mois Retard: ${retardsMensuels.length}`}
+                  </span>
+                </div>
+              )
             })()}
             {activeTab === 'impayes' && (
               <div className="flex items-center gap-2">

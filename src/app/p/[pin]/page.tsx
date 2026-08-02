@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Loader2, CalendarX, FileText, School } from 'lucide-react'
+import { Loader2, CalendarX, FileText, School, CreditCard, Smartphone } from 'lucide-react'
 import BulletinGenerator from '@/components/BulletinGenerator'
 
 export default function EspaceParentPage() {
@@ -12,7 +12,7 @@ export default function EspaceParentPage() {
   const [error, setError] = useState<string | null>(null)
   const [eleve, setEleve] = useState<any>(null)
   const [absences, setAbsences] = useState<any[]>([])
-  const [activeTab, setActiveTab] = useState<'bulletin' | 'absences'>('bulletin')
+  const [activeTab, setActiveTab] = useState<'bulletin' | 'absences' | 'paiement'>('bulletin')
   const [selectedTrimestre, setSelectedTrimestre] = useState<number>(1)
 
   useEffect(() => {
@@ -119,6 +119,13 @@ export default function EspaceParentPage() {
                 <span className="ml-1 bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-xs">{absences.length}</span>
               )}
             </button>
+            <button
+              onClick={() => setActiveTab('paiement')}
+              className={`flex-1 py-4 text-sm font-bold flex items-center justify-center gap-2 transition-colors ${activeTab === 'paiement' ? 'text-emerald-600 border-b-2 border-emerald-600 bg-emerald-50/30' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+            >
+              <CreditCard className="w-4 h-4" />
+              Scolarité
+            </button>
           </div>
 
           {/* Contenu de l'onglet Bulletins */}
@@ -190,6 +197,50 @@ export default function EspaceParentPage() {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Contenu de l'onglet Paiement (Bientôt Disponible) */}
+          {activeTab === 'paiement' && (
+            <div className="p-4 sm:p-8 bg-slate-50/50">
+              <div className="max-w-2xl mx-auto">
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-100 text-amber-700 font-bold text-xs uppercase tracking-widest mb-4">
+                    <Smartphone className="w-4 h-4" />
+                    En cours d'intégration
+                  </div>
+                  <h2 className="text-2xl font-black text-slate-800">Réglez la scolarité en 1 clic</h2>
+                  <p className="text-slate-500 mt-2">Votre école déploie actuellement le paiement par Mobile Money. Vous pourrez bientôt payer directement depuis votre téléphone.</p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Fausse carte Wave */}
+                  <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col items-center text-center opacity-60 grayscale cursor-not-allowed hover:grayscale-0 hover:opacity-100 transition-all duration-500 relative overflow-hidden">
+                    <div className="absolute top-3 right-3 bg-slate-100 text-slate-500 text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md">Bientôt</div>
+                    <div className="w-16 h-16 bg-[#1cd4fd] rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-[#1cd4fd]/20">
+                      <span className="text-white font-black text-2xl">W</span>
+                    </div>
+                    <h3 className="font-bold text-slate-800">Payer avec Wave</h3>
+                    <p className="text-xs text-slate-500 mt-1 mb-4">0% de frais de transaction</p>
+                    <button disabled className="w-full py-3 rounded-xl bg-slate-100 text-slate-400 font-bold text-sm">
+                      Non disponible
+                    </button>
+                  </div>
+
+                  {/* Fausse carte Orange Money */}
+                  <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col items-center text-center opacity-60 grayscale cursor-not-allowed hover:grayscale-0 hover:opacity-100 transition-all duration-500 relative overflow-hidden">
+                    <div className="absolute top-3 right-3 bg-slate-100 text-slate-500 text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md">Bientôt</div>
+                    <div className="w-16 h-16 bg-[#ff6600] rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-[#ff6600]/20">
+                      <span className="text-white font-black text-2xl">O</span>
+                    </div>
+                    <h3 className="font-bold text-slate-800">Orange Money</h3>
+                    <p className="text-xs text-slate-500 mt-1 mb-4">Via code marchand</p>
+                    <button disabled className="w-full py-3 rounded-xl bg-slate-100 text-slate-400 font-bold text-sm">
+                      Non disponible
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>

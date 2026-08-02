@@ -118,10 +118,10 @@ export default function MatieresPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-600/10 flex items-center justify-center">
-              <BookMarked className="w-5 h-5 text-emerald-600" />
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+              <BookMarked className="w-5 h-5 text-emerald-400" />
             </div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none">Référentiel Matières</h1>
+            <h1 className="text-3xl font-black text-white tracking-tight leading-none">Référentiel Matières</h1>
           </div>
           <p className="text-sm text-slate-500 font-medium max-w-2xl tracking-tight leading-relaxed">
             Configurez le socle pédagogique de votre établissement. Définissez les disciplines et leurs coefficients de pondération.
@@ -131,23 +131,23 @@ export default function MatieresPage() {
         <div className="flex flex-wrap items-center gap-4">
           <Link 
             href="/dashboard/matieres/coefficients"
-            className="flex items-center gap-3 px-6 py-4 bg-white border border-slate-200 rounded-2xl text-slate-600 hover:text-emerald-600 hover:border-emerald-200 hover:shadow-lg hover:shadow-emerald-500/5 transition-all duration-300 group"
+            className="flex items-center gap-3 px-6 py-4 bg-slate-900 border border-slate-700 rounded-2xl text-slate-300 hover:text-emerald-400 hover:border-emerald-500/50 hover:shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-all duration-300 group"
           >
-            <Settings2 className="w-4 h-4 text-slate-400 group-hover:text-emerald-500 transition-colors" />
+            <Settings2 className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 transition-colors" />
             <span className="text-xs font-black uppercase tracking-widest">Coefficients par Niveau</span>
           </Link>
 
-          <div className="bg-white rounded-[1.5rem] border border-slate-200/60 shadow-sm p-4 flex items-center gap-6 group hover:border-emerald-200 transition-all duration-500">
+          <div className="bg-slate-900 rounded-[1.5rem] border border-slate-800 shadow-sm p-4 flex items-center gap-6 group hover:border-slate-700 transition-all duration-500">
             <div className="flex flex-col">
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Matières</span>
-              <span className="text-2xl font-black text-slate-900 leading-tight group-hover:text-emerald-600 transition-colors">
+              <span className="text-2xl font-black text-white leading-tight group-hover:text-emerald-400 transition-colors">
                 {matieres.length}
               </span>
             </div>
-            <div className="w-px h-10 bg-slate-100" />
+            <div className="w-px h-10 bg-slate-800" />
             <div className="flex flex-col">
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Actives</span>
-              <span className="text-2xl font-black text-emerald-600 leading-tight">
+              <span className="text-2xl font-black text-emerald-400 leading-tight">
                 {matieres.filter(m => m.is_active).length}
               </span>
             </div>
@@ -157,14 +157,14 @@ export default function MatieresPage() {
 
       {/* Create form */}
       {isDirector && (
-        <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm p-8 group overflow-hidden relative">
+        <div className="bg-slate-900 rounded-[2rem] border border-slate-800 shadow-xl p-8 group overflow-hidden relative">
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-500" />
           
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
               <Plus className="w-5 h-5" />
             </div>
-            <h2 className="text-base font-black uppercase tracking-widest text-slate-900">Nouvelle Matière</h2>
+            <h2 className="text-base font-black uppercase tracking-widest text-white">Nouvelle Matière</h2>
           </div>
 
           <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-12 gap-4 items-end">
@@ -175,7 +175,7 @@ export default function MatieresPage() {
                 value={form.nom}
                 onChange={e => setForm(f => ({ ...f, nom: e.target.value }))}
                 placeholder="Ex: Mathématiques, Français…"
-                className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all shadow-sm"
+                className="w-full bg-slate-800 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-white placeholder-slate-500 focus:ring-4 focus:ring-emerald-500/10 focus:bg-slate-800 transition-all shadow-inner"
                 required
               />
             </div>
@@ -186,7 +186,7 @@ export default function MatieresPage() {
                 value={form.code}
                 onChange={e => setForm(f => ({ ...f, code: e.target.value }))}
                 placeholder="MATH, SVT…"
-                className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all shadow-sm"
+                className="w-full bg-slate-800 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-white placeholder-slate-500 focus:ring-4 focus:ring-emerald-500/10 focus:bg-slate-800 transition-all shadow-inner"
               />
             </div>
             <div className="md:col-span-1 lg:col-span-2">
@@ -194,7 +194,7 @@ export default function MatieresPage() {
               <button
                 type="button"
                 onClick={() => setForm(f => ({ ...f, est_bonus: !f.est_bonus }))}
-                className={`w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl border-2 transition-all text-[10px] font-black uppercase tracking-widest ${form.est_bonus ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-slate-50 border-transparent text-slate-400'}`}
+                className={`w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl border-2 transition-all text-[10px] font-black uppercase tracking-widest ${form.est_bonus ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-slate-800 border-transparent text-slate-400 hover:bg-slate-700'}`}
               >
                 {form.est_bonus ? '★ Bonus' : 'Classique'}
               </button>
@@ -207,14 +207,14 @@ export default function MatieresPage() {
                 max="10"
                 value={form.coefficient}
                 onChange={e => setForm(f => ({ ...f, coefficient: Number(e.target.value) }))}
-                className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all shadow-sm"
+                className="w-full bg-slate-800 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-slate-800 transition-all shadow-inner"
               />
             </div>
             <div className="md:col-span-6 lg:col-span-2">
               <button
                 type="submit"
                 disabled={saving}
-                className="w-full inline-flex items-center justify-center gap-3 px-6 py-3.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-sm font-black transition-all shadow-xl shadow-slate-900/10 disabled:opacity-60"
+                className="w-full inline-flex items-center justify-center gap-3 px-6 py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-900 text-sm font-black transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] disabled:opacity-60"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                 Créer
@@ -225,24 +225,24 @@ export default function MatieresPage() {
       )}
 
       {/* Matieres list */}
-      <div className="bg-white rounded-[2.5rem] border border-slate-200/50 shadow-sm overflow-hidden min-h-[400px]">
-        <div className="px-10 py-6 border-b border-slate-100 bg-slate-50/30 flex items-center justify-between">
+      <div className="bg-slate-900 rounded-[2.5rem] border border-slate-800 shadow-xl overflow-hidden min-h-[400px]">
+        <div className="px-10 py-6 border-b border-slate-800 bg-slate-800/50 flex items-center justify-between">
           <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Catalogue Académique</h2>
           <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] animate-pulse" />
         </div>
         
         {matieres.length === 0 ? (
           <div className="py-24 text-center animate-in fade-in duration-700">
-            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <BookOpen className="w-10 h-10 text-slate-200" />
+            <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
+              <BookOpen className="w-10 h-10 text-slate-600" />
             </div>
-            <h3 className="text-lg font-black uppercase tracking-widest text-slate-400">Aucune matière répertoriée</h3>
+            <h3 className="text-lg font-black uppercase tracking-widest text-slate-500">Aucune matière répertoriée</h3>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/10">
+                <tr className="border-b border-slate-800 bg-slate-800/30">
                   <th className="text-left px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Discipline</th>
                   <th className="text-left px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Code Identification</th>
                   <th className="text-center px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Coefficient</th>
@@ -250,9 +250,9 @@ export default function MatieresPage() {
                   {isDirector && <th className="px-10 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody className="divide-y divide-slate-800">
                 {matieres.map(m => (
-                  <tr key={m.id} className={`group hover:bg-slate-50/80 transition-all duration-300 ${!m.is_active ? 'opacity-40 grayscale-[0.5]' : ''}`}>
+                  <tr key={m.id} className={`group hover:bg-slate-800/50 transition-all duration-300 ${!m.is_active ? 'opacity-40 grayscale-[0.5]' : ''}`}>
                     <td className="px-10 py-5">
                       {editId === m.id ? (
                         <div className="space-y-3">
@@ -260,27 +260,27 @@ export default function MatieresPage() {
                             type="text"
                             value={editForm.nom}
                             onChange={e => setEditForm(f => ({ ...f, nom: e.target.value }))}
-                            className="bg-white border-2 border-emerald-500 rounded-2xl px-5 py-3 text-sm font-black focus:ring-4 focus:ring-emerald-500/10 transition-all w-full max-w-[300px]"
+                            className="bg-slate-800 border border-emerald-500/50 text-white rounded-2xl px-5 py-3 text-sm font-black focus:ring-4 focus:ring-emerald-500/10 transition-all w-full max-w-[300px]"
                             autoFocus
                           />
                           <button
                             type="button"
                             onClick={() => setEditForm(f => ({ ...f, est_bonus: !f.est_bonus }))}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all text-[10px] font-black uppercase tracking-widest ${editForm.est_bonus ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-slate-50 border-transparent text-slate-400'}`}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all text-[10px] font-black uppercase tracking-widest ${editForm.est_bonus ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-slate-800 border-transparent text-slate-400 hover:bg-slate-700'}`}
                           >
                             {editForm.est_bonus ? '★ Bonus' : 'Classique'}
                           </button>
                         </div>
                       ) : (
                         <div className="flex items-center gap-4">
-                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-sm font-black transition-all duration-500 group-hover:scale-105 shadow-sm ${m.is_active ? 'bg-slate-900 text-white group-hover:bg-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
+                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-sm font-black transition-all duration-500 group-hover:scale-105 shadow-sm ${m.is_active ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-800 text-slate-500 border border-slate-700'}`}>
                             {m.nom[0].toUpperCase()}
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="text-base font-black text-slate-900 uppercase group-hover:text-emerald-700 transition-colors">{m.nom}</span>
+                              <span className="text-base font-black text-white uppercase group-hover:text-emerald-400 transition-colors">{m.nom}</span>
                               {m.est_bonus && (
-                                <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[8px] font-black border border-emerald-500/20 uppercase tracking-tighter">Bonus</span>
+                                <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[8px] font-black uppercase tracking-tighter">Bonus</span>
                               )}
                             </div>
                             <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-0.5">Enseignement Général</p>
@@ -294,10 +294,10 @@ export default function MatieresPage() {
                           type="text"
                           value={editForm.code}
                           onChange={e => setEditForm(f => ({ ...f, code: e.target.value }))}
-                          className="bg-white border-2 border-emerald-500 rounded-2xl px-4 py-3 text-sm font-black focus:ring-4 focus:ring-emerald-500/10 transition-all w-32 uppercase"
+                          className="bg-slate-800 border border-emerald-500/50 text-white rounded-2xl px-4 py-3 text-sm font-black focus:ring-4 focus:ring-emerald-500/10 transition-all w-32 uppercase"
                         />
                       ) : (
-                        <span className="inline-flex items-center px-4 py-1.5 rounded-xl bg-slate-100 text-slate-500 text-[10px] font-black uppercase tracking-widest border border-slate-200/50 group-hover:bg-white group-hover:border-emerald-200 transition-all">
+                        <span className="inline-flex items-center px-4 py-1.5 rounded-xl bg-slate-800 text-slate-400 text-[10px] font-black uppercase tracking-widest border border-slate-700 group-hover:border-emerald-500/50 transition-all">
                           {m.code ?? 'NON DÉFINI'}
                         </span>
                       )}
@@ -310,11 +310,11 @@ export default function MatieresPage() {
                           max="10"
                           value={editForm.coefficient}
                           onChange={e => setEditForm(f => ({ ...f, coefficient: Number(e.target.value) }))}
-                          className="bg-white border-2 border-emerald-500 rounded-2xl px-4 py-3 text-sm font-black focus:ring-4 focus:ring-emerald-500/10 transition-all w-20 text-center"
+                          className="bg-slate-800 border border-emerald-500/50 text-white rounded-2xl px-4 py-3 text-sm font-black focus:ring-4 focus:ring-emerald-500/10 transition-all w-20 text-center"
                         />
                       ) : (
                         <div className="flex flex-col items-center">
-                          <div className={`inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-slate-50 text-slate-900 text-sm font-black border border-slate-100 shadow-sm group-hover:bg-emerald-50 group-hover:text-emerald-700 group-hover:border-emerald-100 transition-all ${m.est_bonus ? 'text-emerald-400' : ''}`}>
+                          <div className={`inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-slate-800 text-white text-sm font-black border border-slate-700 shadow-sm group-hover:bg-emerald-500/10 group-hover:text-emerald-400 group-hover:border-emerald-500/20 transition-all ${m.est_bonus ? 'text-emerald-400' : ''}`}>
                             {m.coefficient}
                           </div>
                           {m.est_bonus && <span className="text-[8px] font-black text-emerald-400 uppercase mt-1">Pts seuls</span>}
@@ -327,15 +327,15 @@ export default function MatieresPage() {
                           onClick={() => handleToggleActive(m)}
                           className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm ${
                             m.is_active 
-                              ? 'bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-600 hover:text-white' 
-                              : 'bg-slate-50 text-slate-400 border border-slate-200 hover:bg-emerald-50'
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500 hover:text-slate-900' 
+                              : 'bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700'
                           }`}
                         >
                           <div className={`w-1.5 h-1.5 rounded-full ${m.is_active ? 'bg-emerald-500 group-hover:bg-white animate-pulse' : 'bg-slate-300'}`} />
                           {m.is_active ? 'Actif' : 'Veille'}
                         </button>
                       ) : (
-                        <span className={`inline-flex items-center px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border ${m.is_active ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
+                        <span className={`inline-flex items-center px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border ${m.is_active ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>
                           {m.is_active ? 'Actif' : 'Veille'}
                         </span>
                       )}
@@ -348,14 +348,14 @@ export default function MatieresPage() {
                               <button
                                 onClick={() => handleUpdate(m.id)}
                                 disabled={saving}
-                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-emerald-600 text-white hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-600/20"
+                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-emerald-500 text-slate-900 hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20"
                                 title="Sauvegarder"
                               >
                                 <Check className="w-5 h-5" />
                               </button>
                               <button
                                 onClick={() => setEditId(null)}
-                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:bg-slate-50 transition-all shadow-sm"
+                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-800 border border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-white transition-all shadow-sm"
                                 title="Annuler"
                               >
                                 <X className="w-5 h-5" />
@@ -365,14 +365,14 @@ export default function MatieresPage() {
                             <>
                               <button
                                 onClick={() => startEdit(m)}
-                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 transition-all shadow-sm"
+                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-800 border border-slate-700 text-slate-400 hover:text-emerald-400 hover:border-emerald-500/20 hover:bg-slate-700 transition-all shadow-sm"
                                 title="Modifier"
                               >
                                 <Edit2 className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => handleDelete(m.id)}
-                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all shadow-sm"
+                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-800 border border-slate-700 text-slate-400 hover:text-rose-400 hover:border-rose-500/20 hover:bg-slate-700 transition-all shadow-sm"
                                 title="Supprimer"
                               >
                                 <Trash2 className="w-4 h-4" />
