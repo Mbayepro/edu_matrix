@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
+import { generateSecureQRData } from '@/lib/qrSecurity'
 import { supabase, Eleve, Note, Ecole, Presence } from '@/lib/supabase'
 import {
   User, Award, BookOpen, Loader2,
-  Printer, X, ChevronDown, History, Sparkles, AlertCircle, Phone, Heart, Calendar, MessageSquare, Send
+  Printer, X, ChevronDown, History, Sparkles, AlertCircle, Phone, Heart, Calendar, MessageSquare, Send, ShieldCheck
 } from 'lucide-react'
 
 // ─────────────────────────────────────────
@@ -84,55 +85,94 @@ function PhysicalCard({ eleve, ecole, classeNom, isPrint = false }: {
   classeNom: string
   isPrint?: boolean
 }) {
-  const qrData = eleve.id
+  const qrData = generateSecureQRData(eleve.id)
 
   return (
     <div
       id={isPrint ? "student-card-final" : "student-card-preview"}
-      className={`border-[1.5px] border-slate-200 rounded-xl p-4 bg-white relative overflow-hidden shadow-sm flex gap-4 shrink-0 mx-auto transition-transform ${
-        !isPrint && 'hover:scale-[1.02] sm:scale-110 my-4'
-      } ${isPrint ? 'print-card print:shadow-none print:border-slate-800' : ''}`}
+      className={`relative overflow-hidden bg-white shrink-0 mx-auto transition-transform ${
+        !isPrint ? 'hover:scale-[1.02] sm:scale-110 my-4 shadow-xl border border-slate-200 rounded-2xl' : 'print-card border border-slate-800 rounded-xl'
+      }`}
       style={{ width: '85.6mm', height: '54mm', fontFamily: "var(--font-outfit), system-ui, sans-serif" }}
     >
-      <div className="flex-1 flex flex-col justify-between z-10 w-full min-w-0">
-        <div>
-          <h3 className="font-black text-[10px] tracking-widest leading-tight uppercase text-emerald-800 truncate">{ecole?.nom ?? 'Établissement Scolaire'}</h3>
-          <p className="text-[8px] font-black text-slate-500 uppercase mt-0.5 tracking-[0.2em]">{classeNom} • {new Date().getFullYear()}</p>
-        </div>
+      {/* Arrière-plan premium : motifs et dégradés */}
+      <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#10b981 1px, transparent 1px)', backgroundSize: '10px 10px' }} />
+      <div className="absolute -right-8 -top-8 w-32 h-32 bg-emerald-500 rounded-full mix-blend-multiply filter blur-2xl opacity-40 pointer-events-none"></div>
+      <div className="absolute -left-8 -bottom-8 w-32 h-32 bg-amber-500 rounded-full mix-blend-multiply filter blur-2xl opacity-20 pointer-events-none"></div>
+      <div className="absolute right-0 bottom-0 w-[40mm] h-[60mm] bg-emerald-600 opacity-[0.03] -rotate-45 translate-x-4 translate-y-4 pointer-events-none"></div>
+
+      {/* Header : Bandeau d'en-tête */}
+      <div className="h-[12mm] bg-emerald-700 w-full flex items-center px-4 relative z-10 overflow-hidden shadow-sm">
+        {/* Ligne jaune de décoration */}
+        <div className="absolute bottom-0 left-0 w-full h-[2mm] bg-amber-400"></div>
         
-        <div className="flex gap-3 items-center mt-auto pb-1">
-          <div className="w-[50px] h-[50px] bg-slate-100 rounded-lg overflow-hidden shrink-0 border border-slate-200 shadow-sm">
-            {eleve.photo_url ? (
-              <img src={eleve.photo_url} className="w-full h-full object-cover" alt="" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-slate-400 font-black bg-slate-100 text-lg uppercase">
-                {eleve.prenom[0]}
-              </div>
-            )}
-          </div>
-          <div className="min-w-0 pr-1">
-            <h2 className="font-black text-[12px] leading-tight text-slate-900 uppercase truncate">{eleve.nom || '—'}</h2>
-            <h3 className="font-bold text-[10px] text-slate-700 leading-tight truncate mt-0.5">{eleve.prenom || '—'}</h3>
-            <p className="text-[8px] font-black text-slate-400 mt-1 uppercase tracking-widest bg-slate-50 px-1.5 py-0.5 rounded inline-block">Mat: {eleve.matricule || 'XXX'}</p>
-          </div>
-        </div>
-      </div>
-      
-      <div className="w-[55px] shrink-0 flex flex-col justify-between items-end z-10">
         {ecole?.logo_url ? (
-          <img src={ecole.logo_url} className="w-[30px] h-[30px] object-contain mb-1" alt="" />
+          <img src={ecole.logo_url} className="w-[8mm] h-[8mm] object-contain bg-white rounded-full p-0.5 shadow-sm mr-2" alt="" />
         ) : (
-          <div className="w-[30px] h-[30px] bg-emerald-50 rounded border border-emerald-100 mb-1 flex items-center justify-center">
-            <BookOpen className="w-3 h-3 text-emerald-600" />
+          <div className="w-[8mm] h-[8mm] bg-white rounded-full shadow-sm mr-2 flex items-center justify-center">
+            <BookOpen className="w-4 h-4 text-emerald-700" />
           </div>
         )}
-        <div className="bg-white p-1 rounded-lg border border-slate-200 shadow-sm flex items-center justify-center">
-          <QRCodeSVG value={qrData} size={50} level="H" />
+        <div className="flex-1 min-w-0">
+          <h3 className="font-black text-[12px] tracking-widest leading-tight uppercase text-white truncate drop-shadow-md">
+            {ecole?.nom ?? 'Établissement Scolaire'}
+          </h3>
+          <p className="text-[7px] font-bold text-emerald-100 uppercase tracking-widest mt-0.5">
+            Carte d'identité scolaire • {new Date().getFullYear()}
+          </p>
         </div>
       </div>
 
-      <div className="absolute top-0 right-0 w-[54mm] h-[54mm] bg-gradient-to-bl from-emerald-50 to-transparent rounded-full opacity-60 z-0 pointer-events-none translate-x-1/2 -translate-y-1/2" />
-      <div className="absolute left-0 bottom-0 w-[6mm] h-[85.6mm] bg-emerald-600 opacity-80 z-0 pointer-events-none -rotate-12 translate-y-10 -translate-x-4" />
+      {/* Corps de la carte */}
+      <div className="p-3 flex gap-3 h-[42mm] relative z-10">
+        
+        {/* Photo Élève */}
+        <div className="w-[24mm] h-[32mm] bg-slate-100 rounded-xl overflow-hidden shrink-0 border-2 border-white shadow-md relative">
+          {eleve.photo_url ? (
+            <img src={eleve.photo_url} className="w-full h-full object-cover" alt="" />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 font-black bg-gradient-to-br from-slate-50 to-slate-200">
+              <User className="w-8 h-8 mb-1 opacity-50" />
+            </div>
+          )}
+          {/* Décoration coin photo */}
+          <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-amber-400 rounded-full border-2 border-white"></div>
+        </div>
+
+        {/* Informations Élève */}
+        <div className="flex-1 min-w-0 flex flex-col justify-center">
+          <h2 className="font-black text-[14px] leading-none text-slate-900 uppercase truncate">
+            {eleve.nom || '—'}
+          </h2>
+          <h3 className="font-bold text-[11px] text-slate-700 leading-tight truncate mt-1">
+            {eleve.prenom || '—'}
+          </h3>
+          
+          <div className="mt-2 space-y-1">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[7px] uppercase font-black text-slate-400 tracking-widest w-10">Classe</span>
+              <span className="text-[9px] font-black bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded uppercase tracking-wider">{classeNom}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[7px] uppercase font-black text-slate-400 tracking-widest w-10">Mat.</span>
+              <span className="text-[9px] font-bold text-slate-700 tracking-widest">{eleve.matricule || 'XXX'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Section QR Code */}
+        <div className="w-[18mm] flex flex-col items-center justify-end pb-1 shrink-0">
+          <div className="bg-white p-1 rounded-lg border border-slate-200 shadow-sm relative group">
+            <QRCodeSVG value={qrData} size={54} level="H" />
+            {/* Petit logo ou icône au centre du QR (Optionnel, QR H-level le supporte) */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+               <div className="bg-white rounded-full p-0.5 shadow-sm">
+                  <ShieldCheck className="w-3 h-3 text-emerald-600" />
+               </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
@@ -232,11 +272,11 @@ export default function StudentCard({ eleveId, onClose, defaultTab }: StudentCar
   ].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-[2.5rem] w-full max-w-2xl shadow-2xl overflow-hidden my-auto animate-in zoom-in duration-500">
+    <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto print:fixed print:inset-0 print:z-[99999] print:bg-white print:backdrop-blur-none print:flex print:items-start print:justify-start print:p-8">
+      <div className="bg-white rounded-[2.5rem] w-full max-w-2xl shadow-2xl overflow-hidden my-auto animate-in zoom-in duration-500 print:shadow-none print:w-auto print:max-w-none print:rounded-none">
         
         {/* Header Modal */}
-        <div className="bg-slate-900 px-8 py-6 text-white flex items-center justify-between">
+        <div className="bg-slate-900 px-8 py-6 text-white flex items-center justify-between print:hidden">
            <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-emerald-500 flex items-center justify-center text-white text-xl font-black uppercase">
                  {eleve.prenom[0]}
@@ -252,7 +292,7 @@ export default function StudentCard({ eleveId, onClose, defaultTab }: StudentCar
         </div>
 
         {/* Tabs Navigation */}
-        <div className="flex border-b border-slate-100 bg-slate-50/50">
+        <div className="flex border-b border-slate-100 bg-slate-50/50 print:hidden">
            {[
              { id: 'profil',   label: 'Dossier Scolaire', icon: Award },
              { id: 'parcours', label: 'Timeline 360°',    icon: History },
@@ -397,16 +437,16 @@ export default function StudentCard({ eleveId, onClose, defaultTab }: StudentCar
           )}
 
           {activeTab === 'qr' && (
-            <div className="flex flex-col items-center gap-8 py-10 animate-in zoom-in duration-500">
-               <PhysicalCard eleve={eleve} ecole={ecole} classeNom={classeNom} />
+            <div className="flex flex-col items-center gap-8 py-10 animate-in zoom-in duration-500 print:py-0 print:block">
+               <PhysicalCard eleve={eleve} ecole={ecole} classeNom={classeNom} isPrint={true} />
                <button 
                 onClick={() => window.print()}
-                className="flex items-center gap-3 px-8 py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-emerald-600 transition-all shadow-2xl shadow-black/20"
+                className="flex items-center gap-3 px-8 py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-emerald-600 transition-all shadow-2xl shadow-black/20 print:hidden"
                >
                  <Printer className="w-5 h-5" />
                  Imprimer la carte physique
                </button>
-               <p className="text-center text-[10px] text-slate-400 max-w-xs font-medium leading-relaxed">
+               <p className="text-center text-[10px] text-slate-400 max-w-xs font-medium leading-relaxed print:hidden">
                  Cette carte permet au directeur et aux professeurs d&apos;identifier l&apos;élève et de marquer sa présence via le scanner QR.
                </p>
             </div>

@@ -41,6 +41,7 @@ export default function SchoolSettingsPage() {
     calculation_method: 'BLOCKS',
     type_periode: 'trimestre' as 'trimestre' | 'semestre',
     cycles_couverts: ['primaire'] as string[],
+    heure_limite_retard: '08:30',
   })
 
   useEffect(() => {
@@ -73,6 +74,7 @@ export default function SchoolSettingsPage() {
           calculation_method: ec.calculation_method ?? 'BLOCKS',
           type_periode: ec.type_periode ?? 'trimestre',
           cycles_couverts: ec.cycles_couverts ?? ['primaire'],
+          heure_limite_retard: ec.heure_limite_retard ?? '08:30',
         })
       }
     } catch (err) {
@@ -98,6 +100,7 @@ export default function SchoolSettingsPage() {
           signature_url: form.signature_url || null,
           calculation_method: form.calculation_method,
           cycles_couverts: form.cycles_couverts,
+          heure_limite_retard: form.heure_limite_retard,
           // type_periode: form.type_periode, // Temporairement désactivé en attendant la mise à jour de la base de données
         } as any)
         .eq('id', ecole.id)
@@ -292,6 +295,21 @@ export default function SchoolSettingsPage() {
                 <p className="text-xs text-slate-500 font-medium leading-relaxed">
                   <span className="font-bold text-slate-700 block mb-1">Impact sur les bulletins :</span>
                   Le changement de période modifie l'affichage global de l'application (Saisie des notes, bulletins).
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Heure de retard (Scanner QR)</label>
+              <input
+                type="time"
+                value={form.heure_limite_retard}
+                onChange={(e) => setForm((f) => ({ ...f, heure_limite_retard: e.target.value }))}
+                className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-purple-500/10 focus:bg-white transition-all shadow-sm cursor-text"
+              />
+              <div className="p-4 bg-purple-50 rounded-2xl border border-purple-100">
+                <p className="text-[11px] text-purple-700 font-bold leading-relaxed">
+                  ⏳ Heure à partir de laquelle un élève est considéré en retard lors du scan de sa carte QR.
                 </p>
               </div>
             </div>

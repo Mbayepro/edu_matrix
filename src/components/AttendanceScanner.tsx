@@ -12,6 +12,7 @@ import { syncFromSupabase, addToSyncQueue } from '@/lib/syncService'
 import { supabase } from '@/lib/supabase'
 import type { LocalClasse, LocalEleve } from '@/lib/db'
 import { useProfile } from '@/hooks/useProfile'
+import { verifySecureQRData } from '@/lib/qrSecurity'
 import CameraQRCodeScanner from './CameraQRCodeScanner'
 
 interface ScanResult {
@@ -114,11 +115,44 @@ async function processAttendance(studentId: string, classeId: string, ecoleId: s
       }
     }
 
+    // 3.5 Fetch Ecole for settings
+    let ecole = null
+    if (isOnline) {
+      const { data } = await (supabase as any)
+        .from('ecoles')
+        .select('heure_limite_retard')
+        .eq('id', ecoleId)
+        .maybeSingle()
+      ecole = data
+    }
+    if (!ecole && db) {
+      try {
+        ecole = await db.ecoles.get(ecoleId)
+      } catch (e) {
+        console.warn('Local ecole fetch fail:', e)
+      }
+    }
+
     // 4. Calculate status
     const d = new Date()
     const hour = d.getHours()
     const min  = d.getMinutes()
-    const statut = (hour > 8 || (hour === 8 && min >= 30)) ? 'retard' : 'présent'
+    
+    let limitHour = 8;
+    let limitMin = 30;
+    if (ecole?.heure_limite_retard) {
+       const parts = ecole.heure_limite_retard.split(':');
+       if (parts.length >= 2) {
+         const h = parseInt(parts[0], 10);
+         const m = parseInt(parts[1], 10);
+         if (!isNaN(h) && !isNaN(m)) {
+           limitHour = h;
+           limitMin = m;
+         }
+       }
+    }
+    
+    const statut = (hour > limitHour || (hour === limitHour && min >= limitMin)) ? 'retard' : 'présent'
 
     const presenceData = {
       id: crypto.randomUUID(),
@@ -263,13 +297,22 @@ export default function AttendanceScanner({ classeId }: { classeId: string }) {
     }
   }
 
-  async function handleScan(studentId: string) {
-    if (!studentId.trim() || !ecoleId) return
-    const trimmed = studentId.trim()
+  async function handleScan(scannedData: string) {
+    if (!scannedData.trim() || !ecoleId) return
+    const trimmedData = scannedData.trim()
+    
+    // Vérification de la signature du QR Code
+    const studentId = verifySecureQRData(trimmedData)
+    
+    if (!studentId) {
+      setResult({ status: 'error', message: 'QR Code invalide ou falsifié.' })
+      setManualId('')
+      return
+    }
 
     setLoading(true)
     try {
-      const r = await processAttendance(trimmed, classeId, ecoleId)
+      const r = await processAttendance(studentId, classeId, ecoleId)
       setResult(r)
       if (r.status === 'success') {
         setTodayCount((c) => c + 1)

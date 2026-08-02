@@ -329,13 +329,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <PremiumBackground />
 
       {/* ── Sidebar desktop ── */}
-      <aside className="hidden lg:flex flex-col w-64 shrink-0 fixed top-0 left-0 bottom-0 z-30 border-r border-slate-800">
+      <aside className="hidden lg:flex flex-col w-64 shrink-0 fixed top-0 left-0 bottom-0 z-30 border-r border-slate-800 print:hidden">
         <SidebarContent />
       </aside>
 
       {/* ── Sidebar mobile overlay ── */}
       {sidebarOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="fixed inset-0 z-50 lg:hidden print:hidden">
           <div
             className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm"
             onClick={() => setSidebarOpen(false)}
@@ -353,10 +353,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
 
       {/* ── Main area ── */}
-      <div className="flex-1 flex flex-col lg:ml-64 min-w-0">
+      <div className="flex-1 flex flex-col lg:ml-64 min-w-0 print:m-0 print:w-full">
 
         {/* Top bar */}
-        <header className="sticky top-0 z-20 bg-slate-900 px-4 lg:px-8 py-4 flex items-center gap-4 border-b border-slate-800 shadow-sm">
+        <header className="sticky top-0 z-20 bg-slate-900 px-4 lg:px-8 py-4 flex items-center gap-4 border-b border-slate-800 shadow-sm print:hidden">
           <button
             className="lg:hidden p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all"
             onClick={() => setSidebarOpen(true)}
@@ -388,7 +388,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-4 lg:p-6 bg-slate-950">
+        <main className="flex-1 p-4 lg:p-6 bg-slate-950 print:bg-white print:p-0">
           <ToastProvider>
             {children}
             <QuickGuide />

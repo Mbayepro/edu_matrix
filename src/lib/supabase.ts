@@ -21,6 +21,7 @@ export interface Ecole {
   signature_url: string | null
   calculation_method?: 'BLOCKS' | 'WEIGHTED'
   type_periode?: 'trimestre' | 'semestre'
+  heure_limite_retard?: string
   statut: StatutEcole
   cycles_couverts?: string[]
   created_at: string

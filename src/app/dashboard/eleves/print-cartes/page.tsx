@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Eleve, Classe, Ecole } from '@/lib/supabase'
-import { Loader2, Printer, ArrowLeft } from 'lucide-react'
+import { Loader2, Printer, ArrowLeft, BookOpen, User, ShieldCheck } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
+import { generateSecureQRData } from '@/lib/qrSecurity'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Suspense } from 'react'
 
@@ -78,57 +79,88 @@ function PrintCartesContent() {
 
       <div className="max-w-4xl mx-auto flex flex-wrap gap-4 print:grid print:grid-cols-2 print:gap-x-8 print:gap-y-8 justify-center print:justify-center print:w-full print:m-0">
         {eleves.map((eleve, idx) => {
-          const qrData = JSON.stringify({ id: eleve.id, matricule: eleve.matricule })
+          const qrData = generateSecureQRData(eleve.id)
 
           return (
             <div 
               key={eleve.id} 
-              className={`border-[1.5px] border-slate-200 rounded-xl p-4 bg-white relative overflow-hidden shadow-sm flex gap-4 shrink-0 
-                 print:shadow-none print:border-slate-800 print:break-inside-avoid card
-              `}
-              // Standard CR80 card dimensions
-              style={{ width: '85.6mm', height: '54mm' }}
+              className={`relative overflow-hidden bg-white shrink-0 print:shadow-none print:border-slate-800 print:break-inside-avoid print-card border border-slate-200 rounded-xl shadow-sm`}
+              style={{ width: '85.6mm', height: '54mm', fontFamily: "var(--font-outfit), system-ui, sans-serif" }}
             >
-             {/* Left: Photo + details */}
-             <div className="flex-1 flex flex-col justify-between z-10 w-full min-w-0">
-                <div>
-                  <h3 className="font-extrabold text-[12px] tracking-tight leading-tight uppercase text-emerald-800 truncate">{ecole.nom}</h3>
-                  <p className="text-[9px] font-semibold text-slate-500 uppercase mt-0.5 tracking-wider">{classe.nom_classe} • 2026</p>
-                </div>
-                
-                <div className="flex gap-3 items-center mt-auto pb-1">
-                  <div className="w-[50px] h-[50px] bg-slate-100 rounded-md overflow-hidden shrink-0 border border-slate-200 shadow-sm">
-                    {eleve.photo_url ? (
-                      <img src={eleve.photo_url} className="w-full h-full object-cover" alt="" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold bg-slate-100 text-lg">
-                        {eleve.prenom[0]?.toUpperCase()}
-                      </div>
-                    )}
-                  </div>
-                  <div className="min-w-0 pr-1">
-                    <h2 className="font-black text-[13px] leading-tight text-slate-900 uppercase truncate">{eleve.nom}</h2>
-                    <h3 className="font-bold text-[11px] text-slate-700 leading-tight truncate mt-0.5">{eleve.prenom}</h3>
-                    <p className="text-[9px] font-medium text-slate-500 mt-1 uppercase tracking-wider">Mat: {eleve.matricule || 'XXX'}</p>
-                  </div>
-                </div>
-             </div>
-             
-             {/* Right: Logos & QR Code */}
-             <div className="w-[55px] shrink-0 flex flex-col justify-between items-end z-10">
-               {ecole.logo_url ? (
-                 <img src={ecole.logo_url} className="w-[35px] h-[35px] object-contain mb-1 drop-shadow-sm" alt="" />
-               ) : (
-                 <div className="w-[35px] h-[35px] bg-emerald-50 rounded border border-emerald-100 mb-1" />
-               )}
-               <div className="w-[50px] h-[50px] bg-white rounded border border-slate-200 p-0.5 shadow-sm flex items-center justify-center">
-                 <QRCodeSVG value={qrData} size={44} level="H" />
-               </div>
-             </div>
+              {/* Arrière-plan premium : motifs et dégradés */}
+              <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#10b981 1px, transparent 1px)', backgroundSize: '10px 10px' }} />
+              <div className="absolute -right-8 -top-8 w-32 h-32 bg-emerald-500 rounded-full mix-blend-multiply filter blur-2xl opacity-40 pointer-events-none"></div>
+              <div className="absolute -left-8 -bottom-8 w-32 h-32 bg-amber-500 rounded-full mix-blend-multiply filter blur-2xl opacity-20 pointer-events-none"></div>
+              <div className="absolute right-0 bottom-0 w-[40mm] h-[60mm] bg-emerald-600 opacity-[0.03] -rotate-45 translate-x-4 translate-y-4 pointer-events-none"></div>
 
-             {/* Background decorative elements */}
-             <div className="absolute top-0 right-0 w-[54mm] h-[54mm] bg-gradient-to-bl from-emerald-50 to-transparent rounded-full opacity-60 z-0 pointer-events-none translate-x-1/2 -translate-y-1/2" />
-             <div className="absolute left-0 bottom-0 w-[8mm] h-[85.6mm] bg-emerald-600 opacity-80 z-0 pointer-events-none -rotate-12 translate-y-10 -translate-x-4" />
+              {/* Header : Bandeau d'en-tête */}
+              <div className="h-[12mm] bg-emerald-700 w-full flex items-center px-4 relative z-10 overflow-hidden shadow-sm">
+                <div className="absolute bottom-0 left-0 w-full h-[2mm] bg-amber-400"></div>
+                
+                {ecole.logo_url ? (
+                  <img src={ecole.logo_url} className="w-[8mm] h-[8mm] object-contain bg-white rounded-full p-0.5 shadow-sm mr-2" alt="" />
+                ) : (
+                  <div className="w-[8mm] h-[8mm] bg-white rounded-full shadow-sm mr-2 flex items-center justify-center">
+                    <BookOpen className="w-4 h-4 text-emerald-700" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-black text-[12px] tracking-widest leading-tight uppercase text-white truncate drop-shadow-md">
+                    {ecole.nom}
+                  </h3>
+                  <p className="text-[7px] font-bold text-emerald-100 uppercase tracking-widest mt-0.5">
+                    Carte d'identité scolaire • {new Date().getFullYear()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Corps de la carte */}
+              <div className="p-3 flex gap-3 h-[42mm] relative z-10">
+                {/* Photo Élève */}
+                <div className="w-[24mm] h-[32mm] bg-slate-100 rounded-xl overflow-hidden shrink-0 border-2 border-white shadow-md relative">
+                  {eleve.photo_url ? (
+                    <img src={eleve.photo_url} className="w-full h-full object-cover" alt="" />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 font-black bg-gradient-to-br from-slate-50 to-slate-200">
+                      <User className="w-8 h-8 mb-1 opacity-50" />
+                    </div>
+                  )}
+                  <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-amber-400 rounded-full border-2 border-white"></div>
+                </div>
+
+                {/* Informations Élève */}
+                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                  <h2 className="font-black text-[14px] leading-none text-slate-900 uppercase truncate">
+                    {eleve.nom || '—'}
+                  </h2>
+                  <h3 className="font-bold text-[11px] text-slate-700 leading-tight truncate mt-1">
+                    {eleve.prenom || '—'}
+                  </h3>
+                  
+                  <div className="mt-2 space-y-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[7px] uppercase font-black text-slate-400 tracking-widest w-10">Classe</span>
+                      <span className="text-[9px] font-black bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded uppercase tracking-wider">{classe.nom_classe}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[7px] uppercase font-black text-slate-400 tracking-widest w-10">Mat.</span>
+                      <span className="text-[9px] font-bold text-slate-700 tracking-widest">{eleve.matricule || 'XXX'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section QR Code */}
+                <div className="w-[18mm] flex flex-col items-center justify-end pb-1 shrink-0">
+                  <div className="bg-white p-1 rounded-lg border border-slate-200 shadow-sm relative group">
+                    <QRCodeSVG value={qrData} size={54} level="H" />
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                       <div className="bg-white rounded-full p-0.5 shadow-sm">
+                          <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                       </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )
         })}

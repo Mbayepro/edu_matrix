@@ -33,6 +33,11 @@ import { useNetwork } from '@/hooks/useNetwork'
 import { useToast } from '@/contexts/ToastContext'
 import { generatePaiementRecuPDF, printPaiementRecuPDF, sharePaiementRecu, PaiementRecuInfo, printThermalPaiementRecuPDF } from '@/lib/pdfRecuGenerator'
 import { Skeleton } from '@/components/Skeleton'
+import { StatCards } from '@/components/paiements/StatCards'
+import { AssignFeeModal } from '@/components/paiements/AssignFeeModal'
+import { PaymentForm } from '@/components/paiements/PaymentForm'
+import { PaymentHistory } from '@/components/paiements/PaymentHistory'
+import { StudentList } from '@/components/paiements/StudentList'
 import { db } from '@/lib/db'
 import { syncFromSupabase, addToSyncQueue } from '@/lib/syncService'
 import { formatDate, formatMonthYear, formatDateTime } from '@/lib/dateUtils'
@@ -602,65 +607,13 @@ function PaiementsContent() {
       </div>
 
       {/* KPIs Dashboard */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="premium-glass p-6 group hover:border-emerald-500/30 transition-all duration-500 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-700" />
-          <div className="flex items-center gap-5 relative z-10">
-            <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center text-emerald-400 group-hover:rotate-6 transition-all duration-500 border border-white/5">
-              <Users className="w-7 h-7" />
-            </div>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Total élèves</p>
-              <div className="text-2xl font-black text-white leading-none">{totalEleves}</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="premium-glass p-6 group hover:border-red-500/30 transition-all duration-500 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/5 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-700" />
-          <div className="flex items-center gap-5 relative z-10">
-            <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center text-rose-400 group-hover:rotate-6 transition-all duration-500 border border-white/5">
-              <TrendingDown className="w-7 h-7" />
-            </div>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Reste à recouvrer</p>
-              <div className="text-2xl font-black text-white leading-none">
-                {loading ? '...' : totalRestant.toLocaleString('fr-FR')} <span className="text-[10px] font-black ml-1 uppercase text-slate-400">F</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="premium-glass p-6 group hover:border-emerald-500/30 transition-all duration-500 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-700" />
-          <div className="flex items-center gap-5 relative z-10">
-            <div className="w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-400 group-hover:rotate-6 transition-all duration-500 border border-emerald-500/20">
-              <TrendingUp className="w-7 h-7" />
-            </div>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Encaissé</p>
-              <div className="text-2xl font-black text-emerald-400 leading-none">
-                {loading ? '...' : totalEncaisse.toLocaleString('fr-FR')} <span className="text-[10px] font-black ml-1 uppercase opacity-60">F</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="premium-glass p-6 group hover:border-white/20 transition-all duration-500 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-700" />
-          <div className="flex items-center gap-5 relative z-10">
-            <div className="w-14 h-14 bg-white/10 flex items-center justify-center text-white rounded-2xl group-hover:rotate-6 transition-all duration-500 border border-white/10">
-              <DollarSign className="w-7 h-7" />
-            </div>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Recouvrement</p>
-              <div className="text-2xl font-black text-white leading-none">
-                {tauxRecouvrement.toFixed(1)} <span className="text-[10px] font-black ml-1 uppercase text-slate-400">%</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <StatCards
+        totalEleves={totalEleves}
+        totalRestant={totalRestant}
+        totalEncaisse={totalEncaisse}
+        tauxRecouvrement={tauxRecouvrement}
+        loading={loading}
+      />
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -775,162 +728,25 @@ function PaiementsContent() {
           </div>
 
           <div className="premium-glass rounded-[2.5rem] overflow-hidden min-h-[500px] flex flex-col">
-            {loading || profileLoading ? (
-              <div className="p-8 space-y-6">
-                {Array.from({ length: 10 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-4">
-                    <Skeleton className="w-12 h-12 rounded-2xl bg-white/5" />
-                    <div className="flex-1 space-y-2">
-                      <Skeleton className="h-5 w-1/2 bg-white/5" />
-                      <Skeleton className="h-3 w-1/3 bg-white/5" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : filteredEleves.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center py-24 px-10 text-center animate-in fade-in duration-500">
-                <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6">
-                  <Users className="w-10 h-10 text-slate-500" />
-                </div>
-                <h3 className="text-lg font-black text-white mb-1 tracking-tight">Aucun résultat</h3>
-                <p className="text-sm font-medium text-slate-400 max-w-xs mx-auto">
-                  Aucun élève ne correspond à votre recherche pour le moment.
-                </p>
-              </div>
-            ) : (
-              <ul className="divide-y divide-white/5 overflow-y-auto max-h-[600px] scrollbar-thin scrollbar-thumb-white/10">
-                {filteredEleves.map((e) => (
-                  <li
-                    key={e.id}
-                    className={`px-8 py-5 flex items-center gap-5 cursor-pointer transition-all duration-500 relative group overflow-hidden ${
-                      selectedEleve?.id === e.id ? 'bg-white/10' : 'hover:bg-white/5 hover:translate-x-1'
-                    }`}
-                    onClick={() => setSelectedEleve(e)}
-                  >
-                    {selectedEleve?.id === e.id && (
-                      <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-emerald-500 shadow-[2px_0_10px_rgba(16,185,129,0.3)] animate-in slide-in-from-left duration-300" />
-                    )}
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white text-lg font-black shadow-lg transition-transform duration-500 group-hover:scale-105 border border-white/10 ${
-                      selectedEleve?.id === e.id ? 'bg-emerald-600 rotate-3 border-emerald-500/30' : 'bg-slate-900 grayscale-[0.2] group-hover:grayscale-0'
-                    }`}>
-                      {e.prenom[0]?.toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-base font-black truncate transition-colors uppercase tracking-tight ${selectedEleve?.id === e.id ? 'text-emerald-400' : 'text-white'}`}>
-                        {e.prenom} {e.nom}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <p className="text-[10px] text-slate-400 font-bold tracking-[0.1em] uppercase mt-0.5">
-                          {(e.classe as any)?.nom_classe ?? 'NON ASSIGNÉ'} · <span className="text-slate-400 font-black">{e.matricule}</span>
-                        </p>
-                        {getEleveBalance(e.id).reste > 0 && (
-                          <span className="text-[10px] font-black text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded-md border border-rose-500/20">
-                            Reste: {getEleveBalance(e.id).reste.toLocaleString('fr-FR')} F
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1.5">
-                      <span className={`text-[9px] font-black uppercase tracking-[0.15em] px-3 py-1.5 rounded-lg border shadow-sm ${
-                        e.statut_paiement === 'payé'
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                          : e.statut_paiement === 'partiel'
-                          ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                          : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                      }`}>
-                        {e.statut_paiement}
-                      </span>
-                      {/* Affichage des retards */}
-                      {(() => {
-                        const efs = elevesFrais.filter(ef => ef.eleve_id === e.id)
-                        let retardsMensuels: string[] = []
-                        let hasOtherRetard = false
-                        for (const ef of efs) {
-                          const f = frais.find(fr => fr.id === ef.frais_id)
-                          if (f) {
-                            const lib = (f.libelle || '').toLowerCase()
-                            if (f.frequence === 'mensuel' || lib.includes('mensu') || lib.includes('scolarit')) {
-                               retardsMensuels = [...retardsMensuels, ...getMoisEnRetard(e.id, ef.frais_id)]
-                            } else {
-                               const aPayer = Number(ef.montant_a_payer) || (Number(ef.montant_du) - (Number(ef.montant_remise) || 0)) || 0
-                               const paye = paiements.filter(p => p.eleve_id === e.id && p.frais_id === ef.frais_id).reduce((s, p) => s + Number(p.montant), 0)
-                               if (aPayer > paye) hasOtherRetard = true
-                            }
-                          }
-                        }
-                        
-                        retardsMensuels = Array.from(new Set(retardsMensuels))
-
-                        if (retardsMensuels.length > 0 || hasOtherRetard) {
-                          return (
-                            <div className="mt-1 flex flex-wrap gap-1 justify-end max-w-[150px]">
-                              {retardsMensuels.length > 0 && (
-                                <span className="text-[7px] font-black text-rose-400 uppercase w-full text-right bg-rose-500/10 px-1 rounded border border-rose-500/20">
-                                  Retard: {retardsMensuels.slice(0, 3).join(', ')}{retardsMensuels.length > 3 ? '...' : ''}
-                                </span>
-                              )}
-                              {hasOtherRetard && retardsMensuels.length === 0 && (
-                                <span className="text-[7px] font-black text-amber-400 uppercase w-full text-right bg-amber-500/10 px-1 rounded border border-amber-500/20">
-                                  Frais en retard
-                                </span>
-                              )}
-                            </div>
-                          )
-                        }
-                        return null
-                      })()}
-                      {activeTab === 'impayes' && (
-                        <div className="flex items-center gap-2">
-                           {e.telephone_parent ? (
-                             <button
-                               onClick={(evt) => {
-                                 evt.stopPropagation()
-                                 const { reste } = getEleveBalance(e.id)
-                                 handleWhatsAppReminder(e, reste)
-                               }}
-                               className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
-                               title="Relancer sur WhatsApp"
-                             >
-                               <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                                 <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z" />
-                               </svg>
-                             </button>
-                           ) : (
-                             <div className="flex items-center gap-1" onClick={(evt) => evt.stopPropagation()}>
-                               {editingPhoneId === e.id ? (
-                                 <div className="flex items-center gap-1 animate-in slide-in-from-right-2">
-                                   <input
-                                     autoFocus
-                                     type="text"
-                                     value={tempPhone}
-                                     onChange={(ev) => setTempPhone(ev.target.value)}
-                                     placeholder="+221..."
-                                     className="w-24 px-2 py-1.5 bg-white/10 border border-white/10 rounded-lg text-[10px] font-bold outline-none text-white placeholder:text-slate-500"
-                                     onKeyDown={(ev) => ev.key === 'Enter' && handleUpdatePhone(e.id)}
-                                   />
-                                   <button onClick={() => handleUpdatePhone(e.id)} className="p-1.5 bg-emerald-500 text-white rounded-lg"><CheckCircle2 className="w-3 h-3"/></button>
-                                 </div>
-                               ) : (
-                                 <button
-                                   onClick={() => { setEditingPhoneId(e.id); setTempPhone('') }}
-                                   className="text-[9px] font-black uppercase text-slate-400 hover:text-emerald-600 flex items-center gap-1"
-                                 >
-                                   <CreditCard className="w-3 h-3" /> Ajouter Tel.
-                                 </button>
-                               )}
-                             </div>
-                           )}
-                        </div>
-                      )}
-                      
-                      {activeTab === 'impayes' && elevesFrais.find(ef => ef.eleve_id === e.id)?.derniere_relance_le && (
-                        <p className="text-[8px] font-bold text-slate-500 uppercase italic">Relancé le {elevesFrais.find(ef => ef.eleve_id === e.id)?.derniere_relance_le}</p>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <StudentList
+              loading={loading}
+              profileLoading={profileLoading}
+              filteredEleves={filteredEleves as any}
+              selectedEleve={selectedEleve as any}
+              setSelectedEleve={setSelectedEleve as any}
+              elevesFrais={elevesFrais as any}
+              frais={frais as any}
+              paiements={paiements as any}
+              activeTab={activeTab}
+              getEleveBalance={getEleveBalance}
+              getMoisEnRetard={getMoisEnRetard}
+              handleWhatsAppReminder={handleWhatsAppReminder as any}
+              editingPhoneId={editingPhoneId}
+              setEditingPhoneId={setEditingPhoneId}
+              tempPhone={tempPhone}
+              setTempPhone={setTempPhone}
+              handleUpdatePhone={handleUpdatePhone}
+            />
           </div>
         </div>
 
@@ -944,282 +760,52 @@ function PaiementsContent() {
               Nouveau Versement
             </h2>
             
-            {!selectedEleve ? (
-              <div className="py-12 text-center bg-white/5 rounded-3xl border border-dashed border-white/10 animate-in zoom-in-95 duration-500">
-                <CreditCard className="w-10 h-10 text-slate-700 mx-auto mb-4" />
-                <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 px-8 leading-relaxed">
-                  Veuillez d&apos;abord sélectionner un élève dans la liste de gauche.
-                </p>
-              </div>
-            ) : (
-              <form onSubmit={enregistrerPaiement} className="space-y-6 animate-in slide-in-from-right-4 duration-500">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Type de Frais</label>
-                    <select
-                      value={selectedFraisId}
-                      onChange={(e) => setSelectedFraisId(e.target.value)}
-                      className="w-full bg-white/5 border border-white/5 rounded-2xl px-5 py-4 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all appearance-none cursor-pointer"
-                      required
-                    >
-                      <option value="" className="bg-slate-900 text-white">Sélectionner…</option>
-                      {frais.map((f) => (
-                        <option key={f.id} value={f.id} className="bg-slate-900 text-white">
-                          {f.libelle} ({f.montant.toLocaleString('fr-FR')} F)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {isMensuel && (
-                    <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Mois concerné</label>
-                      <select
-                        value={selectedMonth}
-                        onChange={(e) => setSelectedMonth(e.target.value)}
-                        className="w-full bg-white/5 border border-white/5 rounded-2xl px-5 py-4 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all appearance-none cursor-pointer"
-                        required
-                      >
-                        <option value="" className="bg-slate-900 text-white">Sélectionner le mois…</option>
-                        {months.map((m) => (
-                          <option key={m} value={m} className="bg-slate-900 text-white">{m}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                  
-                  <div className="space-y-2">
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Montant versé (F CFA)</label>
-                    <input
-                      type="text"
-                      value={montant}
-                      onChange={(e) => setMontant(e.target.value)}
-                      placeholder="Ex: 25 000"
-                      className="w-full bg-white/5 border border-white/5 rounded-2xl px-5 py-4 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all placeholder:text-slate-700"
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Mode</label>
-                      <input
-                        type="text"
-                        value={mode}
-                        onChange={(e) => setMode(e.target.value)}
-                        placeholder="Espèces/Mobile"
-                        className="w-full bg-white/5 border border-white/5 rounded-2xl px-5 py-4 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all placeholder:text-slate-700"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Réf. Transaction</label>
-                      <input
-                        type="text"
-                        value={reference}
-                        onChange={(e) => setReference(e.target.value)}
-                        placeholder="Ex: Wave ID, Chèque…"
-                        className="w-full bg-white/5 border border-white/5 rounded-2xl px-5 py-4 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all placeholder:text-slate-700"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="w-full py-5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-black tracking-widest uppercase transition-all shadow-xl shadow-emerald-900/20 flex items-center justify-center gap-4 disabled:opacity-50 active:scale-95"
-                >
-                  {saving ? (
-                    <><Loader2 className="w-5 h-5 animate-spin" /> Enregistrement…</>
-                  ) : (
-                    <><CheckCircle2 className="w-5 h-5" /> Valider le versement</>
-                  )}
-                </button>
-              </form>
-            )}
+            <PaymentForm
+              selectedEleve={selectedEleve as any}
+              enregistrerPaiement={enregistrerPaiement}
+              frais={frais as any}
+              selectedFraisId={selectedFraisId}
+              setSelectedFraisId={setSelectedFraisId}
+              isMensuel={isMensuel}
+              months={months}
+              selectedMonth={selectedMonth}
+              setSelectedMonth={setSelectedMonth}
+              montant={montant}
+              setMontant={setMontant}
+              mode={mode}
+              setMode={setMode}
+              reference={reference}
+              setReference={setReference}
+              saving={saving}
+            />
           </div>
 
           {/* History Section */}
-          <div className="premium-glass overflow-hidden group">
-            <div className="p-8 border-b border-white/5 bg-white/5">
-              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-3">
-                <BarChart3 className="w-4 h-4 text-amber-500" />
-                Derniers règlements
-              </h3>
-            </div>
-            <div className="p-4 space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar">
-              {!selectedEleve ? (
-                <div className="py-12 text-center opacity-30">
-                  <Printer className="w-10 h-10 mx-auto mb-4 text-slate-700" />
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Aucune donnée</p>
-                </div>
-              ) : (
-                paiements
-                  .filter(p => p.eleve_id === selectedEleve.id)
-                  .map((p) => {
-                    const fLibelle = frais.find(f => f.id === p.frais_id)?.libelle || 'Scolarité'
-                    return (
-                      <div key={p.id} className="p-5 bg-white/5 border border-white/5 rounded-3xl group/item hover:border-emerald-500/30 hover:bg-white/10 transition-all duration-300">
-                        <div className="flex items-center justify-between mb-2">
-                          <div>
-                            <p className="text-lg font-black text-white leading-none">
-                              {p.montant.toLocaleString('fr-FR')} <span className="text-xs uppercase text-slate-400">F</span>
-                            </p>
-                            <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mt-1">
-                              {fLibelle} {(p as any).mois ? `— ${(p as any).mois}` : ''}
-                            </p>
-                          </div>
-                          <div className="flex gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                            <button 
-                              onClick={() => handleDownloadReceipt(p)}
-                              className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 text-slate-400 border border-white/10 hover:bg-emerald-600 hover:text-white transition-all shadow-sm"
-                              title="Télécharger Reçu PDF"
-                            >
-                              <Download className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={() => handlePrintThermalReceipt(p)}
-                              className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 text-slate-400 border border-white/10 hover:bg-violet-500 hover:text-white transition-all shadow-sm"
-                              title="Ticket (Thermique)"
-                            >
-                              <Receipt className="w-4 h-4" />
-                            </button>
-                            <button 
-                              onClick={() => handlePrintReceipt(p)}
-                              className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 text-slate-400 border border-white/10 hover:bg-amber-500 hover:text-white transition-all shadow-sm"
-                              title="Imprimer (A4)"
-                            >
-                              <Printer className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                        <div className="pt-3 border-t border-white/5 mt-1 flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                            {formatDateTime(p.date_paiement)}
-                          </span>
-                          <span className="text-[10px] font-black text-slate-400 uppercase italic">
-                            {p.reference || p.mode || 'N/A'}
-                          </span>
-                        </div>
-                      </div>
-                    )
-                  })
-              )}
-              {selectedEleve && paiements.filter(p => p.eleve_id === selectedEleve.id).length === 0 && (
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-300 text-center py-10">Aucun historique pour cet élève</p>
-              )}
-            </div>
-          </div>
+          <PaymentHistory
+            selectedEleve={selectedEleve as any}
+            paiements={paiements as any}
+            frais={frais as any}
+            handleDownloadReceipt={handleDownloadReceipt}
+            handlePrintThermalReceipt={handlePrintThermalReceipt}
+            handlePrintReceipt={handlePrintReceipt}
+          />
         </div>
       </div>
 
       {/* Modal d'affectation collective */}
-      {isAssigning && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="premium-glass shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-300">
-            <div className="p-10 space-y-8">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-black text-white tracking-tight leading-none">Affectation collective</h2>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-3">Attribuer un frais à plusieurs élèves</p>
-                </div>
-                <button onClick={() => setIsAssigning(false)} className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:bg-rose-500/20 hover:text-rose-400 transition-all">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Type de Frais</label>
-                  <select
-                    value={assignFeeId}
-                    onChange={(e) => setAssignFeeId(e.target.value)}
-                    className="w-full bg-white/5 border border-white/5 rounded-2xl px-5 py-4 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all appearance-none cursor-pointer"
-                  >
-                    <option value="" className="bg-slate-900 text-white">Choisir un frais…</option>
-                    {frais.map((f) => (
-                      <option key={f.id} value={f.id} className="bg-slate-900 text-white">{f.libelle} ({f.montant.toLocaleString('fr-FR')} F)</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Cible</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => setAssignClasseId('all')}
-                      className={`p-4 rounded-2xl border-2 transition-all flex flex-col gap-2 ${
-                        assignClasseId === 'all' 
-                          ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-lg shadow-emerald-900/20' 
-                          : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10'
-                      }`}
-                    >
-                      <LayoutGrid className="w-5 h-5" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-left">Toute l'école</span>
-                    </button>
-                    <div className="relative group">
-                      <select
-                        value={assignClasseId === 'all' ? '' : assignClasseId}
-                        onChange={(e) => setAssignClasseId(e.target.value)}
-                        className={`w-full h-full p-4 rounded-2xl border-2 transition-all appearance-none cursor-pointer text-[10px] font-black uppercase tracking-widest ${
-                          assignClasseId !== 'all'
-                            ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-lg shadow-emerald-900/20'
-                            : 'bg-white/5 border-white/5 text-slate-400 hover:bg-white/10'
-                        }`}
-                      >
-                        <option value="" className="bg-slate-900 text-white">Par classe…</option>
-                        {classes.map(c => (
-                          <option key={c.id} value={c.id} className="bg-slate-900 text-white">{c.nom_classe}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {assignFeeId && (
-                  <div className="bg-amber-500/10 p-6 rounded-3xl border border-amber-500/20 flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-amber-400 shadow-sm shrink-0 border border-white/5">
-                      <Users className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-amber-200">Estimation</p>
-                      <p className="text-[10px] font-medium text-amber-400 mt-1 uppercase tracking-tight">
-                        L'attribution sera appliquée à{' '}
-                        <span className="font-black">
-                          {assignClasseId === 'all' 
-                            ? eleves.length 
-                            : eleves.filter(e => e.classe_id === assignClasseId).length
-                          } élèves
-                        </span>.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setIsAssigning(false)}
-                  className="flex-1 py-5 rounded-2xl bg-white/5 border border-white/10 text-slate-400 text-[11px] font-black uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all"
-                >
-                  Annuler
-                </button>
-                <button
-                  onClick={handlePerformAssignment}
-                  disabled={saving || !assignFeeId}
-                  className="flex-2 py-5 px-10 rounded-2xl bg-emerald-600 text-white text-[11px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-900/20 disabled:opacity-50 flex items-center justify-center gap-3"
-                >
-                  {saving ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Traitement…</>
-                  ) : (
-                    <><Check className="w-4 h-4" /> Valider l'affectation</>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <AssignFeeModal
+        isAssigning={isAssigning}
+        setIsAssigning={setIsAssigning}
+        assignFeeId={assignFeeId}
+        setAssignFeeId={setAssignFeeId}
+        assignClasseId={assignClasseId}
+        setAssignClasseId={setAssignClasseId}
+        frais={frais as any}
+        classes={classes as any}
+        eleves={eleves as any}
+        saving={saving}
+        onPerformAssignment={handlePerformAssignment}
+      />
     </div>
   )
 }
