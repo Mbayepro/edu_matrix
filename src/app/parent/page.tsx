@@ -23,6 +23,7 @@ export default function ParentLoginPage() {
     
     try {
       // Check if PIN exists
+      // @ts-ignore
       const { data, error: err } = await supabase.rpc('get_eleve_by_pin', { p_pin: trimmedPin })
       
       if (err || !data) {
