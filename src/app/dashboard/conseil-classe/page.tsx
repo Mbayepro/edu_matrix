@@ -42,7 +42,7 @@ export default function ConseilClassePage() {
   const [classes, setClasses] = useState<any[]>([])
   const [selectedClasse, setSelectedClasse] = useState<string>('')
   const [selectedTrimestre, setSelectedTrimestre] = useState<1 | 2 | 3>(1)
-  const [anneeScolaire, setAnneeScolaire] = useState('2025-2026')
+  const [anneeScolaire, setAnneeScolaire] = useState('2026-2027')
   const [loading, setLoading] = useState(false)
   const [bulletins, setBulletins] = useState<BulletinData[]>([])
   const [search, setSearch] = useState('')
@@ -186,12 +186,15 @@ export default function ConseilClassePage() {
           </div>
 
           <div className="flex items-center gap-3 bg-slate-900 px-4 py-2 rounded-2xl border border-slate-700 shadow-sm relative group overflow-hidden transition-all hover:border-emerald-500/50">
-            <input 
-              type="text"
+            <select
               value={anneeScolaire}
               onChange={(e) => setAnneeScolaire(e.target.value)}
-              className="bg-transparent border-none focus:outline-none text-sm font-black text-white pr-8 cursor-pointer w-24"
-            />
+              className="bg-transparent border-none focus:outline-none text-sm font-black text-white pr-8 cursor-pointer appearance-none relative z-10"
+            >
+              <option value="2025-2026" className="text-slate-900">2025-2026</option>
+              <option value="2026-2027" className="text-slate-900">2026-2027</option>
+              <option value="2027-2028" className="text-slate-900">2027-2028</option>
+            </select>
             <TrendingUp className="w-4 h-4 text-emerald-400 absolute right-4 pointer-events-none" />
           </div>
 

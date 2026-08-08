@@ -36,10 +36,10 @@ export default function LandingPage() {
               Connexion
             </Link>
             <Link 
-              href="/login" 
+              href="/parent" 
               className="px-7 py-3.5 text-sm font-bold bg-slate-900 hover:bg-emerald-600 text-white rounded-xl transition-all shadow-xl shadow-slate-900/10 hover:shadow-emerald-600/30 hover:-translate-y-0.5"
             >
-              Espace Élève
+              Espace Parent
             </Link>
           </div>
         </div>
@@ -155,7 +155,7 @@ export default function LandingPage() {
                 Rendez votre école futuriste. Chaque élève reçoit une carte d'identité avec QR Code. Au portail ou en classe, un simple scan enregistre la présence et peut même notifier parents et administration instantanément.
               </p>
               <ul className="space-y-4 pt-4">
-                {['Pointage ultra-rapide par scan', 'Notification SMS aux parents (Absences/Retards)', 'Génération des cartes élèves avec photo'].map((item, i) => (
+                {['Pointage ultra-rapide par scan', 'Notification WhatsApp aux parents (Absences/Retards)', 'Génération des cartes élèves avec photo'].map((item, i) => (
                   <li key={i} className="flex items-center gap-3">
                     <CheckCircle className="w-6 h-6 text-amber-500 shrink-0" />
                     <span className="text-slate-700 font-medium">{item}</span>

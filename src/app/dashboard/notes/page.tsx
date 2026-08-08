@@ -42,7 +42,7 @@ export default function NotesPage() {
   const [selectedMatiere, setSelectedMatiere] = useState<string>('')
   const [selectedTrimestre, setSelectedTrimestre] = useState<1 | 2 | 3>(1)
   const [selectedEvaluation, setSelectedEvaluation] = useState<string>('')
-  const [anneeScolaire, setAnneeScolaire] = useState<string>('2025-2026')
+  const [anneeScolaire, setAnneeScolaire] = useState<string>('2026-2027')
   const [typePeriode, setTypePeriode] = useState<'trimestre' | 'semestre'>('trimestre')
   
   const [loading, setLoading] = useState(true)

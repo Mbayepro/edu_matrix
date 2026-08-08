@@ -87,7 +87,7 @@ export default function BulletinPrimaire({ data }: { data: BulletinData }) {
         <h1 className="text-xl font-black uppercase tracking-wider border-2 border-slate-800 inline-block px-6 py-2 bg-slate-100">
           BULLETIN DE COMPOSITION
         </h1>
-        <p className="text-lg font-bold mt-1 uppercase">Trimestre {data.trimestre} - Année Scolaire : {data.annee_scolaire || '2025 - 2026'}</p>
+        <p className="text-lg font-bold mt-1 uppercase">Trimestre {data.trimestre} - Année Scolaire : {data.annee_scolaire || '2026 - 2027'}</p>
         <p className="text-sm font-semibold uppercase text-slate-700 bg-slate-200 inline-block px-3 py-1 mt-1 rounded-sm shadow-sm">
           CYCLE ÉLÉMENTAIRE
         </p>
@@ -178,8 +178,8 @@ export default function BulletinPrimaire({ data }: { data: BulletinData }) {
            
            <div className="border-t border-slate-800 pt-2 mt-4 text-center">
              <p className="font-bold text-sm mb-1 uppercase text-slate-900 border-b border-dashed inline-block">Décision du Conseil de Classe</p>
-             <p className="italic text-sm mt-1">
-               {data.decision_conseil || "Admis(e) en classe supérieure."}
+             <p className="italic text-base text-slate-800 leading-relaxed font-medium">
+               {data.decision_conseil || "En attente de la décision du conseil."}
              </p>
            </div>
         </div>

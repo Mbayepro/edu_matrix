@@ -133,7 +133,7 @@ export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }
           <p className="font-bold text-sm">RÉPUBLIQUE DU SÉNÉGAL</p>
           <p className="italic">Un Peuple - Un But - Une Foi</p>
           <p>**********</p>
-          <p className="font-bold">Année Scolaire : {data.annee_scolaire || '2025 - 2026'}</p>
+          <p className="font-bold">Année Scolaire : {data.annee_scolaire || '2026 - 2027'}</p>
         </div>
       </div>
 
@@ -240,7 +240,7 @@ export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }
         <div className="border-2 border-slate-800 p-3 rounded-sm">
            <p className="font-bold underline text-sm mb-2 uppercase text-center bg-slate-200 py-1">Décision du conseil de classe</p>
            <p className="italic text-base whitespace-pre-line text-center mt-4">
-             {data.decision_conseil || "Passe en classe supérieure."}
+             {data.decision_conseil || "En attente de la décision du conseil."}
            </p>
         </div>
         

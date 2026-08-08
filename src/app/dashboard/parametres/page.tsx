@@ -475,7 +475,7 @@ export default function SchoolSettingsPage() {
               </p>
             </div>
 
-            {/* Alertes SMS */}
+            {/* Alertes WhatsApp */}
             <div className="bg-slate-800/30 border border-white/5 rounded-2xl p-6 relative overflow-hidden group">
               <div className="absolute top-4 right-4">
                 <div className="w-10 h-6 bg-slate-700 rounded-full flex items-center p-1 opacity-50 cursor-not-allowed">
@@ -485,9 +485,9 @@ export default function SchoolSettingsPage() {
               <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center mb-4">
                 <MessageSquare className="w-6 h-6 text-slate-400" />
               </div>
-              <h3 className="text-sm font-bold text-white mb-2">Alertes SMS Automatiques</h3>
+              <h3 className="text-sm font-bold text-white mb-2">Alertes WhatsApp Automatiques</h3>
               <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                Envoyez automatiquement un SMS aux parents en cas d'absence, de retard à l'école ou de retard de paiement.
+                Envoyez automatiquement un message WhatsApp aux parents en cas d'absence, de retard à l'école ou de retard de paiement.
               </p>
             </div>
           </div>
