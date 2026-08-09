@@ -94,12 +94,14 @@ function PaiementsContent() {
   }, [selectedFrais])
 
   const getCurrentSchoolMonthIndex = () => {
+    // Obtenir le mois actuel en français
     const currentMonth = new Date().toLocaleString('fr-FR', { month: 'long' }).toLowerCase()
     const index = SCHOOL_MONTHS.findIndex(m => m.toLowerCase() === currentMonth)
+    
+    // Si on est en Août ou Septembre (hors année scolaire), 
+    // on ne compte aucun retard pour la nouvelle année qui se prépare.
     if (index === -1) {
-      const m = new Date().getMonth()
-      if (m === 7 || m === 8) return SCHOOL_MONTHS.length - 1
-      return 0
+      return -1 // -1 signifie qu'aucun mois n'est encore écoulé pour les mensualités
     }
     return index
   }
@@ -261,7 +263,7 @@ function PaiementsContent() {
     if (ecoleId) void loadElevesLocal(ecoleId)
   }, [search])
 
-  async function enregistrerPaiement(e: React.FormEvent) {
+  async function enregistrerPaiement(e: React.FormEvent, autoPrint: boolean = true) {
     e.preventDefault()
     if (!selectedEleve || !selectedFraisId || !montant || !ecoleId || !db) return
     setSaving(true)
@@ -351,6 +353,14 @@ function PaiementsContent() {
         loadElevesFraisLocal(ecoleId),
         loadPaiementsLocal(ecoleId)
       ])
+
+      // Impression automatique si demandée
+      if (autoPrint && ecole) {
+        const info = buildRecuInfo(newPaiement as any)
+        if (info) {
+           printPaiementRecuPDF(ecole, info, profile).catch(e => console.warn("Erreur auto-print:", e))
+        }
+      }
     } catch (err: any) {
       console.error(err)
       showToast('Erreur : ' + err.message, 'error')
@@ -777,6 +787,8 @@ function PaiementsContent() {
               reference={reference}
               setReference={setReference}
               saving={saving}
+              paiements={paiements.filter(p => p.eleve_id === selectedEleve?.id) as any}
+              elevesFrais={elevesFrais.filter(ef => ef.eleve_id === selectedEleve?.id) as any}
             />
           </div>
 

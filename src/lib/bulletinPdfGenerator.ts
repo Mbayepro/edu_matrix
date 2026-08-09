@@ -309,8 +309,21 @@ export async function generateSingleBulletinPDF(
     const [logo, signature, tampon] = await Promise.race([imagePromises, timeoutPromise]) as [string | null, string | null, string | null]
 
     drawBulletin(doc, bulletin, ecole, typePeriode, includePIN, { logo, signature, tampon })
-    const fileName = `Bulletin_${bulletin.eleve.prenom}_${bulletin.eleve.nom}_T${bulletin.trimestre}.pdf`
-    doc.save(fileName)
+    
+    const safePrenom = (bulletin.eleve.prenom || '').replace(/[^a-zA-Z0-9]/g, '_')
+    const safeNom = (bulletin.eleve.nom || '').replace(/[^a-zA-Z0-9]/g, '_')
+    const fileName = `Bulletin_${safePrenom}_${safeNom}_T${bulletin.trimestre}.pdf`
+    
+    // Forcer le téléchargement correct avec le bon nom
+    const blob = doc.output('blob')
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = fileName
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    setTimeout(() => URL.revokeObjectURL(url), 100)
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     console.error('Erreur génération PDF bulletin:', errorMessage)
@@ -348,7 +361,20 @@ export async function generateAllBulletinsPDF(
       if (idx > 0) doc.addPage()
       drawBulletin(doc, bulletin, ecole, typePeriode, includePIN, { logo, signature, tampon })
     })
-    doc.save(`Bulletins_${classeNom}_T${bulletins[0].trimestre}.pdf`)
+    
+    const safeClasse = (classeNom || 'Classe').replace(/[^a-zA-Z0-9]/g, '_')
+    const fileName = `Bulletins_${safeClasse}_T${bulletins[0].trimestre}.pdf`
+    
+    // Forcer le téléchargement correct avec le bon nom
+    const blob = doc.output('blob')
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = fileName
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    setTimeout(() => URL.revokeObjectURL(url), 100)
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     console.error('Erreur génération PDF bulletins:', errorMessage)

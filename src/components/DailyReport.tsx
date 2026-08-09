@@ -9,12 +9,15 @@ import {
 } from 'lucide-react'
 import { addToSyncQueue } from '@/lib/syncService'
 import { useToast } from '@/contexts/ToastContext'
+import Link from 'next/link'
+import TodayAbsencesModal from './TodayAbsencesModal'
 
 export default function DailyReport({ ecoleId }: { ecoleId: string }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [stats, setStats] = useState<any>(null)
   const { showToast } = useToast()
+  const [showAbsencesModal, setShowAbsencesModal] = useState(false)
 
   useEffect(() => {
     if (ecoleId) calculateTodayStats()
@@ -154,22 +157,32 @@ export default function DailyReport({ ecoleId }: { ecoleId: string }) {
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Élèves présents</span>
                   <span className="text-xs font-black text-white">{stats.presents}</span>
                </div>
-               <div className="flex justify-between items-center p-3 bg-white/5 rounded-xl border border-white/5">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">Absences signalées</span>
-                  <span className="text-xs font-black text-rose-500">{stats.absents}</span>
+               <div 
+                 onClick={() => setShowAbsencesModal(true)}
+                 className="flex justify-between items-center p-3 bg-rose-500/10 rounded-xl border border-rose-500/20 cursor-pointer hover:bg-rose-500/20 transition-colors group"
+                 title="Voir la liste des absents et retards"
+               >
+                  <span className="text-[10px] font-bold text-rose-400 uppercase group-hover:text-rose-300">Absences signalées</span>
+                  <span className="text-xs font-black text-rose-500 group-hover:text-rose-400">{stats.absents}</span>
                </div>
             </div>
          </div>
       </div>
 
       <div className="p-8 pt-0">
-         <button 
-           onClick={() => showToast('Historique bientôt disponible', 'info')}
-           className="w-full py-4 bg-white text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-400 transition-all shadow-xl shadow-black/20"
+         <Link 
+           href="/dashboard/presences/historique"
+           className="w-full py-4 bg-white text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-400 transition-all shadow-xl shadow-black/20 text-center block"
          >
-           Voir l&apos;historique complet
-         </button>
+           Voir l'historique complet
+         </Link>
       </div>
+
+      <TodayAbsencesModal 
+        isOpen={showAbsencesModal}
+        onClose={() => setShowAbsencesModal(false)}
+        ecoleId={ecoleId}
+      />
     </div>
   )
 }

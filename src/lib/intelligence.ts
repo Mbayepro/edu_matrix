@@ -11,6 +11,7 @@ export interface AtRiskStudent {
   moyenne_precedente: number
   chute: number
   raison: 'chute_moyenne' | 'absenteisme'
+  nb_absences?: number
 }
 
 /**
@@ -26,45 +27,98 @@ export async function detectAtRiskStudents(ecoleId: string): Promise<AtRiskStude
     const classes = await db.classes.where('ecole_id').equals(ecoleId).toArray()
     const classMap = new Map(classes.map(c => [c.id, c.nom_classe]))
     
-    const notesAll = await db.notes.where('ecole_id').equals(ecoleId).toArray()
-    const evalsAll = await db.evaluations.where('ecole_id').equals(ecoleId).toArray()
-    const evalMap = new Map(evalsAll.map(ev => [ev.id, ev]))
+    // Récupérer les seuils configurables
+    const ecole = await db.ecoles.get(ecoleId)
+    const seuilChute = Number(ecole?.seuil_alerte_chute ?? 2)
+    const seuilAbsences = Number(ecole?.seuil_alerte_absences ?? 5)
+    
+    // --- 1. DÉTECTION CHUTE DE MOYENNE VIA v_moyennes_generales ---
+    if (typeof window !== 'undefined' && navigator.onLine) {
+      try {
+        const { supabase } = await import('./supabase')
+        const { data: moyennes, error } = await supabase
+          .from('v_moyennes_generales')
+          .select('*')
+          .eq('ecole_id', ecoleId)
+          .order('annee_scolaire', { ascending: false })
+          .order('trimestre', { ascending: false })
 
-    for (const eleve of eleves) {
-      const eleveNotes = notesAll.filter(n => n.eleve_id === eleve.id)
-      if (eleveNotes.length < 2) continue
+        if (!error && moyennes) {
+          // Grouper par élève
+          const mapByEleve = new Map<string, any[]>()
+          for (const _row of moyennes) {
+            const row = _row as any
+            if (!mapByEleve.has(row.eleve_id)) mapByEleve.set(row.eleve_id, [])
+            mapByEleve.get(row.eleve_id)!.push(row)
+          }
 
-      // Calculer moyenne T1 et T2 (ou juste les deux dernières évaluations si même trimestre)
-      // Pour faire simple : on compare la moyenne des 2 dernières notes vs la moyenne des 2 précédentes
-      const sortedNotes = eleveNotes.sort((a,b) => new Date(evalMap.get(b.evaluation_id)?.date || 0).getTime() - new Date(evalMap.get(a.evaluation_id)?.date || 0).getTime())
-      
-      const lastNotes = sortedNotes.slice(0, 2)
-      const prevNotes = sortedNotes.slice(2, 4)
+          for (const [eleveId, records] of Array.from(mapByEleve.entries())) {
+            // records sont triés du plus récent au plus ancien
+            if (records.length >= 2) {
+              const last = records[0]
+              const prev = records[1]
+              
+              // On vérifie que ce sont bien des trimestres consécutifs (approximativement, ou au moins l'un après l'autre)
+              const avgLast = Number(last.moyenne_generale)
+              const avgPrev = Number(prev.moyenne_generale)
 
-      if (lastNotes.length >= 1 && prevNotes.length >= 1) {
-        const avgLast = lastNotes.reduce((sum, n) => sum + (n.note / (evalMap.get(n.evaluation_id)?.bareme || 20) * 20), 0) / lastNotes.length
-        const avgPrev = prevNotes.reduce((sum, n) => sum + (n.note / (evalMap.get(n.evaluation_id)?.bareme || 20) * 20), 0) / prevNotes.length
+              if (avgPrev - avgLast >= seuilChute) {
+                const eleve = eleves.find(e => e.id === eleveId)
+                if (eleve) {
+                  riskList.push({
+                    id: eleve.id,
+                    prenom: eleve.prenom,
+                    nom: eleve.nom,
+                    classe_nom: classMap.get(eleve.classe_id) || 'Inconnue',
+                    moyenne_actuelle: avgLast,
+                    moyenne_precedente: avgPrev,
+                    chute: avgPrev - avgLast,
+                    raison: 'chute_moyenne'
+                  })
+                }
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Erreur lors du fetch v_moyennes_generales:', err)
+      }
+    }
 
-        if (avgPrev - avgLast >= 2) { // Chute de plus de 2 points
+    // --- 2. DÉTECTION ABSENTÉISME (Local Dexie) ---
+    // On prend les absences de l'année en cours (simplifié : toutes les absences en base locale)
+    const presences = await db.presences.where('ecole_id').equals(ecoleId).toArray()
+    const absents = presences.filter(p => p.statut === 'absent')
+    
+    const absCountMap = new Map<string, number>()
+    for (const p of absents) {
+      absCountMap.set(p.eleve_id, (absCountMap.get(p.eleve_id) || 0) + 1)
+    }
+
+    for (const [eleveId, count] of Array.from(absCountMap.entries())) {
+      if (count >= seuilAbsences) {
+        // Vérifier si pas déjà dans la liste pour éviter les doublons UI, ou l'ajouter
+        const eleve = eleves.find(e => e.id === eleveId)
+        if (eleve && !riskList.find(r => r.id === eleveId && r.raison === 'absenteisme')) {
           riskList.push({
             id: eleve.id,
             prenom: eleve.prenom,
             nom: eleve.nom,
             classe_nom: classMap.get(eleve.classe_id) || 'Inconnue',
-            moyenne_actuelle: avgLast,
-            moyenne_precedente: avgPrev,
-            chute: avgPrev - avgLast,
-            raison: 'chute_moyenne'
+            moyenne_actuelle: 0,
+            moyenne_precedente: 0,
+            chute: count, // On utilise 'chute' pour le tri, on affichera nb_absences
+            nb_absences: count,
+            raison: 'absenteisme'
           })
         }
       }
     }
 
-    // On pourrait aussi ajouter une détection basée sur les absences (ex: > 3 absences dans le mois)
-    
   } catch (err) {
     console.error('[Intelligence] Error:', err)
   }
 
-  return riskList.sort((a,b) => b.chute - a.chute).slice(0, 5) // Top 5 risques
+  // Trier par criticité : d'abord les plus grandes chutes, puis les plus grands nombres d'absences
+  return riskList.sort((a,b) => b.chute - a.chute).slice(0, 8) 
 }

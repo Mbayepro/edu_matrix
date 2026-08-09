@@ -57,6 +57,12 @@ export default function FlashReportModal({ isOpen, onClose, ecoleId, ecoleNom }:
       let paiementsJour = []
       let totalCaisseJour = 0
       if (db) {
+        // Recalculer le statut pour corriger les faux positifs "impayé" (élèves sans frais)
+        const eleves = await db.eleves.where('ecole_id').equals(ecoleId).toArray()
+        for (const e of eleves) {
+          await db.recalculateEleveStatus(e.id)
+        }
+
         impayes = await db.eleves.where('ecole_id').equals(ecoleId).and(e => e.statut_paiement === 'impayé').count()
         paiementsJour = await db.paiements.where('ecole_id').equals(ecoleId).and(p => p.date_paiement.startsWith(today)).toArray()
         totalCaisseJour = paiementsJour.reduce((sum, p) => sum + Number(p.montant), 0)

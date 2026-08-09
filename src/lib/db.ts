@@ -21,6 +21,19 @@ import type {
   Paiement,
 } from './supabase'
 
+export interface AppreciationTrimestrielle {
+  id: string
+  ecole_id: string
+  eleve_id: string
+  matiere_id: string
+  trimestre: number
+  annee_scolaire: string
+  appreciation: string | null
+  professeur_id?: string
+  created_at?: string
+  updated_at?: string
+}
+
 // ─── Types locaux ─────────────────────────────────────────────────────────────
 
 export interface LocalEleve extends Eleve {
@@ -42,6 +55,7 @@ export interface LocalEleveFrais extends EleveFrais {}
 export interface LocalPaiement extends Paiement {
   mois?: string | null
 }
+export interface LocalAppreciation extends AppreciationTrimestrielle {}
 
 export interface LocalRapportJournalier {
   id: string
@@ -88,6 +102,7 @@ export class EduMatrixDB extends Dexie {
   sync_queue!:  Table<SyncAction,      number>
   sync_metadata!: Table<{ id: string, table_name: string, last_synced_at: string, ecole_id: string }, string>
   rapports_journaliers!: Table<LocalRapportJournalier, string>
+  appreciations!: Table<LocalAppreciation, string>
 
   constructor() {
     super('EduMatrixDB')
@@ -109,7 +124,8 @@ export class EduMatrixDB extends Dexie {
       paiements:   'id, eleve_id, ecole_id, date_paiement, mois, updated_at',
       sync_queue:  '++id, table, ecole_id, createdAt',
       sync_metadata: 'id, table_name, ecole_id',
-      rapports_journaliers: 'id, date, ecole_id'
+      rapports_journaliers: 'id, date, ecole_id',
+      appreciations: 'id, ecole_id, eleve_id, matiere_id, trimestre, annee_scolaire, updated_at'
     })
 
     // Explicit table assignments to ensure properties are ALWAYS defined on the instance
@@ -130,6 +146,7 @@ export class EduMatrixDB extends Dexie {
     this.sync_queue      = this.table('sync_queue')
     this.sync_metadata   = this.table('sync_metadata')
     this.rapports_journaliers = this.table('rapports_journaliers')
+    this.appreciations   = this.table('appreciations')
   }
 
   // ─── Helpers Métier ────────────────────────────────────────────────────────
@@ -147,13 +164,14 @@ export class EduMatrixDB extends Dexie {
     if (!classe) throw new Error('Classe introuvable en local.')
 
     const ecoleId = classe.ecole_id
-    const [eleves, notes, evaluations, presences, coeffs] = await Promise.all([
+    const [eleves, notes, evaluations, presences, coeffs, appreciations] = await Promise.all([
       this.eleves.where('classe_id').equals(classeId).toArray(),
       this.notes.where('ecole_id').equals(ecoleId).toArray(),
       this.evaluations.where('classe_id').equals(classeId).and((e: LocalEvaluation) => e.trimestre === trimestre).toArray(),
       this.presences.where('classe_id').equals(classeId).toArray(),
       // For coefficients, we'll try to find them or use defaults
       this.matieres.where('ecole_id').equals(ecoleId).toArray(),
+      this.appreciations ? this.appreciations.where('trimestre').equals(trimestre).toArray() : Promise.resolve([])
     ])
 
     // Mapper matieres en format "coefficients" attendu par le moteur
@@ -173,7 +191,8 @@ export class EduMatrixDB extends Dexie {
       coefficients,
       trimestre,
       anneeScolaire,
-      isPrimaire
+      isPrimaire,
+      appreciations
     )
 
     // Fill missing Niveau/Serie info
@@ -198,7 +217,8 @@ export class EduMatrixDB extends Dexie {
     const totalPaye = paiements.reduce((sum, p) => sum + Number(p.montant), 0)
 
     let statut: 'payé' | 'partiel' | 'impayé' = 'impayé'
-    if (totalPaye >= totalDu && totalPaye > 0) statut = 'payé'
+    if (totalDu === 0) statut = 'payé'
+    else if (totalPaye >= totalDu) statut = 'payé'
     else if (totalPaye > 0) statut = 'partiel'
 
     await eTable.update(eleveId, { statut_paiement: statut })

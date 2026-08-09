@@ -26,7 +26,8 @@ export async function syncFromSupabase(ecoleId: string, tablesToSync?: string[])
   
   // Limiter les données volumineuses à l'année scolaire courante pour éviter la surcharge mémoire
   const today = new Date();
-  const currentYear = today.getMonth() >= 8 
+  // On bascule sur la nouvelle année dès Juillet (mois >= 6) pour les inscriptions d'été
+  const currentYear = today.getMonth() >= 6 
     ? `${today.getFullYear()}-${today.getFullYear() + 1}`
     : `${today.getFullYear() - 1}-${today.getFullYear()}`
 
@@ -38,14 +39,14 @@ export async function syncFromSupabase(ecoleId: string, tablesToSync?: string[])
     { name: 'matieres', query: supabase.from('matieres').select('*').eq('ecole_id', ecoleId) },
     { name: 'coefficients_matieres', query: supabase.from('coefficients_matieres').select('*').eq('ecole_id', ecoleId) },
     { name: 'evaluations', query: supabase.from('evaluations').select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) },
-    { name: 'eleves', query: supabase.from('eleves').select('*').eq('ecole_id', ecoleId) }, // Les élèves restent tous chargés pour le moment
+    { name: 'eleves', query: supabase.from('eleves').select('*').eq('ecole_id', ecoleId).eq('is_active', true) },
     { name: 'notes', query: supabase.from('notes').select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) }, // Filtrage par année scolaire pour optimiser le cache
-    { name: 'presences', query: supabase.from('presences').select('*').eq('ecole_id', ecoleId) }, 
+    { name: 'presences', query: supabase.from('presences').select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) }, 
     { name: 'profiles', query: supabase.from('profiles').select('*').eq('ecole_id', ecoleId) },
-    { name: 'frais_scolaires', query: supabase.from('frais_scolaires').select('*').eq('ecole_id', ecoleId) },
-    { name: 'eleves_frais', query: supabase.from('eleves_frais').select('*').eq('ecole_id', ecoleId) },
-    { name: 'paiements', query: supabase.from('paiements').select('*').eq('ecole_id', ecoleId) },
-    { name: 'emargements', query: supabase.from('emargements').select('*').eq('ecole_id', ecoleId) }
+    { name: 'frais_scolaires', query: supabase.from('frais_scolaires').select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) },
+    { name: 'eleves_frais', query: supabase.from('eleves_frais').select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) },
+    { name: 'paiements', query: supabase.from('paiements').select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) },
+    { name: 'emargements', query: supabase.from('emargements').select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) }
   ]
 
   if (tablesToSync && tablesToSync.length > 0) {

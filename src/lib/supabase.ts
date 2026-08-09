@@ -24,6 +24,12 @@ export interface Ecole {
   heure_limite_retard?: string
   statut: StatutEcole
   cycles_couverts?: string[]
+  seuil_passage_secondaire?: number
+  seuil_redoublement_secondaire?: number
+  seuil_passage_primaire?: number
+  seuil_redoublement_primaire?: number
+  seuil_alerte_chute?: number
+  seuil_alerte_absences?: number
   created_at: string
   updated_at?: string
   deleted_at?: string | null
@@ -171,6 +177,7 @@ export interface Presence {
   date: string
   heure: string
   statut: StatutPresence
+  annee_scolaire?: string
   eleve?: Eleve
 }
 
@@ -182,6 +189,7 @@ export interface Emargement {
   date_heure: string
   sujet_cours: string
   ecole_id: string
+  annee_scolaire?: string
 }
 
 export interface FraisScolaire {
@@ -195,6 +203,7 @@ export interface FraisScolaire {
   created_at: string
   updated_at?: string
   deleted_at?: string | null
+  annee_scolaire?: string
 }
 
 export interface EleveFrais {
@@ -206,6 +215,7 @@ export interface EleveFrais {
   montant_remise: number
   montant_a_payer: number
   derniere_relance_le?: string | null
+  annee_scolaire?: string
 }
 
 export interface Paiement {
@@ -221,6 +231,7 @@ export interface Paiement {
   created_at: string
   updated_at?: string
   deleted_at?: string | null
+  annee_scolaire?: string
 }
 
 export interface EnseignantClasse {

@@ -27,6 +27,37 @@ export default function BulletinGenerator({ eleveId, classeId, trimestre, pinCod
         setLoading(true);
 
         let bulletins: any[] = [];
+        let bulletinsT1: any[] = [];
+        let bulletinsT2: any[] = [];
+
+        const fetchT1T2 = async (eId?: string, cId?: string, tp?: string) => {
+          const isFinal = (tp === 'semestre' && trimestre === 2) || (tp === 'trimestre' && trimestre === 3) || (!tp && trimestre === 3);
+          if (!isFinal) return;
+          try {
+            if (eId) {
+              const resT1 = await CalculateurMoyennes.genererBulletin(eId, 1).catch(() => null);
+              if (resT1) bulletinsT1 = [resT1];
+              if (tp !== 'semestre') {
+                const resT2 = await CalculateurMoyennes.genererBulletin(eId, 2).catch(() => null);
+                if (resT2) bulletinsT2 = [resT2];
+              }
+            } else if (cId) {
+              if (tp === 'semestre') {
+                const resT1 = await CalculateurMoyennes.genererBulletinsClasse(cId, 1).catch(() => []);
+                bulletinsT1 = resT1 || [];
+              } else {
+                const [resT1, resT2] = await Promise.all([
+                  CalculateurMoyennes.genererBulletinsClasse(cId, 1).catch(() => []),
+                  CalculateurMoyennes.genererBulletinsClasse(cId, 2).catch(() => [])
+                ]);
+                bulletinsT1 = resT1 || [];
+                bulletinsT2 = resT2 || [];
+              }
+            }
+          } catch (err) {
+            console.warn('Erreur lors du chargement de l\'historique T1/T2:', err);
+          }
+        };
 
         if (pinCode) {
           // Utilisation de l'accès public sécurisé
@@ -35,12 +66,15 @@ export default function BulletinGenerator({ eleveId, classeId, trimestre, pinCod
           
           const bulletin = await CalculateurMoyennes.genererBulletin(data.id, trimestre);
           bulletins = [bulletin];
+          await fetchT1T2(data.id, undefined, bulletin.ecole?.type_periode);
         } else {
           if (eleveId) {
             const bulletin = await CalculateurMoyennes.genererBulletin(eleveId, trimestre);
             bulletins = [bulletin];
+            await fetchT1T2(eleveId, undefined, bulletin.ecole?.type_periode);
           } else {
             bulletins = await CalculateurMoyennes.genererBulletinsClasse(classeId, trimestre);
+            await fetchT1T2(undefined, classeId, bulletins[0]?.ecole?.type_periode);
           }
         }
 
@@ -50,13 +84,59 @@ export default function BulletinGenerator({ eleveId, classeId, trimestre, pinCod
           return;
         }
 
+        const mapT1 = new Map(bulletinsT1.map(b => [b.eleve.id, b]));
+        const mapT2 = new Map(bulletinsT2.map(b => [b.eleve.id, b]));
+
         const formattedArray = bulletins.map((b: any) => {
-          return {
+          const out = {
             ...b,
             nombre_matieres: b.matieres.length,
             total_coefficients: b.matieres.reduce((sum: number, m: any) => sum + m.coefficient, 0),
             decision_conseil: b.annual?.decision || "Passe en classe supérieure."
           } as BulletinData;
+
+          const typePeriode = b.ecole?.type_periode || 'trimestre';
+          const isFinal = (typePeriode === 'semestre' && trimestre === 2) || (typePeriode === 'trimestre' && trimestre === 3);
+
+          if (isFinal) {
+            const bT1 = mapT1.get(b.eleve.id);
+            const bT2 = mapT2.get(b.eleve.id);
+            
+            if (typePeriode === 'semestre') {
+              out.historiqueTrimesters = [
+                {
+                  trimestre: 1,
+                  moyenne_generale: bT1?.moyenne_generale ?? null,
+                  mention: bT1?.mention ?? ''
+                },
+                {
+                  trimestre: 2,
+                  moyenne_generale: b.moyenne_generale ?? null,
+                  mention: b.mention ?? ''
+                }
+              ];
+            } else {
+              out.historiqueTrimesters = [
+                {
+                  trimestre: 1,
+                  moyenne_generale: bT1?.moyenne_generale ?? null,
+                  mention: bT1?.mention ?? ''
+                },
+                {
+                  trimestre: 2,
+                  moyenne_generale: bT2?.moyenne_generale ?? null,
+                  mention: bT2?.mention ?? ''
+                },
+                {
+                  trimestre: 3,
+                  moyenne_generale: b.moyenne_generale ?? null,
+                  mention: b.mention ?? ''
+                }
+              ];
+            }
+          }
+
+          return out;
         });
 
         setDataArray(formattedArray);

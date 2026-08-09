@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { detectAtRiskStudents, AtRiskStudent } from '@/lib/intelligence'
-import { AlertTriangle, ArrowDownRight, Eye, UserX, Loader2 } from 'lucide-react'
+import { AlertTriangle, ArrowDownRight, Eye, UserX, Loader2, CalendarX } from 'lucide-react'
 import StudentCard from './StudentCard'
 
 export default function AtRiskPanel({ ecoleId }: { ecoleId: string }) {
@@ -72,14 +72,25 @@ export default function AtRiskPanel({ ecoleId }: { ecoleId: string }) {
                   </button>
                </div>
 
-               <div className="mt-4 flex items-center gap-3 bg-white/5 rounded-xl p-3 border border-rose-500/20">
-                  <div className="flex items-center gap-1 text-rose-400">
-                     <ArrowDownRight className="w-4 h-4" />
-                     <span className="text-xs font-black">-{risk.chute.toFixed(1)} pts</span>
-                  </div>
-                  <div className="w-px h-4 bg-white/10" />
-                  <p className="text-[10px] font-medium text-slate-400 italic">Moyenne passée de {risk.moyenne_precedente.toFixed(1)} à {risk.moyenne_actuelle.toFixed(1)}</p>
-               </div>
+               {risk.raison === 'chute_moyenne' ? (
+                 <div className="mt-4 flex items-center gap-3 bg-white/5 rounded-xl p-3 border border-rose-500/20">
+                    <div className="flex items-center gap-1 text-rose-400">
+                       <ArrowDownRight className="w-4 h-4" />
+                       <span className="text-xs font-black">-{risk.chute.toFixed(1)} pts</span>
+                    </div>
+                    <div className="w-px h-4 bg-white/10" />
+                    <p className="text-[10px] font-medium text-slate-400 italic">Moyenne passée de {risk.moyenne_precedente.toFixed(1)} à {risk.moyenne_actuelle.toFixed(1)}</p>
+                 </div>
+               ) : (
+                 <div className="mt-4 flex items-center gap-3 bg-white/5 rounded-xl p-3 border border-amber-500/20">
+                    <div className="flex items-center gap-1 text-amber-400">
+                       <CalendarX className="w-4 h-4" />
+                       <span className="text-xs font-black">{risk.nb_absences} absences</span>
+                    </div>
+                    <div className="w-px h-4 bg-white/10" />
+                    <p className="text-[10px] font-medium text-slate-400 italic">Absences non justifiées signalées</p>
+                 </div>
+               )}
             </div>
          ))}
       </div>

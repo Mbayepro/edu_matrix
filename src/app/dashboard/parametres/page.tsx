@@ -46,6 +46,12 @@ export default function SchoolSettingsPage() {
     type_periode: 'trimestre' as 'trimestre' | 'semestre',
     cycles_couverts: ['primaire'] as string[],
     heure_limite_retard: '08:30',
+    seuil_passage_secondaire: 10,
+    seuil_redoublement_secondaire: 8.5,
+    seuil_passage_primaire: 5,
+    seuil_redoublement_primaire: 4,
+    seuil_alerte_chute: 2,
+    seuil_alerte_absences: 5,
   })
 
   useEffect(() => {
@@ -79,6 +85,12 @@ export default function SchoolSettingsPage() {
           type_periode: ec.type_periode ?? 'trimestre',
           cycles_couverts: ec.cycles_couverts ?? ['primaire'],
           heure_limite_retard: ec.heure_limite_retard ?? '08:30',
+          seuil_passage_secondaire: ec.seuil_passage_secondaire ?? 10,
+          seuil_redoublement_secondaire: ec.seuil_redoublement_secondaire ?? 8.5,
+          seuil_passage_primaire: ec.seuil_passage_primaire ?? 5,
+          seuil_redoublement_primaire: ec.seuil_redoublement_primaire ?? 4,
+          seuil_alerte_chute: ec.seuil_alerte_chute ?? 2,
+          seuil_alerte_absences: ec.seuil_alerte_absences ?? 5,
         })
       }
     } catch (err) {
@@ -105,14 +117,20 @@ export default function SchoolSettingsPage() {
           calculation_method: form.calculation_method,
           cycles_couverts: form.cycles_couverts,
           heure_limite_retard: form.heure_limite_retard,
-          // type_periode: form.type_periode, // Temporairement désactivé en attendant la mise à jour de la base de données
+          seuil_passage_secondaire: form.seuil_passage_secondaire,
+          seuil_redoublement_secondaire: form.seuil_redoublement_secondaire,
+          seuil_passage_primaire: form.seuil_passage_primaire,
+          seuil_redoublement_primaire: form.seuil_redoublement_primaire,
+          seuil_alerte_chute: form.seuil_alerte_chute,
+          seuil_alerte_absences: form.seuil_alerte_absences,
+          type_periode: form.type_periode,
         } as any)
         .eq('id', ecole.id)
 
-      if (!error) {
-        await load(ecole.id)
-        showToast('Paramètres mis à jour avec succès.', 'success')
-      }
+      if (error) throw error
+
+      await load(ecole.id)
+      showToast('Paramètres mis à jour avec succès.', 'success')
     } catch (err: any) {
       showToast('Erreur lors de la sauvegarde : ' + err.message, 'error')
     } finally {
@@ -345,6 +363,89 @@ export default function SchoolSettingsPage() {
                   </label>
                 ))}
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Seuils Pédagogiques */}
+        <div className="bg-slate-900/40 rounded-[2rem] border border-white/5 shadow-xl backdrop-blur-sm p-8 space-y-8">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center shadow-lg shadow-orange-500/10">
+              <Settings2 className="w-5 h-5 text-orange-400" />
+            </div>
+            <h2 className="text-base font-black uppercase tracking-widest text-white">Seuils Pédagogiques</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Seuil de passage (Secondaire)</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                max="20"
+                value={form.seuil_passage_secondaire}
+                onChange={(e) => setForm((f) => ({ ...f, seuil_passage_secondaire: parseFloat(e.target.value) || 0 }))}
+                className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:ring-4 focus:ring-orange-500/20 focus:bg-slate-800 transition-all shadow-sm"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Seuil de redoublement (Secondaire)</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                max="20"
+                value={form.seuil_redoublement_secondaire}
+                onChange={(e) => setForm((f) => ({ ...f, seuil_redoublement_secondaire: parseFloat(e.target.value) || 0 }))}
+                className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:ring-4 focus:ring-orange-500/20 focus:bg-slate-800 transition-all shadow-sm"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Seuil de passage (Primaire)</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                max="10"
+                value={form.seuil_passage_primaire}
+                onChange={(e) => setForm((f) => ({ ...f, seuil_passage_primaire: parseFloat(e.target.value) || 0 }))}
+                className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:ring-4 focus:ring-orange-500/20 focus:bg-slate-800 transition-all shadow-sm"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Seuil de redoublement (Primaire)</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                max="10"
+                value={form.seuil_redoublement_primaire}
+                onChange={(e) => setForm((f) => ({ ...f, seuil_redoublement_primaire: parseFloat(e.target.value) || 0 }))}
+                className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:ring-4 focus:ring-orange-500/20 focus:bg-slate-800 transition-all shadow-sm"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Alerte chute de moyenne (pts)</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                max="20"
+                value={form.seuil_alerte_chute}
+                onChange={(e) => setForm((f) => ({ ...f, seuil_alerte_chute: parseFloat(e.target.value) || 0 }))}
+                className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:ring-4 focus:ring-orange-500/20 focus:bg-slate-800 transition-all shadow-sm"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Alerte absentéisme (absences)</label>
+              <input
+                type="number"
+                min="0"
+                value={form.seuil_alerte_absences}
+                onChange={(e) => setForm((f) => ({ ...f, seuil_alerte_absences: parseInt(e.target.value, 10) || 0 }))}
+                className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3.5 text-sm font-bold text-white focus:ring-4 focus:ring-orange-500/20 focus:bg-slate-800 transition-all shadow-sm"
+              />
             </div>
           </div>
         </div>

@@ -101,7 +101,9 @@ export default function BulletinPrimaire({ data }: { data: BulletinData }) {
         </div>
         <div className="text-right border-l px-4 border-slate-300">
           <p className="mb-1"><span className="font-bold text-xs">Classe :</span> <span className="font-bold text-md">{data.classe.nom_classe}</span></p>
+          <p className="mb-1"><span className="font-bold text-xs">Effectif :</span> <span className="font-bold text-md">{data.total_eleves || 'N/A'}</span></p>
           <p><span className="font-bold text-xs">Matricule :</span> {data.eleve.matricule}</p>
+          <p className="mt-2 text-xs"><span className="font-bold text-xs">Absences :</span> {data.attendance?.absences || 0} &nbsp;|&nbsp; <span className="font-bold text-xs">Retards :</span> {data.attendance?.retards || 0}</p>
           {('pin_parent' in data.eleve && data.eleve.pin_parent) && (
             <p className="mt-1"><span className="font-bold text-xs">PIN Parent :</span> <span className="font-mono font-bold bg-slate-200 px-1 rounded">{data.eleve.pin_parent as string}</span></p>
           )}

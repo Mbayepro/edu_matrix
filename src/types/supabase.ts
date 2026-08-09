@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -267,6 +267,12 @@ export type Database = {
           type_periode: string
           updated_at: string | null
           ville: string
+          seuil_passage_secondaire: number | null
+          seuil_redoublement_secondaire: number | null
+          seuil_passage_primaire: number | null
+          seuil_redoublement_primaire: number | null
+          seuil_alerte_chute: number | null
+          seuil_alerte_absences: number | null
         }
         Insert: {
           adresse?: string | null
@@ -283,6 +289,12 @@ export type Database = {
           type_periode?: string
           updated_at?: string | null
           ville: string
+          seuil_passage_secondaire?: number | null
+          seuil_redoublement_secondaire?: number | null
+          seuil_passage_primaire?: number | null
+          seuil_redoublement_primaire?: number | null
+          seuil_alerte_chute?: number | null
+          seuil_alerte_absences?: number | null
         }
         Update: {
           adresse?: string | null
@@ -299,6 +311,12 @@ export type Database = {
           type_periode?: string
           updated_at?: string | null
           ville?: string
+          seuil_passage_secondaire?: number | null
+          seuil_redoublement_secondaire?: number | null
+          seuil_passage_primaire?: number | null
+          seuil_redoublement_primaire?: number | null
+          seuil_alerte_chute?: number | null
+          seuil_alerte_absences?: number | null
         }
         Relationships: []
       }

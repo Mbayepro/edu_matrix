@@ -40,6 +40,7 @@ export interface BulletinData {
     logo_url?: string;
     tampon_url?: string;
     signature_url?: string;
+    type_periode?: string;
   };
   trimestre: number;
   matieres: MatiereDetails[];
@@ -50,6 +51,15 @@ export interface BulletinData {
   decision_conseil?: string;
   annee_scolaire?: string;
   total_eleves?: number;
+  historiqueTrimesters?: {
+    trimestre: number;
+    moyenne_generale: number | null;
+    mention: string;
+  }[];
+  attendance?: {
+    absences: number;
+    retards: number;
+  };
 }
 
 export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }) {
@@ -157,7 +167,8 @@ export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }
         </div>
         <div className="w-1/3 text-right">
           <p className="mb-1"><span className="font-bold">Classe :</span> {data.classe.nom_classe}</p>
-          <p><span className="font-bold">Effectif :</span> {data.total_eleves || 'N/A'}</p>
+          <p className="mb-1"><span className="font-bold">Effectif :</span> {data.total_eleves || 'N/A'}</p>
+          <p className="text-xs mt-2"><span className="font-bold">Absences :</span> {data.attendance?.absences || 0} &nbsp;|&nbsp; <span className="font-bold">Retards :</span> {data.attendance?.retards || 0}</p>
         </div>
       </div>
 
@@ -268,6 +279,52 @@ export default function BulletinMoyenSecondaire({ data }: { data: BulletinData }
         </div>
       </div>
       
+      {/* Bilan Annuel (Affiche uniquement si historiqueTrimesters est présent) */}
+      {data.historiqueTrimesters && data.historiqueTrimesters.length > 0 && (
+        <div className="mt-8 z-10 relative mb-4">
+          <p className="font-bold text-slate-800 uppercase mb-2">Bilan Annuel</p>
+          <table className="w-2/3 border-collapse border-2 border-slate-800 text-sm">
+            <thead className="bg-slate-200">
+              <tr>
+                <th className="border border-slate-800 p-2 text-left">{data.ecole?.type_periode === 'semestre' ? 'Semestre' : 'Trimestre'}</th>
+                <th className="border border-slate-800 p-2 text-center">Moyenne</th>
+                <th className="border border-slate-800 p-2 text-left">Mention</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.historiqueTrimesters.map(t => (
+                <tr key={t.trimestre} className="hover:bg-slate-50">
+                  <td className="border border-slate-800 p-2 font-semibold">{data.ecole?.type_periode === 'semestre' ? 'Semestre' : 'Trimestre'} {t.trimestre}</td>
+                  <td className="border border-slate-800 p-2 text-center font-bold">
+                    {t.moyenne_generale !== null ? t.moyenne_generale.toFixed(2) : 'N/A'}
+                  </td>
+                  <td className="border border-slate-800 p-2 italic">{t.mention || '-'}</td>
+                </tr>
+              ))}
+              <tr className="bg-amber-50">
+                <td className="border border-slate-800 p-2 font-black uppercase text-slate-800">Moyenne Annuelle</td>
+                <td className="border border-slate-800 p-2 text-center font-black text-lg text-slate-800">
+                  {(() => {
+                    const validTrimesters = data.historiqueTrimesters!.filter(t => t.moyenne_generale !== null);
+                    if (validTrimesters.length === 0) return 'N/A';
+                    const sum = validTrimesters.reduce((acc, t) => acc + (t.moyenne_generale as number), 0);
+                    return (sum / validTrimesters.length).toFixed(2);
+                  })()}
+                </td>
+                <td className="border border-slate-800 p-2 italic font-bold">
+                  {(() => {
+                    const validTrimesters = data.historiqueTrimesters!.filter(t => t.moyenne_generale !== null);
+                    if (validTrimesters.length === 0) return '-';
+                    const sum = validTrimesters.reduce((acc, t) => acc + (t.moyenne_generale as number), 0);
+                    const avg = sum / validTrimesters.length;
+                    return getAppreciation(avg);
+                  })()}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
       {/* Footer Text & Transparency Message */}
       <div className="absolute bottom-4 left-0 right-0 z-10 flex justify-between items-end px-8">
         <div className="space-y-1 text-left w-3/4">

@@ -40,7 +40,7 @@ interface RecentEleve {
   classe:    { nom_classe: string } | null
 }
 
-type WidgetId = 'stats' | 'charts' | 'recentEleves' | 'recentEmargements' | 'absences' | 'shortcuts'
+type WidgetId = 'stats' | 'charts' | 'recentEleves' | 'recentEmargements' | 'absences' | 'retardsPaiement' | 'shortcuts'
 
 interface WidgetConfig {
   id: WidgetId
@@ -56,6 +56,7 @@ const WIDGETS: WidgetConfig[] = [
   { id: 'recentEleves', title: 'Élèves récents', icon: Users, defaultVisible: true, priority: 'medium' },
   { id: 'recentEmargements', title: 'Émargements récents', icon: FileText, defaultVisible: true, priority: 'low' },
   { id: 'absences', title: 'Absences du jour', icon: AlertCircle, defaultVisible: true, priority: 'high' },
+  { id: 'retardsPaiement', title: 'Retards Paiement', icon: AlertCircle, defaultVisible: true, priority: 'high' },
   { id: 'shortcuts', title: 'Raccourcis', icon: Sparkles, defaultVisible: true, priority: 'medium' },
 ]
 
@@ -150,6 +151,7 @@ export default function DashboardEnhanced() {
   const [recentEleves,  setRecentEleves]  = useState<RecentEleve[]>([])
   const [recentEmargements, setRecentEmargements] = useState<any[]>([])
   const [absencesJour, setAbsencesJour] = useState<any[]>([])
+  const [retardsPaiement, setRetardsPaiement] = useState<any[]>([])
   const [presenceChart, setPresenceChart] = useState<{ jour: string; present: number; absent: number }[]>([])
   const [notesChart,    setNotesChart]    = useState<{ classe: string; moyenne: number }[]>([])
   const [loading,       setLoading]       = useState(true)
@@ -189,7 +191,7 @@ export default function DashboardEnhanced() {
         const [totalEleves, totalTeach, elevesImpayes, totalClasses, presRawToday] = await Promise.all([
           db.eleves.where('ecole_id').equals(schoolId).count(),
           db.profiles.where('ecole_id').equals(schoolId).and(p => p.role === 'teacher').count(),
-          db.eleves.where('ecole_id').equals(schoolId).and(e => e.statut_paiement === 'impayé').count(),
+          db.eleves.where('ecole_id').equals(schoolId).and(e => e.statut_paiement === 'impayé' || e.statut_paiement === 'partiel').count(),
           db.classes.where('ecole_id').equals(schoolId).count(),
           db.presences.where('date').equals(today).toArray(),
         ])
@@ -244,15 +246,46 @@ export default function DashboardEnhanced() {
 
         const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
         const presRawAll = await db.presences.where('date').between(sevenDaysAgo.toISOString().split('T')[0], today + '\uffff').toArray()
-        const allEleves = await db.eleves.where('ecole_id').equals(schoolId).toArray()
-        const localElevesIds = new Set(allEleves.map(e => e.id))
-        const eleveMap = new Map(allEleves.map(e => [e.id, e]))
-        const presRaw = presRawAll.filter(p => localElevesIds.has(p.eleve_id))
         
-        setAbsencesJour(presRaw.filter(p => p.date === today && (p.statut === 'absent' || p.statut === 'retard')).map(p => {
-          const e = eleveMap.get(p.eleve_id)
-          return { ...p, eleve_nom: e ? `${e.prenom} ${e.nom}` : 'Inconnu', telephone: e?.telephone_parent || '', classe_nom: classesMap.get(p.classe_id) || 'N/A' }
-        }))
+        const localEleves = await db.eleves.where('ecole_id').equals(schoolId).toArray()
+        const localElevesIds = new Set(localEleves.map(e => e.id))
+        const eleveMap = new Map(localEleves.map(e => [e.id, e]))
+        const presRaw = presRawAll.filter(p => localElevesIds.has(p.eleve_id))
+
+        const presencesTodayValid = await db.presences.where('date').equals(today).toArray()
+        const absentsIds = new Set(presencesTodayValid.filter(p => p.statut === 'absent' || p.statut === 'retard').map(p => p.eleve_id))
+        const elevesAbsents = localEleves.filter(e => absentsIds.has(e.id))
+        const absencesData = elevesAbsents.map(e => {
+          const pres = presencesTodayValid.find(p => p.eleve_id === e.id)
+          return {
+            eleve_nom: `${e.prenom} ${e.nom}`,
+            classe_nom: classesMap.get(e.classe_id) || 'N/A',
+            statut: pres?.statut || 'absent',
+            telephone: e.telephone_parent || ''
+          }
+        })
+        setAbsencesJour(absencesData)
+
+        // Calcul des Retards de Paiement
+        const impayesFull = localEleves.filter(e => e.statut_paiement === 'impayé' || e.statut_paiement === 'partiel')
+        const allElevesFrais = await db.eleves_frais.where('ecole_id').equals(schoolId).toArray()
+        const allPaiements = await db.paiements.where('ecole_id').equals(schoolId).toArray()
+
+        const retardsData = impayesFull.map(e => {
+          const efs = allElevesFrais.filter(ef => ef.eleve_id === e.id)
+          const paims = allPaiements.filter(p => p.eleve_id === e.id)
+          const totalDu = efs.reduce((sum, ef) => sum + (Number((ef as any).montant_a_payer) || (Number(ef.montant_du) - Number(ef.montant_remise))), 0)
+          const totalPaye = paims.reduce((sum, p) => sum + Number(p.montant), 0)
+          const reste = totalDu - totalPaye
+          return {
+            eleve_nom: `${e.prenom} ${e.nom}`,
+            classe_nom: classesMap.get(e.classe_id) || 'N/A',
+            reste,
+            telephone: e.telephone_parent || ''
+          }
+        }).filter(r => r.reste > 0).sort((a, b) => b.reste - a.reste)
+
+        setRetardsPaiement(retardsData)
 
         const presMap: Record<string, { present: number; absent: number }> = {}
         for (let i = 6; i >= 0; i--) {
@@ -391,18 +424,105 @@ export default function DashboardEnhanced() {
                     <h3 className="text-lg font-bold text-white">Absences du jour</h3>
                     <span className="ml-auto text-sm text-slate-400">{absencesJour.length} absent(s)</span>
                   </div>
-                  <div className="space-y-2">
-                    {absencesJour.map((absence, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-3 bg-slate-800 rounded-lg">
-                        <div>
-                          <p className="font-medium text-white">{absence.eleve_nom}</p>
-                          <p className="text-sm text-slate-400">{absence.classe_nom}</p>
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                    {absencesJour.map((absence, idx) => {
+                      const hasPhone = !!absence.telephone
+                      const phoneForWa = absence.telephone ? absence.telephone.replace(/\s+/g, '') : ''
+                      const waMessage = absence.statut === 'absent'
+                        ? `Bonjour, sauf erreur de notre part, nous vous informons que votre enfant ${absence.eleve_nom} est absent(e) ce jour (${getTodayDate()}).`
+                        : `Bonjour, nous vous informons que votre enfant ${absence.eleve_nom} est arrivé(e) en retard ce jour (${getTodayDate()}).`
+
+                      return (
+                        <div key={idx} className="flex items-center justify-between p-3 bg-slate-800 rounded-lg group">
+                          <div>
+                            <p className="font-medium text-white text-sm">{absence.eleve_nom}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <p className="text-xs text-slate-400">{absence.classe_nom}</p>
+                              <span className="text-[10px] uppercase font-black tracking-widest text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                                {absence.statut}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                            {hasPhone && (
+                              <>
+                                <a 
+                                  href={`tel:${phoneForWa}`}
+                                  title="Appeler"
+                                  className="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-600 transition-colors"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                                </a>
+                                <a 
+                                  href={`https://wa.me/${phoneForWa}?text=${encodeURIComponent(waMessage)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title="WhatsApp"
+                                  className="w-8 h-8 rounded-lg bg-[#25D366]/10 flex items-center justify-center text-[#25D366] hover:bg-[#25D366]/20 transition-colors"
+                                >
+                                  <MessageCircle className="w-4 h-4" />
+                                </a>
+                              </>
+                            )}
+                          </div>
                         </div>
-                        <span className="text-xs text-amber-400 bg-amber-500/10 px-2 py-1 rounded">
-                          {absence.statut}
-                        </span>
-                      </div>
-                    ))}
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {widget.id === 'retardsPaiement' && retardsPaiement.length > 0 && (
+                <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <AlertCircle className="w-5 h-5 text-rose-400" />
+                    <h3 className="text-lg font-bold text-white">Retards de Paiement</h3>
+                    <span className="ml-auto text-sm text-slate-400">{retardsPaiement.length} élève(s)</span>
+                  </div>
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                    {retardsPaiement.map((retard, idx) => {
+                      const hasPhone = !!retard.telephone
+                      const phoneForWa = retard.telephone ? retard.telephone.replace(/\s+/g, '') : ''
+                      const waMessage = `Bonjour, sauf erreur de notre part, nous vous informons que votre enfant ${retard.eleve_nom} a un reste à payer de ${retard.reste.toLocaleString('fr-FR')} FCFA. Merci de bien vouloir vous rapprocher de l'administration.`
+
+                      return (
+                        <div key={idx} className="flex items-center justify-between p-3 bg-slate-800 rounded-lg group">
+                          <div>
+                            <p className="font-medium text-white text-sm">{retard.eleve_nom}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <p className="text-xs text-slate-400">{retard.classe_nom}</p>
+                              <span className="text-[10px] font-black text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">
+                                Reste: {retard.reste.toLocaleString('fr-FR')} F
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                            {hasPhone && (
+                              <>
+                                <a 
+                                  href={`tel:${phoneForWa}`}
+                                  title="Appeler"
+                                  className="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-600 transition-colors"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                                </a>
+                                <a 
+                                  href={`https://wa.me/${phoneForWa}?text=${encodeURIComponent(waMessage)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  title="Rappel WhatsApp"
+                                  className="w-8 h-8 rounded-lg bg-[#25D366]/10 flex items-center justify-center text-[#25D366] hover:bg-[#25D366]/20 transition-colors"
+                                >
+                                  <MessageCircle className="w-4 h-4" />
+                                </a>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               )}

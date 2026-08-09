@@ -150,14 +150,54 @@ export default function DashboardPage() {
       
       if (db) {
         const localElevesIds = new Set((await db.eleves.where('ecole_id').equals(schoolId).toArray()).map(e => e.id))
-        const [totalEleves, totalTeach, elevesImpayes, totalClasses, presRawToday] = await Promise.all([
+        const [totalEleves, totalTeach, totalClasses, presRawToday] = await Promise.all([
           db.eleves.where('ecole_id').equals(schoolId).count(),
           db.profiles.where('ecole_id').equals(schoolId).and(p => p.role === 'teacher').count(),
-          db.eleves.where('ecole_id').equals(schoolId).and(e => e.statut_paiement === 'impayé').count(),
           db.classes.where('ecole_id').equals(schoolId).count(),
           db.presences.where('date').equals(today).toArray(),
         ])
         
+        const [fraisRaw, elevesFraisRaw, paiementsRaw] = await Promise.all([
+          db.frais_scolaires.where('ecole_id').equals(schoolId).toArray(),
+          db.eleves_frais.where('ecole_id').equals(schoolId).toArray(),
+          db.paiements.where('ecole_id').equals(schoolId).toArray(),
+        ])
+        
+        const isEleveEnRetard = (eleveId: string) => {
+          const efs = elevesFraisRaw.filter(ef => ef.eleve_id === eleveId)
+          let isLate = false
+          
+          for (const ef of efs) {
+            const f = fraisRaw.find(fr => fr.id === ef.frais_id)
+            if (f) {
+              const lib = (f.libelle || '').toLowerCase()
+              if (f.frequence === 'mensuel' || lib.includes('mensu') || lib.includes('scolarit')) {
+                const SCHOOL_MONTHS = ['Octobre', 'Novembre', 'Décembre', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet']
+                const currentMonth = new Date().toLocaleString('fr-FR', { month: 'long' }).toLowerCase()
+                let currentIndex = SCHOOL_MONTHS.findIndex(m => m.toLowerCase() === currentMonth)
+                if (currentIndex === -1) {
+                  const m = new Date().getMonth()
+                  if (m === 7 || m === 8) currentIndex = SCHOOL_MONTHS.length - 1
+                  else currentIndex = 0
+                }
+                
+                const pastMonths = SCHOOL_MONTHS.slice(0, currentIndex + 1)
+                const moisPayes = paiementsRaw.filter(p => p.eleve_id === eleveId && p.frais_id === ef.frais_id).map(p => p.mois).filter(Boolean)
+                const retards = pastMonths.filter(m => !moisPayes.includes(m))
+                if (retards.length > 0) isLate = true
+              } else {
+                const aPayer = Number(ef.montant_a_payer) || (Number(ef.montant_du) - (Number(ef.montant_remise) || 0)) || 0
+                const paye = paiementsRaw.filter(p => p.eleve_id === eleveId && p.frais_id === ef.frais_id).reduce((s, p) => s + Number(p.montant), 0)
+                if (aPayer > paye) isLate = true
+              }
+            }
+          }
+          return isLate
+        }
+
+        const elevesIdsArr = Array.from(localElevesIds)
+        const elevesImpayes = elevesIdsArr.filter(id => isEleveEnRetard(id)).length
+
         const presencesAujourd = presRawToday.filter(p => localElevesIds.has(p.eleve_id) && (p.statut === 'présent' || p.statut === 'retard')).length
 
         setStats({
@@ -182,7 +222,7 @@ export default function DashboardPage() {
           const s: DashboardStats = {
             totalEleves: elRes.data?.length || 0,
             totalEnseignants: profRes.data?.length || 0,
-            elevesImpayes: elRes.data?.filter((e: any) => e.statut_paiement === 'impayé').length || 0,
+            elevesImpayes: stats?.elevesImpayes || 0, // Fallback on local indexeddb calculation
             totalClasses: clRes.data?.length || 0,
             presencesAujourd: presRes.data?.length || 0,
           }
@@ -240,10 +280,25 @@ export default function DashboardPage() {
           const studentIds = Array.from(new Set(classNotes.map(n => n.eleve_id)))
           const studentAverages = studentIds.map(sid => {
             const sNotes = classNotes.filter(n => n.eleve_id === sid)
-            const notesCC = sNotes.filter(n => evalsMap.get(n.evaluation_id)?.type !== 'composition').map(n => (n.note / (evalsMap.get(n.evaluation_id)?.bareme || 20)) * 20)
-            const noteCompRaw = sNotes.find(n => evalsMap.get(n.evaluation_id)?.type === 'composition')
-            let noteComp = noteCompRaw ? (noteCompRaw.note / (evalsMap.get(noteCompRaw.evaluation_id)?.bareme || 20)) * 20 : null
-            return CalculateurMoyennes.calculerMoyenneMatiereBase(notesCC, noteComp, 'BLOCKS', true).moyenne
+            const subjectIds = Array.from(new Set(sNotes.map(n => evalsMap.get(n.evaluation_id)?.matiere_id).filter(Boolean)))
+            
+            let totalAvg = 0;
+            let validSubjects = 0;
+            
+            subjectIds.forEach(subId => {
+              const subjectNotes = sNotes.filter(n => evalsMap.get(n.evaluation_id)?.matiere_id === subId)
+              const notesCC = subjectNotes.filter(n => evalsMap.get(n.evaluation_id)?.type !== 'composition').map(n => (n.note / (evalsMap.get(n.evaluation_id)?.bareme || 20)) * 20)
+              const noteCompRaw = subjectNotes.find(n => evalsMap.get(n.evaluation_id)?.type === 'composition')
+              let noteComp = noteCompRaw ? (noteCompRaw.note / (evalsMap.get(noteCompRaw.evaluation_id)?.bareme || 20)) * 20 : null
+              
+              const avgObj = CalculateurMoyennes.calculerMoyenneMatiereBase(notesCC, noteComp, calculationMethod as any, true)
+              if (avgObj.moyenne > 0) {
+                 totalAvg += avgObj.moyenne
+                 validSubjects++
+              }
+            })
+            
+            return validSubjects > 0 ? (totalAvg / validSubjects) : 0
           })
           return { classe: cl.nom_classe, moyenne: Math.round((studentAverages.reduce((a, b) => a + b, 0) / studentAverages.length) * 100) / 100 }
         })

@@ -10,6 +10,7 @@ import { getTodayDate } from '@/lib/dateUtils';
 import { useNetwork } from '@/hooks/useNetwork';
 import { db } from '@/lib/db';
 import { addToSyncQueue, syncFromSupabase } from '@/lib/syncService';
+import AppreciationsModal from './AppreciationsModal';
 
 interface Matiere {
   id: string;
@@ -57,6 +58,7 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
   const { profile } = useProfile();
   const ecoleId = profile?.ecole_id;
   const [selectedMatiereId, setSelectedMatiereId] = useState<string>('');
+  const [showAppreciationsModal, setShowAppreciationsModal] = useState(false);
 
   const [mobileEvalId, setMobileEvalId] = useState<string | null>(null);
 
@@ -345,12 +347,20 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
         <div key={matiere.id} className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm overflow-hidden w-full max-w-full">
           <div className="px-6 py-4 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between gap-4">
             <h3 className="font-black text-slate-900 uppercase tracking-tight text-xs truncate min-w-0">{matiere.nom}</h3>
-            <button
-              onClick={() => { setSelectedMatiereId(matiere.id); setShowNewEvalModal(true); }}
-              className="flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-md shadow-emerald-500/20 active:scale-95"
-            >
-              <Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Nouvelle Éval.</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { setSelectedMatiereId(matiere.id); setShowAppreciationsModal(true); }}
+                className="flex-shrink-0 flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all"
+              >
+                ✨ <span className="hidden sm:inline">Appréciations IA</span>
+              </button>
+              <button
+                onClick={() => { setSelectedMatiereId(matiere.id); setShowNewEvalModal(true); }}
+                className="flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-md shadow-emerald-500/20 active:scale-95"
+              >
+                <Plus className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Nouvelle Éval.</span>
+              </button>
+            </div>
           </div>
 
           <div className="overflow-x-auto w-full">
@@ -508,6 +518,22 @@ export default function GradesEntry({ classeId, trimestre }: GradesEntryProps) {
             </div>
           </div>
         </div>
+      )}
+
+      {showAppreciationsModal && selectedMatiereId && (
+        <AppreciationsModal
+          isOpen={showAppreciationsModal}
+          onClose={() => setShowAppreciationsModal(false)}
+          classeId={classeId}
+          matiereId={selectedMatiereId}
+          trimestre={trimestre}
+          ecoleId={ecoleId || ''}
+          anneeScolaire={
+            new Date().getMonth() >= 8 
+              ? `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`
+              : `${new Date().getFullYear() - 1}-${new Date().getFullYear()}`
+          }
+        />
       )}
 
       {/* Toast Notification */}

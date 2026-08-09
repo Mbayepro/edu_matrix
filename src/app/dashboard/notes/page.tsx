@@ -18,6 +18,8 @@ import { useProfile } from '@/hooks/useProfile'
 import { useToast } from '@/contexts/ToastContext'
 import { useTeacherClasses } from '@/hooks/useTeacherClasses'
 import { getTodayDate } from '@/lib/dateUtils'
+import AppreciationsModal from '@/components/AppreciationsModal'
+import { CalculateurMoyennes } from '@/lib/calculMoyennes'
 
 export default function NotesPage() {
   const { profile, loading: profileLoading } = useProfile()
@@ -49,6 +51,7 @@ export default function NotesPage() {
   const [saving, setSaving] = useState(false)
   const { showToast } = useToast()
   const [showNewEvalModal, setShowNewEvalModal] = useState(false)
+  const [showAppreciationsModal, setShowAppreciationsModal] = useState(false)
   const [newEval, setNewEval] = useState({
     type: 'controle' as 'controle' | 'devoir' | 'composition',
     date: getTodayDate(),
@@ -273,21 +276,20 @@ export default function NotesPage() {
     })
     setNotes(notesMap)
 
-    // Charger les moyennes générales depuis la vue SQL pour le trimestre courant et l'école
+    // Charger les moyennes générales via le calculateur TS (qui gère les bonnes règles CC/Composition)
     if (ecoleId && selectedClasse && selectedTrimestre) {
-      const { data: moyennesData } = await supabase
-        .from('v_moyennes_generales')
-        .select('eleve_id, moyenne_generale')
-        .eq('ecole_id', ecoleId) // isolation multi-école
-        .eq('classe_id', selectedClasse)
-        .eq('trimestre', selectedTrimestre)
-
-      const moyennesMap: Record<string, number> = {}
-      const isClassePrimaire = selectedClasseData?.niveau_info?.cycle === 'primaire'
-      moyennesData?.forEach((m: any) => {
-         moyennesMap[m.eleve_id] = Number(m.moyenne_generale)
-      })
-      setMoyennesGenerales(moyennesMap)
+      try {
+        const bulletins = await CalculateurMoyennes.genererBulletinsClasse(selectedClasse, selectedTrimestre, anneeScolaire)
+        const moyennesMap: Record<string, number> = {}
+        bulletins.forEach(b => {
+          if (b.moyenne_generale !== null) {
+             moyennesMap[b.eleve.id] = b.moyenne_generale
+          }
+        })
+        setMoyennesGenerales(moyennesMap)
+      } catch (err) {
+        console.error('Erreur calcul des moyennes générales:', err)
+      }
     }
   }
 
@@ -591,6 +593,14 @@ export default function NotesPage() {
                   </option>
                 ))}
               </select>
+              <button
+                onClick={() => setShowAppreciationsModal(true)}
+                disabled={!selectedClasse || !selectedMatiere}
+                className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-all shadow-lg shadow-indigo-600/20 disabled:opacity-30 disabled:grayscale active:scale-95"
+                title="Générer Appréciations IA"
+              >
+                ✨
+              </button>
               <button
                 onClick={() => {
                   const isPrimary = (classes.find(c => c.id === selectedClasse) as any)?.niveau_info?.cycle === 'primaire'
@@ -935,6 +945,18 @@ export default function NotesPage() {
             </div>
           </div>
         </div>
+      )}
+      
+      {showAppreciationsModal && selectedMatiere && (
+        <AppreciationsModal
+          isOpen={showAppreciationsModal}
+          onClose={() => setShowAppreciationsModal(false)}
+          classeId={selectedClasse}
+          matiereId={selectedMatiere}
+          trimestre={selectedTrimestre}
+          anneeScolaire={anneeScolaire}
+          ecoleId={ecoleId || ''}
+        />
       )}
     </div>
   )

@@ -167,7 +167,8 @@ export class CalculateurMoyennes {
     annee_scolaire: string,
     niveau: any,
     serie: any,
-    getEvalFromNote: (note: any) => any
+    getEvalFromNote: (note: any) => any,
+    studentAppreciations?: any[]
   ): BulletinData {
     const baremeMatiere = isPrimaire ? 10 : 20
     let totalPointsEleve = 0
@@ -245,6 +246,9 @@ export class CalculateurMoyennes {
          return new Date(evA.date).getTime() - new Date(evB.date).getTime()
       })
 
+      const customAppreciation = studentAppreciations?.find(a => a.matiere_id === coeff.matiere_id)?.appreciation;
+      const defaultAppreciation = finalMoyenneMatiere !== null ? this.genererAppreciation(isPrimaire ? finalMoyenneMatiere * 2 : finalMoyenneMatiere) : 'Non Évalué';
+
       const matiereResult: MoyenneMatiere = {
         matiere_id: coeff.matiere_id,
         matiere_nom: coeff.matiere?.nom || 'Matière Inconnue',
@@ -252,7 +256,7 @@ export class CalculateurMoyennes {
         moyenne: finalMoyenneMatiere,
         total_points: totalPointsMatiere,
         bareme: baremeMatiere,
-        appreciation: finalMoyenneMatiere !== null ? this.genererAppreciation(isPrimaire ? finalMoyenneMatiere * 2 : finalMoyenneMatiere) : 'Non Évalué',
+        appreciation: customAppreciation || defaultAppreciation,
         nombre_evaluations: matiereNotes.length,
         is_bonus: isBonus,
         moyenne_controles: finalMoyCC,
@@ -307,7 +311,8 @@ export class CalculateurMoyennes {
     coefficients: any[],
     trimestre: number,
     annee_scolaire: string,
-    isPrimaire: boolean
+    isPrimaire: boolean,
+    appreciations?: any[]
   ): BulletinData[] {
     const evalsMap = new Map(evaluations.map(e => [e.id, e]))
     
@@ -327,7 +332,8 @@ export class CalculateurMoyennes {
         annee_scolaire,
         niveauMock,
         undefined, // serie
-        (n) => evalsMap.get(n.evaluation_id)
+        (n) => evalsMap.get(n.evaluation_id),
+        appreciations?.filter(a => a.eleve_id === eleve.id)
       )
     })
 
@@ -381,7 +387,8 @@ export class CalculateurMoyennes {
       { data: ecoleData, error: ecErr },
       { data: eleves, error: elErr },
       { data: rawNotes, error: ntErr },
-      { data: allPresences, error: prErr }
+      { data: allPresences, error: prErr },
+      { data: rawAppreciations, error: appErr }
     ] = await Promise.all([
       supabase.from('classes' as any).select('*, serie:series(*)').eq('id', classe_id).single() as any,
       supabase.from('ecoles' as any).select('*').eq('id', ecoleId).single() as any,
@@ -389,11 +396,28 @@ export class CalculateurMoyennes {
       evalIds.length > 0
         ? supabase.from('notes' as any).select('*').in('evaluation_id', evalIds) as any
         : Promise.resolve({ data: [], error: null }),
-      supabase.from('presences' as any).select('*').eq('classe_id', classe_id) as any
+      supabase.from('presences' as any).select('*').eq('classe_id', classe_id) as any,
+      supabase.from('appreciations_trimestrielles' as any).select('*').eq('trimestre', trimestre).eq('annee_scolaire', annee_scolaire) as any
     ]);
 
     if (clErr || ecErr || elErr || prErr || ntErr) throw new Error("Erreur lors de la récupération groupée des données.")
     
+    // Fetch local presences in case they are not synced to Supabase yet
+    let localPresences: any[] = [];
+    try {
+      if (typeof window !== 'undefined') {
+        const { db } = await import('./db');
+        localPresences = await db.presences.where('classe_id').equals(classe_id).toArray();
+      }
+    } catch (e) {
+      console.warn("Could not fetch local presences:", e);
+    }
+
+    const mergedPresences = [...(allPresences || []), ...localPresences];
+    // deduplicate by id
+    const presencesMap = new Map();
+    mergedPresences.forEach((p: any) => presencesMap.set(p.id, p));
+    const finalPresences = Array.from(presencesMap.values());
     // Reconstruire l'objet notes avec son évaluation liée
     const evaluationsMap = new Map(((evaluations as any[]) || []).map(e => [e.id, e]));
     let processedNotes = (rawNotes || []).map((note: any) => ({
@@ -416,23 +440,33 @@ export class CalculateurMoyennes {
     const calculationMethod = ecole.calculation_method || 'BLOCKS' // 'BLOCKS' | 'WEIGHTED'
     const typePeriode = ecole.type_periode || 'trimestre'
 
-    // 3. Charger le niveau avec plus de souplesse
-    let { data: niveau } = await supabase
-      .from('niveaux')
-      .select('*')
-      .ilike('code', classe.niveau)
-      .eq('ecole_id', ecoleId)
-      .maybeSingle() as { data: import('@/lib/supabase').Niveau | null; error: unknown }
+    // 3. Charger le niveau avec plus de souplesse (NON-BLOQUANT)
+    let niveau: import('@/lib/supabase').Niveau | null = null;
+    try {
+      if (classe.niveau) {
+        const { data } = await supabase
+          .from('niveaux')
+          .select('*')
+          .ilike('code', classe.niveau)
+          .eq('ecole_id', ecoleId)
+          .maybeSingle();
+        niveau = data;
+      }
+    } catch (e) {
+      // Ignorer silencieusement si la requête échoue
+    }
     
     if (!niveau) {
-      console.warn(`Niveau ${classe.niveau} introuvable pour l'école ${ecoleId}.`)
+      console.warn(`Niveau ${classe.niveau || 'inconnu'} introuvable pour l'école ${ecoleId}.`);
+      // Si introuvable, on continue sans crasher en créant un niveau virtuel
+      const codeNiveau = classe.niveau || 'Terminale';
       niveau = {
-        id: '',
-        code: classe.niveau,
-        nom: classe.niveau,
-        cycle: (classe.niveau.includes('CM') || classe.niveau.includes('CE') || classe.niveau.includes('CP') || classe.niveau.includes('CI')) ? 'primaire' : 'moyen',
+        id: '', // id vide pour forcer le fallback des coefficients par défaut si besoin
+        code: codeNiveau,
+        nom: codeNiveau,
+        cycle: (codeNiveau.includes('CM') || codeNiveau.includes('CE') || codeNiveau.includes('CP') || codeNiveau.includes('CI')) ? 'primaire' : 'moyen',
         ecole_id: ecoleId
-      } as any
+      } as any;
     }
 
     const isPrimaire = (niveau!.cycle === 'primaire' || (niveau!.cycle as string) === 'elementaire')
@@ -441,13 +475,39 @@ export class CalculateurMoyennes {
     // 4. Charger les coefficients une seule fois
     const coefficients = await this.getCoefficientsMatieres(ecoleId, niveau!.id, serie?.id)
 
+    // 4.1. GARANTIE ABSOLUE : Si des notes existent pour une matière qui n'est pas dans les coefficients, 
+    // on l'ajoute automatiquement avec un coefficient de 1 pour ne jamais perdre de données.
+    const matieresAvecNotes = new Set(processedNotes.map((n: any) => n.evaluations?.matiere_id).filter(Boolean));
+    for (const matId of Array.from(matieresAvecNotes)) {
+      if (!coefficients.some(c => c.matiere_id === matId)) {
+        // Récupérer le nom de la matière (fallback silencieux)
+        const nomMatiere = (rawNotes || []).find((n: any) => n.evaluations?.matiere_id === matId)?.evaluations?.matiere?.nom || 'Matière Non Configurée';
+        coefficients.push({
+          matiere_id: matId as string,
+          coefficient: 1,
+          is_obligatoire: true,
+          matiere: { id: matId, nom: nomMatiere } as any
+        } as any);
+      }
+    }
+
+    if (!coefficients || coefficients.length === 0) {
+      console.warn("⚠️ Aucune matière configurée pour cette classe !");
+      return [];
+    }
+
     // 5. Calculer les bulletins élève par élève
     if (!eleves || eleves.length === 0) return []
+
     const bulletins: BulletinData[] = eleves.map((eleve: any) => {
-      const studentNotes = processedNotes.filter((n: any) => n.eleve_id === eleve.id)
+      const studentNotes = processedNotes.filter((n: any) => {
+        if (n.eleve_id !== eleve.id) return false;
+        const ev = n.evaluations || n.evaluation;
+        return ev && ev.trimestre === trimestre;
+      })
 
       // Calculer l'assiduité par période (trimestre ou semestre)
-      const studentPresences = (allPresences || []).filter((p: any) => {
+      const studentPresences = finalPresences.filter((p: any) => {
         if (p.eleve_id !== eleve.id) return false
         const date = new Date(p.date)
         const month = date.getMonth() + 1
@@ -463,6 +523,8 @@ export class CalculateurMoyennes {
         return true
       })
 
+      const studentAppreciations = (rawAppreciations || []).filter((a: any) => a.eleve_id === eleve.id)
+
       const bulletin = this.processStudentBulletin(
         eleve,
         studentNotes,
@@ -473,7 +535,8 @@ export class CalculateurMoyennes {
         annee_scolaire!,
         niveau!,
         serie,
-        (n) => n.evaluations || n.evaluation
+        (n) => n.evaluations || n.evaluation,
+        studentAppreciations
       )
 
       bulletin.classe = {
@@ -530,7 +593,14 @@ export class CalculateurMoyennes {
         // Décision si c'est le dernier trimestre (T3 ou S2)
         const isFinal = (typePeriode === 'semestre' && trimestre === 2) || (typePeriode === 'trimestre' && trimestre === 3)
         if (isFinal && validAverages.length >= (typePeriode === 'semestre' ? 2 : 2)) { // On attend au moins 2 notes pour décider
-          bulletin.annual.decision = this.determinerDecisionAnnuelle(bulletin.annual.moyenne_annuelle, isPrimaire)
+          bulletin.annual.decision = this.determinerDecisionAnnuelle(
+            bulletin.annual.moyenne_annuelle, 
+            isPrimaire,
+            {
+              passage: isPrimaire ? Number(ecole.seuil_passage_primaire ?? 5) : Number(ecole.seuil_passage_secondaire ?? 10),
+              redoublement: isPrimaire ? Number(ecole.seuil_redoublement_primaire ?? 4) : Number(ecole.seuil_redoublement_secondaire ?? 8.5)
+            }
+          )
         } else {
           bulletin.annual.decision = 'En attente'
         }
@@ -599,9 +669,13 @@ export class CalculateurMoyennes {
     return 'Excellent'
   }
 
-  private static determinerDecisionAnnuelle(moyenne: number, isPrimaire: boolean): 'Passage' | 'Redoublement' | 'Exclusion' {
-    const thresholdPassage = isPrimaire ? 5 : 10
-    const thresholdRedoublement = isPrimaire ? 4 : 8.5
+  private static determinerDecisionAnnuelle(
+    moyenne: number, 
+    isPrimaire: boolean,
+    seuils?: { passage: number, redoublement: number }
+  ): 'Passage' | 'Redoublement' | 'Exclusion' {
+    const thresholdPassage = seuils?.passage ?? (isPrimaire ? 5 : 10)
+    const thresholdRedoublement = seuils?.redoublement ?? (isPrimaire ? 4 : 8.5)
 
     if (moyenne >= thresholdPassage) return 'Passage'
     if (moyenne >= thresholdRedoublement) return 'Redoublement'

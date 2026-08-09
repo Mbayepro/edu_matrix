@@ -307,7 +307,7 @@ export async function printThermalPaiementRecuPDF(
   doc.rect(marginX, y - 4, pageWidth - (marginX * 2), 8, 'F') // Fond gris clair pour le total
   doc.setFont('helvetica', 'bold').setFontSize(10)
   doc.text('TOTAL PAYÉ :', marginX + 2, y + 1.5)
-  doc.text(`${paiement.montant.toLocaleString('fr-FR')} F`, pageWidth - marginX - 2, y + 1.5, { align: 'right' })
+  doc.text(`${paiement.montant.toLocaleString('fr-FR').replace(/[\u00a0\u202f]/g, ' ')} F`, pageWidth - marginX - 2, y + 1.5, { align: 'right' })
   
   y += 6
   ;(doc as any).setLineDash([1, 1], 0)
