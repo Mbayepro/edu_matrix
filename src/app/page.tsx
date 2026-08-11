@@ -31,13 +31,13 @@ export default function LandingPage() {
           <div className="flex items-center gap-4">
             <Link 
               href="/login" 
-              className="hidden sm:block px-5 py-2.5 text-sm font-bold text-slate-600 hover:text-emerald-600 transition-colors"
+              className="px-3 sm:px-5 py-2.5 text-sm font-bold text-slate-600 hover:text-emerald-600 transition-colors"
             >
               Connexion
             </Link>
             <Link 
               href="/parent" 
-              className="px-7 py-3.5 text-sm font-bold bg-slate-900 hover:bg-emerald-600 text-white rounded-xl transition-all shadow-xl shadow-slate-900/10 hover:shadow-emerald-600/30 hover:-translate-y-0.5"
+              className="px-4 sm:px-7 py-2.5 sm:py-3.5 text-sm font-bold bg-slate-900 hover:bg-emerald-600 text-white rounded-xl transition-all shadow-xl shadow-slate-900/10 hover:shadow-emerald-600/30 hover:-translate-y-0.5 whitespace-nowrap"
             >
               Espace Parent
             </Link>
