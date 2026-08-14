@@ -283,6 +283,7 @@ function PaiementsContent() {
     }
 
     try {
+      let onlineSuccess = false
       if (isOnline) {
         // 1. Try DIRECT Supabase
         const { error } = await (supabase as any).from('paiements').insert({
@@ -294,31 +295,36 @@ function PaiementsContent() {
           mode: newPaiement.mode,
           reference: newPaiement.reference,
           date_paiement: newPaiement.date_paiement,
-          mois: (newPaiement as any).mois // Inclusion du mois si la colonne existe
+          mois: (newPaiement as any).mois
         })
         
-        if (error) throw error
-
-        // 2. Update local Dexie for cache
-        try {
-          const paiementTable = db.table('paiements')
-          await paiementTable.add(newPaiement)
-          // Update student balance locally too
-          const efTable = db.table('eleves_frais')
-          const ef = await efTable.where({ eleve_id: selectedEleve.id, frais_id: selectedFraisId }).first()
-          if (ef) {
-             const updatedAcompte = (ef as any).montant_paye ? (ef as any).montant_paye + m : m
-             await efTable.update(ef.id, { montant_paye: updatedAcompte } as any)
+        if (!error) {
+          onlineSuccess = true
+          // 2. Update local Dexie for cache
+          try {
+            const paiementTable = db.table('paiements')
+            await paiementTable.add(newPaiement)
+            // Update student balance locally too
+            const efTable = db.table('eleves_frais')
+            const ef = await efTable.where({ eleve_id: selectedEleve.id, frais_id: selectedFraisId }).first()
+            if (ef) {
+               const updatedAcompte = (ef as any).montant_paye ? (ef as any).montant_paye + m : m
+               await efTable.update(ef.id, { montant_paye: updatedAcompte } as any)
+            }
+          } catch (e) {
+            console.warn('Local save fail:', e)
           }
-        } catch (e) {
-          console.warn('Local save fail:', e)
+
+          // Force recalcul local du statut pour l'instantanéité UI
+          await db!.recalculateEleveStatus(selectedEleve.id)
+
+          showToast('Paiement enregistré (En ligne) !', 'success')
+        } else {
+          console.warn('Supabase direct insert failed, falling back to sync queue:', error)
         }
+      }
 
-        // Force recalcul local du statut pour l'instantanéité UI
-        await db!.recalculateEleveStatus(selectedEleve.id)
-
-        showToast('Paiement enregistré (En ligne) !', 'success')
-      } else {
+      if (!isOnline || !onlineSuccess) {
         // 3. Offline Fallback
         try {
           const paiementTable = db.table('paiements')
@@ -339,7 +345,7 @@ function PaiementsContent() {
         // Force recalcul local du statut
         await db!.recalculateEleveStatus(selectedEleve.id)
 
-        showToast('Paiement enregistré (Hors-ligne) !', 'success')
+        showToast(isOnline ? 'Paiement mis en attente (Synchronisation du tarif requise)' : 'Paiement enregistré (Hors-ligne) !', 'success')
       }
 
       setMontant('')
@@ -425,10 +431,21 @@ function PaiementsContent() {
     // Initialisation
     eleves.forEach(e => map.set(e.id, { du: 0, paye: 0, reste: 0 }))
 
+    const currentIndex = getCurrentSchoolMonthIndex()
+    const monthsDue = currentIndex >= 0 ? currentIndex + 1 : 0
+
     // Cumul des frais dus
     elevesFrais.forEach(ef => {
       const current = map.get(ef.eleve_id) || { du: 0, paye: 0, reste: 0 }
-      const aPayer = Number(ef.montant_a_payer) || (Number(ef.montant_du) - (Number(ef.montant_remise) || 0)) || 0
+      const f = frais.find(fr => fr.id === ef.frais_id)
+      let multiplier = 1
+      if (f) {
+        const lib = (f.libelle || '').toLowerCase()
+        if (f.frequence === 'mensuel' || lib.includes('mensu') || lib.includes('scolarit')) {
+           multiplier = monthsDue
+        }
+      }
+      const aPayer = (Number(ef.montant_a_payer) || (Number(ef.montant_du) - (Number(ef.montant_remise) || 0)) || 0) * multiplier
       const newDu = current.du + aPayer
       map.set(ef.eleve_id, { ...current, du: newDu, reste: newDu - current.paye })
     })
@@ -441,10 +458,18 @@ function PaiementsContent() {
     })
 
     return map
-  }, [eleves, elevesFrais, paiements])
+  }, [eleves, elevesFrais, paiements, frais])
 
   const getEleveBalance = (eleveId: string) => {
     return balancesMap.get(eleveId) || { du: 0, paye: 0, reste: 0 }
+  }
+
+  const getEleveStatus = (eleveId: string) => {
+    const isLate = isEleveEnRetard(eleveId);
+    if (!isLate) return 'payé';
+    const bal = getEleveBalance(eleveId);
+    if (bal.paye > 0) return 'partiel';
+    return 'impayé';
   }
 
   const handleUpdatePhone = async (eleveId: string) => {
@@ -497,14 +522,16 @@ function PaiementsContent() {
             frais_id: assignFeeId,
             montant_du: targetFee.montant,
             montant_remise: 0,
-            montant_a_payer: targetFee.montant
+            montant_a_payer: targetFee.montant,
+            solde_credit: 0
           }
           
           // Store locally
           try {
             await db.table('eleves_frais').add(newEF)
-            // Queue for Supabase
-            await addToSyncQueue('eleves_frais', 'INSERT', newEF as any, ecoleId)
+            // Queue for Supabase (exclude GENERATED column montant_a_payer and potentially missing solde_credit)
+            const { montant_a_payer, solde_credit, ...payloadForSupabase } = newEF as any
+            await addToSyncQueue('eleves_frais', 'INSERT', payloadForSupabase as any, ecoleId)
             count++
           } catch (e) {
             console.warn('EleveFrais add fail:', e)
@@ -570,9 +597,9 @@ function PaiementsContent() {
   const tauxRecouvrement = totalDu > 0 ? (totalEncaisse / totalDu) * 100 : 0
 
   const elevesParStatut = {
-    payé: eleves.filter(e => e.statut_paiement === 'payé').length,
-    partiel: eleves.filter(e => e.statut_paiement === 'partiel').length,
-    impayé: eleves.filter(e => e.statut_paiement === 'impayé').length,
+    payé: eleves.filter(e => getEleveStatus(e.id) === 'payé').length,
+    partiel: eleves.filter(e => getEleveStatus(e.id) === 'partiel').length,
+    impayé: eleves.filter(e => getEleveStatus(e.id) === 'impayé').length,
   }
 
   // Monthly payments data for chart

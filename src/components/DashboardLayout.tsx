@@ -46,6 +46,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Conseil de Classe',   href: '/dashboard/conseil-classe',        icon: UsersRound,    roles: ['superadmin', 'director'] },
   { label: 'Présences',           href: '/dashboard/presences',             icon: UserCheck,     roles: ['superadmin', 'director', 'teacher'] },
   { label: 'Caisse & Paiements',  href: '/dashboard/paiements',             icon: Wallet,        roles: ['superadmin', 'director'] },
+  { label: '💰 Finance',          href: '/dashboard/finance',               icon: TrendingUp,    roles: ['director', 'superadmin'] },
   { label: 'Paramètres',          href: '/dashboard/parametres',            icon: Settings,      roles: ['superadmin', 'director'] },
 ]
 

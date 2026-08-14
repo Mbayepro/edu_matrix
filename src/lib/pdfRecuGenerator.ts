@@ -2,7 +2,6 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import type { Ecole, Profile } from './supabase'
 
-// Interface representing the payment data we need for the receipt
 export interface PaiementRecuInfo {
   id: string
   date_paiement: string
@@ -16,82 +15,64 @@ export interface PaiementRecuInfo {
   frais_libelle: string
 }
 
-/** Helper pour charger une image distante en base64 pour jsPDF */
 async function getImageData(url: string | null | undefined): Promise<string | null> {
   if (!url) return null
   try {
-    // On essaie avec fetch
     const res = await fetch(url, { mode: 'cors' })
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`)
     const blob = await res.blob()
     
     return new Promise((resolve) => {
       const reader = new FileReader()
-      reader.onloadend = () => {
-        const base64data = reader.result as string
-        resolve(base64data)
-      }
-      reader.onerror = () => {
-        console.error('FileReader error for:', url)
-        resolve(null)
-      }
+      reader.onloadend = () => resolve(reader.result as string)
+      reader.onerror = () => resolve(null)
       reader.readAsDataURL(blob)
     })
   } catch (err) {
-    console.error('Erreur lors du chargement de l\'image (cors):', url, err)
-    // Tentative alternative pour certains navigateurs si CORS est bloqué par fetch 
-    // mais autorisé pour les balises img (parfois)
     return null
   }
 }
 
-/** Construit le document jsPDF du reçu (partagé entre téléchargement, impression, etc.) */
-async function buildRecuDoc(
+async function drawRecuOnDoc(
+  doc: jsPDF,
+  offsetY: number,
   ecole: Ecole,
   paiement: PaiementRecuInfo,
-  caissier?: Profile | null
-): Promise<jsPDF> {
-  const doc = new jsPDF()
+  caissier?: Profile | null,
+  logoData?: string | null,
+  tamponData?: string | null,
+  signatureData?: string | null
+) {
   const pageWidth = doc.internal.pageSize.getWidth()
-
   const datePaiement = new Date(paiement.date_paiement)
   const dateStr = datePaiement.toLocaleDateString('fr-FR')
   const timeStr = datePaiement.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 
-  // Logo
-  if (ecole.logo_url) {
-    try {
-      const logoData = await getImageData(ecole.logo_url)
-      if (logoData) {
-        // Détecter si c'est un PNG ou JPG pour addImage
-        const format = ecole.logo_url.toLowerCase().endsWith('.png') ? 'PNG' : 'JPEG'
-        doc.addImage(logoData, format, 14, 10, 24, 24)
-      }
-    } catch (e) { 
-      console.warn('Logo error skipped', e)
-    }
+  if (logoData) {
+    const format = ecole.logo_url?.toLowerCase().endsWith('.png') ? 'PNG' : 'JPEG'
+    doc.addImage(logoData, format, 14, 6 + offsetY, 16, 16)
   }
 
-  const titleX = ecole.logo_url ? 45 : 14
-  doc.setFont('helvetica', 'bold').setFontSize(22).setTextColor(15, 23, 42)
-  doc.text(ecole.nom.toUpperCase(), titleX, 20)
-  doc.setFont('helvetica', 'normal').setFontSize(10).setTextColor(100, 116, 139)
-  if (ecole.adresse)   doc.text(ecole.adresse, titleX, 26)
-  if (ecole.telephone) doc.text(`Tél : ${ecole.telephone}`, titleX, 31)
+  const titleX = logoData ? 35 : 14
+  doc.setFont('helvetica', 'bold').setFontSize(16).setTextColor(15, 23, 42)
+  doc.text(ecole.nom.toUpperCase(), titleX, 12 + offsetY)
+  doc.setFont('helvetica', 'normal').setFontSize(9).setTextColor(100, 116, 139)
+  if (ecole.adresse)   doc.text(ecole.adresse, titleX, 17 + offsetY)
+  if (ecole.telephone) doc.text(`Tél : ${ecole.telephone}`, titleX, 22 + offsetY)
 
-  doc.setFontSize(10).setTextColor(15, 23, 42)
-  doc.text(`Reçu N°: REF-${paiement.id.substring(0, 8).toUpperCase()}`, pageWidth - 14, 20, { align: 'right' })
-  doc.text(`Date : ${dateStr} à ${timeStr}`, pageWidth - 14, 26, { align: 'right' })
+  doc.setFontSize(9).setTextColor(15, 23, 42)
+  doc.text(`Reçu N°: REF-${paiement.id.substring(0, 8).toUpperCase()}`, pageWidth - 14, 12 + offsetY, { align: 'right' })
+  doc.text(`Date : ${dateStr} à ${timeStr}`, pageWidth - 14, 17 + offsetY, { align: 'right' })
 
   doc.setDrawColor(226, 232, 240)
-  doc.line(14, 38, pageWidth - 14, 38)
+  doc.line(14, 26 + offsetY, pageWidth - 14, 26 + offsetY)
 
-  doc.setFont('helvetica', 'bold').setFontSize(16).setTextColor(5, 150, 105)
-  doc.text('REÇU DE PAIEMENT SCOLARITÉ', pageWidth / 2, 50, { align: 'center' })
+  doc.setFont('helvetica', 'bold').setFontSize(13).setTextColor(5, 150, 105)
+  doc.text('REÇU DE PAIEMENT SCOLARITÉ', pageWidth / 2, 33 + offsetY, { align: 'center' })
 
-  doc.setFontSize(11).setTextColor(51, 65, 85)
+  doc.setFontSize(10).setTextColor(51, 65, 85)
   doc.setFont('helvetica', 'bold')
-  doc.text("Informations de l'élève", 14, 65)
+  doc.text("Informations de l'élève", 14, 42 + offsetY)
   doc.setFont('helvetica', 'normal')
 
   const eleveInfos = [
@@ -99,76 +80,97 @@ async function buildRecuDoc(
     `Classe : ${paiement.classe_nom}`,
   ]
   if (paiement.eleve_matricule) eleveInfos.push(`Matricule : ${paiement.eleve_matricule}`)
-  eleveInfos.forEach((text, i) => doc.text(text, 14, 75 + i * 7))
+  eleveInfos.forEach((text, i) => doc.text(text, 14, 48 + offsetY + i * 5))
 
-  try {
-    autoTable(doc, {
-      startY: 100,
-      head: [['Désignation', 'Mode de paiement', 'Référence', 'Montant Payé']],
-      body: [[
-        paiement.frais_libelle,
-        paiement.mode_paiement,
-        paiement.reference || `REF-${paiement.id.substring(0, 8).toUpperCase()}`,
-        `${paiement.montant.toLocaleString('fr-FR').replace(/\u00a0/g, ' ').replace(/\u202f/g, ' ')} F`,
-      ]],
-      theme: 'grid',
-      headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold' },
-      styles: { font: 'helvetica', fontSize: 11, cellPadding: 6 },
-      columnStyles: { 3: { halign: 'right', fontStyle: 'bold', textColor: [5, 150, 105] } },
-    })
-  } catch (err) {
-    console.error('AutoTable error:', err)
-  }
+  autoTable(doc, {
+    startY: 60 + offsetY,
+    head: [['Désignation', 'Mode de paiement', 'Référence', 'Montant Payé']],
+    body: [[
+      paiement.frais_libelle,
+      paiement.mode_paiement,
+      paiement.reference || `REF-${paiement.id.substring(0, 8).toUpperCase()}`,
+      `${paiement.montant.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} F`,
+    ]],
+    theme: 'grid',
+    headStyles: { fillColor: [15, 23, 42], textColor: 255, fontStyle: 'bold', minCellHeight: 6 },
+    styles: { font: 'helvetica', fontSize: 9, cellPadding: 3 },
+    columnStyles: { 3: { halign: 'right', fontStyle: 'bold', textColor: [5, 150, 105] } },
+    margin: { bottom: 0 }
+  })
 
-  const finalY = (doc as any).lastAutoTable?.finalY || 150
+  const finalY = (doc as any).lastAutoTable?.finalY || (75 + offsetY)
   
-  doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(15, 23, 42)
-  doc.text('La Direction', pageWidth - 50, finalY + 20)
-  doc.setFont('helvetica', 'normal').setFontSize(9).setTextColor(148, 163, 184)
-  if (caissier) doc.text(`Encaissé par : ${caissier.prenom} ${caissier.nom}`, 14, finalY + 20)
+  doc.setFont('helvetica', 'bold').setFontSize(9).setTextColor(15, 23, 42)
+  doc.text('La Direction', pageWidth - 40, finalY + 8)
+  doc.setFont('helvetica', 'normal').setFontSize(8).setTextColor(148, 163, 184)
+  if (caissier) doc.text(`Encaissé par : ${caissier.prenom} ${caissier.nom}`, 14, finalY + 8)
 
-  if (ecole.tampon_url) {
-    try {
-      const tamponData = await getImageData(ecole.tampon_url)
-      if (tamponData) {
-        doc.addImage(tamponData, 'PNG', pageWidth - 60, finalY + 25, 35, 35)
-      }
-    } catch (e) { console.warn('Tampon error skipped', e) }
+  if (tamponData) {
+    doc.addImage(tamponData, 'PNG', pageWidth - 45, finalY + 10, 20, 20)
+  }
+  if (signatureData) {
+    doc.addImage(signatureData, 'PNG', pageWidth - 40, finalY + 15, 20, 10)
   }
 
-  if (ecole.signature_url) {
-    try {
-      const signatureData = await getImageData(ecole.signature_url)
-      if (signatureData) {
-        doc.addImage(signatureData, 'PNG', pageWidth - 55, finalY + 30, 30, 15)
-      }
-    } catch (e) { console.warn('Signature error skipped', e) }
-  }
+  doc.setFontSize(7).setTextColor(148, 163, 184)
+  doc.text('Généré par EduMatrix', pageWidth / 2, offsetY + 95, { align: 'center' })
+}
 
-  doc.setFontSize(8).setTextColor(148, 163, 184)
-  doc.text('Généré par EduMatrix • Logiciel de Gestion Scolaire Sénégalaise', pageWidth / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' })
+/** Pre-loads images and builds a document with multiple receipts (2 per page) */
+async function buildBulkRecuDoc(
+  ecole: Ecole,
+  paiements: PaiementRecuInfo[],
+  caissier?: Profile | null
+): Promise<jsPDF> {
+  const doc = new jsPDF()
+  
+  const logoData = ecole.logo_url ? await getImageData(ecole.logo_url) : null
+  const tamponData = ecole.tampon_url ? await getImageData(ecole.tampon_url) : null
+  const signatureData = ecole.signature_url ? await getImageData(ecole.signature_url) : null
+
+  for (let i = 0; i < paiements.length; i++) {
+    const isNewPage = i > 0 && i % 3 === 0
+    if (isNewPage) doc.addPage()
+    
+    const positionInPage = i % 3
+    const offsetY = positionInPage * 99
+    
+    // Ligne de coupe entre les reçus
+    if (positionInPage > 0) {
+      doc.setDrawColor(200, 200, 200)
+      ;(doc as any).setLineDash([2, 2], 0)
+      doc.line(0, offsetY, doc.internal.pageSize.getWidth(), offsetY)
+      ;(doc as any).setLineDash([], 0) // reset
+    }
+
+    await drawRecuOnDoc(doc, offsetY, ecole, paiements[i], caissier, logoData, tamponData, signatureData)
+  }
 
   return doc
 }
 
-/** ⬇️ Télécharge le reçu PDF */
-export async function generatePaiementRecuPDF(
+/** ⬇️ Télécharge les reçus groupés */
+export async function generateBulkPaiementsRecusPDF(
   ecole: Ecole,
-  paiement: PaiementRecuInfo,
+  paiements: PaiementRecuInfo[],
   caissier?: Profile | null
 ) {
-  const doc = await buildRecuDoc(ecole, paiement, caissier)
-  doc.save(`Recu_${paiement.id.substring(0, 8)}_${paiement.eleve_nom.replace(/\s+/g, '')}.pdf`)
+  if (paiements.length === 0) return
+  const doc = await buildBulkRecuDoc(ecole, paiements, caissier)
+  doc.save(paiements.length === 1 
+    ? `Recu_${paiements[0].id.substring(0, 8)}_${paiements[0].eleve_nom.replace(/\s+/g, '')}.pdf` 
+    : `Recus_Massifs_${new Date().toISOString().substring(0,10)}.pdf`
+  )
 }
 
-/** 🖨️ Ouvre le reçu PDF dans un onglet et déclenche l'impression */
-export async function printPaiementRecuPDF(
+/** 🖨️ Imprime les reçus groupés */
+export async function printBulkPaiementsRecusPDF(
   ecole: Ecole,
-  paiement: PaiementRecuInfo,
+  paiements: PaiementRecuInfo[],
   caissier?: Profile | null
 ) {
-  const doc = await buildRecuDoc(ecole, paiement, caissier)
-  // Ouvre en blob URL dans un nouvel onglet + auto-print
+  if (paiements.length === 0) return
+  const doc = await buildBulkRecuDoc(ecole, paiements, caissier)
   const blob = doc.output('blob')
   const url  = URL.createObjectURL(blob)
   const win  = window.open(url, '_blank')
@@ -177,18 +179,20 @@ export async function printPaiementRecuPDF(
       setTimeout(() => { win.print() }, 300)
     })
   }
-  // Libère l'URL après 60s
   setTimeout(() => URL.revokeObjectURL(url), 60_000)
 }
 
-/** 📤 Partage le résumé du paiement (WhatsApp, Email ou Copie) */
-export function sharePaiementRecu(
-  paiement: PaiementRecuInfo,
-  ecole: Ecole,
-  method: 'whatsapp' | 'email' | 'copy'
-) {
+/** ⬇️ Compatibilité individuelle existante */
+export async function generatePaiementRecuPDF(ecole: Ecole, paiement: PaiementRecuInfo, caissier?: Profile | null) {
+  return generateBulkPaiementsRecusPDF(ecole, [paiement], caissier)
+}
+export async function printPaiementRecuPDF(ecole: Ecole, paiement: PaiementRecuInfo, caissier?: Profile | null) {
+  return printBulkPaiementsRecusPDF(ecole, [paiement], caissier)
+}
+
+export function sharePaiementRecu(paiement: PaiementRecuInfo, ecole: Ecole, method: 'whatsapp' | 'email' | 'copy') {
   const date = new Date(paiement.date_paiement).toLocaleDateString('fr-FR')
-  const montantStr = paiement.montant.toLocaleString('fr-FR')
+  const montantStr = paiement.montant.toString().replace(/\\B(?=(\\d{3})+(?!\\d))/g, " ")
   const ref = `REF-${paiement.id.substring(0, 8).toUpperCase()}`
 
   const message =
@@ -198,6 +202,7 @@ export function sharePaiementRecu(
     `💰 Montant : ${montantStr} F CFA\n` +
     `🔖 Motif : ${paiement.frais_libelle}\n` +
     `📅 Date : ${date}`
+
 
   if (method === 'whatsapp') {
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank')

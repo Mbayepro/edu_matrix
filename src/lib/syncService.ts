@@ -39,13 +39,13 @@ export async function syncFromSupabase(ecoleId: string, tablesToSync?: string[])
     { name: 'matieres', query: supabase.from('matieres').select('*').eq('ecole_id', ecoleId) },
     { name: 'coefficients_matieres', query: supabase.from('coefficients_matieres').select('*').eq('ecole_id', ecoleId) },
     { name: 'evaluations', query: supabase.from('evaluations').select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) },
-    { name: 'eleves', query: supabase.from('eleves').select('*').eq('ecole_id', ecoleId).eq('is_active', true) },
+    { name: 'eleves', query: supabase.from('eleves').select('*').eq('ecole_id', ecoleId) },
     { name: 'notes', query: supabase.from('notes').select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) }, // Filtrage par année scolaire pour optimiser le cache
     { name: 'presences', query: supabase.from('presences').select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) }, 
     { name: 'profiles', query: supabase.from('profiles').select('*').eq('ecole_id', ecoleId) },
-    { name: 'frais_scolaires', query: supabase.from('frais_scolaires').select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) },
-    { name: 'eleves_frais', query: supabase.from('eleves_frais').select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) },
-    { name: 'paiements', query: supabase.from('paiements').select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) },
+    { name: 'frais_scolaires', query: supabase.from('frais_scolaires').select('*').eq('ecole_id', ecoleId) },
+    { name: 'eleves_frais', query: supabase.from('eleves_frais').select('*').eq('ecole_id', ecoleId) },
+    { name: 'paiements', query: supabase.from('paiements').select('*').eq('ecole_id', ecoleId) },
     { name: 'emargements', query: supabase.from('emargements').select('*').eq('ecole_id', ecoleId).eq('annee_scolaire', currentYear) }
   ]
 
@@ -328,11 +328,13 @@ export async function cleanupLocalCache(): Promise<void> {
     const presenceTable = db.table('presences')
     const countPresences = await presenceTable.where('date').below(oldDate).delete()
     
-    // Garder les paiements de l'année scolaire en cours (depuis septembre dernier)
-    const currentYear = new Date().getFullYear()
-    const startOfSchoolYear = new Date(currentYear, 8, 1).toISOString() // 1er Septembre
+    // Garder les paiements des 3 derniers mois au lieu de dépendre d'une date de rentrée fixe
+    // qui casse les paiements de l'été.
+    const threeMonthsAgoPaiements = new Date()
+    threeMonthsAgoPaiements.setMonth(threeMonthsAgoPaiements.getMonth() - 3)
+    const oldDatePaiements = threeMonthsAgoPaiements.toISOString()
     const paiementTable = db.table('paiements')
-    const countPaiements = await paiementTable.where('date_paiement').below(startOfSchoolYear).delete()
+    const countPaiements = await paiementTable.where('date_paiement').below(oldDatePaiements).delete()
     
     if (countPresences > 0 || countPaiements > 0) {
       console.info(`[EduMatrix GC] Cache nettoyé: ${countPresences} présences, ${countPaiements} paiements supprimés.`)

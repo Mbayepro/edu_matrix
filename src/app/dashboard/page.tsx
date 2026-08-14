@@ -211,25 +211,8 @@ export default function DashboardPage() {
 
       if (isOnlineSafe) {
         setIsRefreshing(true)
-        const [elRes, profRes, clRes, presRes] = await Promise.all([
-          supabase.from('eleves').select('id, statut_paiement').eq('ecole_id', schoolId),
-          supabase.from('profiles').select('id').eq('ecole_id', schoolId).eq('role', 'teacher'),
-          supabase.from('classes').select('id').eq('ecole_id', schoolId),
-          supabase.from('presences').select('id, eleve_id').eq('ecole_id', schoolId).eq('date', today).in('statut', ['présent', 'retard']),
-        ])
-
-        if (!elRes.error && !profRes.error && !clRes.error && !presRes.error) {
-          const s: DashboardStats = {
-            totalEleves: elRes.data?.length || 0,
-            totalEnseignants: profRes.data?.length || 0,
-            elevesImpayes: stats?.elevesImpayes || 0, // Fallback on local indexeddb calculation
-            totalClasses: clRes.data?.length || 0,
-            presencesAujourd: presRes.data?.length || 0,
-          }
-          setStats(s)
-          void syncFromSupabase(schoolId)
-        }
-        setIsRefreshing(false)
+        // Background sync to update IndexedDB (UI will react on next load or when we add observables later)
+        syncFromSupabase(schoolId).finally(() => setIsRefreshing(false))
       }
 
       if (db) {

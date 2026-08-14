@@ -19,6 +19,8 @@ import type {
   FraisScolaire,
   EleveFrais,
   Paiement,
+  Depense,
+  PaiementStaff,
 } from './supabase'
 
 export interface AppreciationTrimestrielle {
@@ -56,6 +58,8 @@ export interface LocalPaiement extends Paiement {
   mois?: string | null
 }
 export interface LocalAppreciation extends AppreciationTrimestrielle {}
+export interface LocalDepense extends Depense {}
+export interface LocalPaiementStaff extends PaiementStaff {}
 
 export interface LocalRapportJournalier {
   id: string
@@ -99,6 +103,8 @@ export class EduMatrixDB extends Dexie {
   frais_scolaires!: Table<LocalFraisScolaire, string>
   eleves_frais!: Table<LocalEleveFrais, string>
   paiements!:   Table<LocalPaiement,   string>
+  depenses!:    Table<LocalDepense,    string>
+  paiements_staff!: Table<LocalPaiementStaff, string>
   sync_queue!:  Table<SyncAction,      number>
   sync_metadata!: Table<{ id: string, table_name: string, last_synced_at: string, ecole_id: string }, string>
   rapports_journaliers!: Table<LocalRapportJournalier, string>
@@ -107,7 +113,7 @@ export class EduMatrixDB extends Dexie {
   constructor() {
     super('EduMatrixDB')
 
-    this.version(16).stores({
+    this.version(17).stores({
       ecoles:      'id, updated_at',
       eleves:      'id, ecole_id, classe_id, matricule, telephone_parent, updated_at, [ecole_id+statut_paiement]',
       classes:     'id, ecole_id, updated_at',
@@ -122,6 +128,8 @@ export class EduMatrixDB extends Dexie {
       frais_scolaires: 'id, ecole_id, updated_at',
       eleves_frais: 'id, eleve_id, ecole_id, updated_at',
       paiements:   'id, eleve_id, ecole_id, date_paiement, mois, updated_at',
+      depenses:    'id, ecole_id, date_depense, categorie, updated_at',
+      paiements_staff: 'id, ecole_id, profile_id, mois, updated_at',
       sync_queue:  '++id, table, ecole_id, createdAt',
       sync_metadata: 'id, table_name, ecole_id',
       rapports_journaliers: 'id, date, ecole_id',
@@ -143,6 +151,8 @@ export class EduMatrixDB extends Dexie {
     this.frais_scolaires = this.table('frais_scolaires')
     this.eleves_frais    = this.table('eleves_frais')
     this.paiements       = this.table('paiements')
+    this.depenses        = this.table('depenses')
+    this.paiements_staff = this.table('paiements_staff')
     this.sync_queue      = this.table('sync_queue')
     this.sync_metadata   = this.table('sync_metadata')
     this.rapports_journaliers = this.table('rapports_journaliers')

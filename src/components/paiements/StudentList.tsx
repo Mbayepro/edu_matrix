@@ -118,52 +118,63 @@ export function StudentList({
             </div>
           </div>
           <div className="flex flex-col items-end gap-1.5">
-            {/* Affichage détaillé des statuts d'inscription et de mensualité */}
+            {/* Affichage détaillé des statuts d'inscription, mensualité et montants restants */}
             {(() => {
               const efs = elevesFrais.filter(ef => ef.eleve_id === e.id)
               let retardsMensuels: string[] = []
               let isInscriptionPaid = true
               let hasInscriptionFee = false
 
+              // Compute remaining amounts for inscription and monthly fees
+              let inscriptionRemaining = 0
+              let mensualiteRemaining = 0
+              let monthlyFee: any = null
+
               for (const ef of efs) {
                 const f = frais.find(fr => fr.id === ef.frais_id)
                 if (f) {
                   const lib = (f.libelle || '').toLowerCase()
                   if (f.frequence === 'mensuel' || lib.includes('mensu') || lib.includes('scolarit')) {
-                     retardsMensuels = [...retardsMensuels, ...getMoisEnRetard(e.id, ef.frais_id)]
+                    // monthly fee
+                    monthlyFee = f
+                    retardsMensuels = [...retardsMensuels, ...getMoisEnRetard(e.id, ef.frais_id)]
                   } else {
-                     const aPayer = Number(ef.montant_a_payer) || (Number(ef.montant_du) - (Number(ef.montant_remise) || 0)) || 0
-                     const paye = paiements.filter(p => p.eleve_id === e.id && p.frais_id === ef.frais_id).reduce((s, p) => s + Number(p.montant), 0)
-                     if (lib.includes('inscription')) {
-                         hasInscriptionFee = true
-                         if (aPayer > paye) isInscriptionPaid = false
-                     }
+                    const aPayer = Number(ef.montant_a_payer) || (Number(ef.montant_du) - (Number(ef.montant_remise) || 0)) || 0
+                    const paye = paiements.filter(p => p.eleve_id === e.id && p.frais_id === ef.frais_id).reduce((s, p) => s + Number(p.montant), 0)
+                    if (lib.includes('inscription')) {
+                      hasInscriptionFee = true
+                      if (aPayer > paye) isInscriptionPaid = false
+                      inscriptionRemaining = Math.max(0, aPayer - paye)
+                    }
                   }
                 }
               }
-              
+
+              // calculate remaining for monthly if fee exists
+              if (monthlyFee) {
+                const totalPaidMonthly = paiements.filter(p => p.eleve_id === e.id && p.frais_id === monthlyFee.id).reduce((s, p) => s + Number(p.montant), 0)
+                const amountDue = Number(monthlyFee.montant) || 0
+                mensualiteRemaining = Math.max(0, amountDue - totalPaidMonthly)
+              }
+
               retardsMensuels = Array.from(new Set(retardsMensuels))
 
               return (
                 <div className="flex flex-col gap-1 items-end w-full max-w-[140px]">
                   {hasInscriptionFee && (
-                    <span className={`w-full text-right text-[8px] font-black uppercase tracking-[0.1em] px-2 py-1 rounded-md border shadow-sm truncate ${
-                      isInscriptionPaid 
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                        : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-                    }`}>
-                      Inscrip: {isInscriptionPaid ? 'Payée' : 'Impayée'}
-                    </span>
+                    <div className="flex flex-col items-end">
+                      <span className={`w-full text-right text-[8px] font-black uppercase tracking-[0.1em] px-2 py-1 rounded-md border shadow-sm truncate ${isInscriptionPaid ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'}`}> 
+                        Inscrip: {isInscriptionPaid ? 'Payée' : 'Impayée'}
+                      </span>
+                      <span className="text-[8px] font-black text-slate-400">{inscriptionRemaining.toLocaleString('fr-FR')} F</span>
+                    </div>
                   )}
-                  <span className={`w-full text-right text-[8px] font-black uppercase tracking-[0.1em] px-2 py-1 rounded-md border shadow-sm truncate ${
-                    retardsMensuels.length === 0
-                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                      : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                  }`}>
-                    {retardsMensuels.length === 0 
-                      ? 'Mois: À Jour' 
-                      : `Mois Retard: ${retardsMensuels.length}`}
+                  <span className={`w-full text-right text-[8px] font-black uppercase tracking-[0.1em] px-2 py-1 rounded-md border shadow-sm truncate ${retardsMensuels.length === 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}> 
+                    {retardsMensuels.length === 0 ? 'Mois: À Jour' : `Mois Retard: ${retardsMensuels.length}`}
                   </span>
+                  {monthlyFee && (
+                    <span className="text-[8px] font-black text-slate-400">{mensualiteRemaining.toLocaleString('fr-FR')} F</span>
+                  )}
                 </div>
               )
             })()}

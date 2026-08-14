@@ -214,8 +214,41 @@ export interface EleveFrais {
   montant_du: number
   montant_remise: number
   montant_a_payer: number
+  solde_credit?: number // Report automatique du surplus de paiement
   derniere_relance_le?: string | null
   annee_scolaire?: string
+}
+
+export interface Depense {
+  id: string
+  ecole_id: string
+  libelle: string
+  montant: number
+  categorie: 'loyer' | 'electricite' | 'eau' | 'fournitures' | 'materiel' | 'entretien' | 'communication' | 'transport' | 'autre'
+  date_depense: string
+  description?: string | null
+  created_by?: string | null
+  created_at: string
+  updated_at?: string
+  deleted_at?: string | null
+}
+
+export interface PaiementStaff {
+  id: string
+  ecole_id: string
+  profile_id: string
+  montant: number
+  mois: string
+  annee_scolaire: string
+  mode: 'Espèces' | 'Mobile Money' | 'Virement' | 'Chèque'
+  reference?: string | null
+  note?: string | null
+  date_paiement: string
+  created_by?: string | null
+  created_at: string
+  updated_at?: string
+  // Joined
+  profile?: Profile
 }
 
 export interface Paiement {
@@ -283,6 +316,8 @@ export type Database = {
       frais_scolaires: { Row: FraisScolaire; Insert: Omit<FraisScolaire, 'id' | 'created_at'>; Update: Partial<Omit<FraisScolaire, 'id' | 'created_at'>> }
       eleves_frais:    { Row: EleveFrais;    Insert: Omit<EleveFrais,    'id'>;               Update: Partial<Omit<EleveFrais, 'id'>> }
       paiements:       { Row: Paiement;      Insert: Omit<Paiement,      'id' | 'created_at'>; Update: Partial<Omit<Paiement, 'id' | 'created_at'>> }
+      depenses:        { Row: Depense;       Insert: Omit<Depense,       'id' | 'created_at'>; Update: Partial<Omit<Depense, 'id' | 'created_at'>> }
+      paiements_staff: { Row: PaiementStaff; Insert: Omit<PaiementStaff, 'id' | 'created_at'>; Update: Partial<Omit<PaiementStaff, 'id' | 'created_at'>> }
       enseignants_classes: { Row: EnseignantClasse; Insert: Omit<EnseignantClasse, 'id' | 'created_at'>; Update: Partial<Omit<EnseignantClasse, 'id' | 'created_at'>> }
       emploi_du_temps: { Row: EmploiDuTemps; Insert: Omit<EmploiDuTemps, 'id' | 'created_at'>; Update: Partial<Omit<EmploiDuTemps, 'id' | 'created_at'>> }
       emargements:     { Row: Emargement;     Insert: Omit<Emargement,     'id'>; Update: Partial<Omit<Emargement, 'id'>> }
