@@ -167,14 +167,15 @@ function PaiementsContent() {
 
       // 2. If online, trigger background refresh
       if (isOnline) {
-        await syncFromSupabase(schoolId)
-        // Re-load after sync to get latest
-        await Promise.all([
-          loadElevesLocal(schoolId),
-          loadFraisLocal(schoolId),
-          loadElevesFraisLocal(schoolId),
-          loadPaiementsLocal(schoolId),
-        ])
+        syncFromSupabase(schoolId).then(async () => {
+          // Re-load after sync to get latest
+          await Promise.all([
+            loadElevesLocal(schoolId),
+            loadFraisLocal(schoolId),
+            loadElevesFraisLocal(schoolId),
+            loadPaiementsLocal(schoolId),
+          ])
+        }).catch(e => console.warn('Sync failed', e))
       }
     } finally {
       setLoading(false)

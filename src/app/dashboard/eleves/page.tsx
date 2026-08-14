@@ -107,11 +107,12 @@ export default function ElevesPage() {
 
       // 2. Si online, Sync du fond
       if (isOnline) {
-        await syncFromSupabase(ecoleId)
-        // Refresh local après sync si online
-        let freshCls = await db.classes.where('ecole_id').equals(ecoleId).sortBy('nom_classe')
-        if (isTeacher) freshCls = freshCls.filter(c => teacherClasseIds.includes(c.id))
-        setClasses(freshCls as unknown as Classe[])
+        syncFromSupabase(ecoleId).then(async () => {
+          // Refresh local après sync si online
+          let freshCls = await db.classes.where('ecole_id').equals(ecoleId).sortBy('nom_classe')
+          if (isTeacher) freshCls = freshCls.filter(c => teacherClasseIds.includes(c.id))
+          setClasses(freshCls as unknown as Classe[])
+        }).catch(e => console.warn('Sync failed', e))
       }
 
     } catch (err) {

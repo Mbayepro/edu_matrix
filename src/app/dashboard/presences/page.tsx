@@ -76,10 +76,12 @@ export default function PresencesPage() {
 
       // 2. Si Online, Sync du fond
       if (isOnline) {
-        await syncFromSupabase(schoolId)
-        // Refresh local
-        const freshCls = await db.classes.where('ecole_id').equals(schoolId).sortBy('nom_classe')
-        setClasses(freshCls as unknown as Classe[])
+        syncFromSupabase(schoolId).then(async () => {
+          if (!db) return
+          // Refresh local
+          const freshCls = await db.classes.where('ecole_id').equals(schoolId).sortBy('nom_classe')
+          setClasses(freshCls as unknown as Classe[])
+        }).catch(e => console.warn('Sync failed', e))
       }
     } finally {
       setLoading(false)
@@ -105,7 +107,7 @@ export default function PresencesPage() {
 
       // 2. Si Online, Sync
       if (isOnline) {
-        await syncFromSupabase(ecoleId)
+        syncFromSupabase(ecoleId).catch(e => console.warn('Sync failed', e))
       }
     } finally {
       setLoading(false)

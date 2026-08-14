@@ -145,16 +145,18 @@ export default function ClassesPage() {
 
       // 2. Background Pull if Online
       if (isOnline) {
-        await syncFromSupabase(eid)
-        const updatedCls = await db.classes.where('ecole_id').equals(eid).toArray()
-        const updatedEleves = await db.eleves.where('ecole_id').equals(eid).toArray()
-        setClasses(updatedCls.map((c: LocalClasse) => ({
-          ...c,
-          nb_eleves: updatedEleves.filter((e: LocalEleve) => e.classe_id === c.id).length,
-        })))
-        
-        const updatedSers = await db.series.where('ecole_id').equals(eid).toArray()
-        setSeries(updatedSers)
+        syncFromSupabase(eid).then(async () => {
+          if (!db) return
+          const updatedCls = await db.classes.where('ecole_id').equals(eid).toArray()
+          const updatedEleves = await db.eleves.where('ecole_id').equals(eid).toArray()
+          setClasses(updatedCls.map((c: LocalClasse) => ({
+            ...c,
+            nb_eleves: updatedEleves.filter((e: LocalEleve) => e.classe_id === c.id).length,
+          })))
+          
+          const updatedSers = await db.series.where('ecole_id').equals(eid).toArray()
+          setSeries(updatedSers)
+        }).catch(e => console.warn('Sync failed', e))
       }
     } finally {
       setLoading(false)
