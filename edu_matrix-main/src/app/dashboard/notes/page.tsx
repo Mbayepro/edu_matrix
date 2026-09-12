@@ -1,0 +1,963 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import type { Classe, Matiere, Evaluation, Eleve, Note, Niveau, Serie } from '@/lib/supabase'
+import {
+  Loader2,
+  Save,
+  Plus,
+  Edit,
+  Trash2,
+  BookOpen,
+  Users,
+  Calendar,
+  Filter,
+} from 'lucide-react'
+import { useProfile } from '@/hooks/useProfile'
+import { useToast } from '@/contexts/ToastContext'
+import { useTeacherClasses } from '@/hooks/useTeacherClasses'
+import { getTodayDate } from '@/lib/dateUtils'
+import AppreciationsModal from '@/components/AppreciationsModal'
+import { CalculateurMoyennes } from '@/lib/calculMoyennes'
+
+export default function NotesPage() {
+  const { profile, loading: profileLoading } = useProfile()
+  const ecoleId = profile?.ecole_id || null
+  const isTeacher = profile?.role === 'teacher'
+
+  // Professeur : récupère uniquement ses classes et matières assignées
+  const { classeIds: teacherClasseIds, getMatiereIdsForClasse, loading: teacherLoading } = useTeacherClasses(
+    isTeacher ? profile?.id : null
+  )
+
+  const [classes, setClasses] = useState<Classe[]>([])
+  const [niveaux, setNiveaux] = useState<Niveau[]>([])
+  const [series, setSeries] = useState<Serie[]>([])
+  const [matieres, setMatieres] = useState<Matiere[]>([])
+  const [evaluations, setEvaluations] = useState<Evaluation[]>([])
+  const [eleves, setEleves] = useState<Eleve[]>([])
+  const [notes, setNotes] = useState<Record<string, number>>({})
+  const [moyennesGenerales, setMoyennesGenerales] = useState<Record<string, number>>({})
+  
+  const [selectedClasse, setSelectedClasse] = useState<string>('')
+  const [selectedMatiere, setSelectedMatiere] = useState<string>('')
+  const [selectedTrimestre, setSelectedTrimestre] = useState<1 | 2 | 3>(1)
+  const [selectedEvaluation, setSelectedEvaluation] = useState<string>('')
+  const [anneeScolaire, setAnneeScolaire] = useState<string>('2026-2027')
+  const [typePeriode, setTypePeriode] = useState<'trimestre' | 'semestre'>('trimestre')
+  
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const { showToast } = useToast()
+  const [showNewEvalModal, setShowNewEvalModal] = useState(false)
+  const [showAppreciationsModal, setShowAppreciationsModal] = useState(false)
+  const [newEval, setNewEval] = useState({
+    type: 'controle' as 'controle' | 'devoir' | 'composition',
+    date: getTodayDate(),
+    coef: 1,
+    bareme: 20,
+  })
+
+  useEffect(() => {
+    if (selectedClasse) {
+      loadMatieres()
+      loadEleves()
+    }
+  }, [selectedClasse])
+
+  useEffect(() => {
+    if (selectedClasse && selectedMatiere && selectedTrimestre && anneeScolaire) {
+      loadEvaluations()
+    }
+  }, [selectedClasse, selectedMatiere, selectedTrimestre, anneeScolaire])
+
+  useEffect(() => {
+    if (selectedEvaluation) {
+      loadNotes()
+    }
+  }, [selectedEvaluation])
+
+  async function loadBaseData(schoolId: string) {
+    setLoading(true)
+    try {
+      const { data: ecole } = await supabase
+        .from('ecoles')
+        .select('type_periode')
+        .eq('id', schoolId)
+        .single() as { data: { type_periode: 'trimestre' | 'semestre' } | null; error: any }
+        
+      if (ecole?.type_periode) {
+        setTypePeriode(ecole.type_periode)
+      }
+
+      await Promise.all([
+        loadNiveaux(schoolId),
+        loadSeries(schoolId),
+        loadClasses(schoolId)
+      ])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (profileLoading) return
+    if (!ecoleId) { setLoading(false); return }
+    // Attendre les assignations du prof
+    if (isTeacher && teacherLoading) return
+    loadBaseData(ecoleId)
+  }, [ecoleId, profileLoading, isTeacher, teacherLoading, teacherClasseIds.join(',')])
+
+  async function loadNiveaux(schoolId: string) {
+    const { data } = await supabase
+      .from('niveaux')
+      .select('*')
+      .eq('ecole_id', schoolId)
+      .eq('is_active', true)
+      .order('ordre')
+    setNiveaux(data ?? [])
+  }
+
+  async function loadSeries(schoolId: string) {
+    const { data } = await supabase
+      .from('series')
+      .select('*')
+      .eq('ecole_id', schoolId)
+      .eq('is_active', true)
+      .order('code')
+    setSeries(data ?? [])
+  }
+
+  async function loadClasses(schoolId: string) {
+    if (isTeacher) {
+      // Prof : uniquement ses classes assignées
+      if (teacherClasseIds.length === 0) {
+        setClasses([])
+        return
+      }
+      const { data } = await supabase
+        .from('classes')
+        .select('*, niveau_info:niveaux(cycle)')
+        .in('id', teacherClasseIds)
+        .order('nom_classe')
+      setClasses(data ?? [])
+    } else {
+      // Directeur : toutes les classes de l'école
+      const { data } = await supabase
+        .from('classes')
+        .select('*, niveau_info:niveaux(cycle)')
+        .eq('ecole_id', schoolId)
+        .order('nom_classe')
+      setClasses(data ?? [])
+    }
+  }
+
+  async function loadMatieres() {
+    if (!selectedClasse || !ecoleId) return
+    
+    const { data: classeData } = await supabase
+      .from('classes')
+      .select('niveau_id, serie_id, niveau_info:niveaux(cycle)')
+      .eq('id', selectedClasse)
+      .single() as { data: any; error: any }
+
+    try {
+      let matieresList: Matiere[] = []
+
+      if (classeData?.niveau_id) {
+        let query = supabase
+          .from('coefficients_matieres')
+          .select(`matiere:matieres(*)`)
+          .eq('ecole_id', ecoleId)
+          .eq('niveau_id', classeData.niveau_id)
+          .eq('is_obligatoire', true)
+
+        if (classeData.serie_id) {
+           query = query.or(`serie_id.eq.${classeData.serie_id},serie_id.is.null`)
+        } else {
+           query = query.is('serie_id', null)
+        }
+
+        const { data } = await query
+        matieresList = (data?.map((cm: any) => cm.matiere).filter(Boolean) as Matiere[]) ?? []
+      }
+      
+      if (!matieresList.length) {
+        const { data: allMatieres } = await supabase
+          .from('matieres')
+          .select('*')
+          .eq('ecole_id', ecoleId)
+          .eq('is_active', true)
+          .order('nom')
+        matieresList = allMatieres ?? []
+      }
+
+      // Pour les professeurs : restreindre aux matières assignées à cette classe
+      if (isTeacher) {
+        const assignedMatiereIds = getMatiereIdsForClasse(selectedClasse)
+        if (assignedMatiereIds && assignedMatiereIds.length > 0) {
+          const filtered = matieresList.filter((m) => assignedMatiereIds.includes(m.id))
+          if (filtered.length > 0) {
+            matieresList = filtered
+          } else {
+            const { data: assignedMatieres } = await supabase
+              .from('matieres')
+              .select('*')
+              .in('id', assignedMatiereIds)
+              .eq('is_active', true)
+            matieresList = assignedMatieres ?? []
+          }
+        }
+      }
+
+      setMatieres(matieresList)
+    } catch (error) {
+      console.error('Erreur lors du chargement des matières:', error)
+      const { data } = await supabase.from('matieres').select('*').eq('ecole_id', ecoleId).eq('is_active', true).order('nom')
+      setMatieres(data ?? [])
+    }
+  }
+
+  async function loadEvaluations() {
+    if (!selectedClasse || !selectedMatiere || !selectedTrimestre) return
+    
+    const { data, error } = await supabase
+      .from('evaluations')
+      .select('*, matiere:matieres(nom), classe:classes(nom_classe)')
+      .eq('classe_id', selectedClasse)
+      .eq('matiere_id', selectedMatiere)
+      .eq('trimestre', selectedTrimestre)
+      .order('date', { ascending: false })
+    
+    if (error) {
+      console.error('[Notes] Erreur chargement évaluations:', error)
+    }
+
+    // Filtre annee_scolaire en post-traitement (la colonne peut ne pas exister)
+    let filteredData = (data as any) ?? []
+    if (filteredData.length > 0 && filteredData[0]?.annee_scolaire !== undefined) {
+      filteredData = filteredData.filter((ev: any) => ev.annee_scolaire === anneeScolaire)
+    }
+    
+    setEvaluations(filteredData)
+    if (filteredData.length > 0) {
+      setSelectedEvaluation(filteredData[0].id)
+    } else {
+      setSelectedEvaluation('')
+      setNotes({})
+    }
+  }
+
+  async function loadEleves() {
+    if (!selectedClasse) return
+    
+    const { data } = await supabase
+      .from('eleves')
+      .select('*')
+      .eq('classe_id', selectedClasse)
+      .order('nom')
+    
+    setEleves(data ?? [])
+  }
+
+  async function loadNotes() {
+    if (!selectedEvaluation) return
+    
+    // Charger les notes de cette évaluation
+    const { data: notesData } = await supabase
+      .from('notes')
+      .select('*, eleve:eleves(nom, prenom)')
+      .eq('evaluation_id', selectedEvaluation)
+    
+    const notesMap: Record<string, number> = {}
+    notesData?.forEach((note: any) => {
+      notesMap[note.eleve_id] = note.note
+    })
+    setNotes(notesMap)
+
+    // Charger les moyennes générales via le calculateur TS (qui gère les bonnes règles CC/Composition)
+    if (ecoleId && selectedClasse && selectedTrimestre) {
+      try {
+        const bulletins = await CalculateurMoyennes.genererBulletinsClasse(selectedClasse, selectedTrimestre, anneeScolaire)
+        const moyennesMap: Record<string, number> = {}
+        bulletins.forEach(b => {
+          if (b.moyenne_generale !== null) {
+             moyennesMap[b.eleve.id] = b.moyenne_generale
+          }
+        })
+        setMoyennesGenerales(moyennesMap)
+      } catch (err) {
+        console.error('Erreur calcul des moyennes générales:', err)
+      }
+    }
+  }
+
+  async function createEvaluation() {
+    if (!selectedClasse || !selectedMatiere || !ecoleId) return
+    
+    setSaving(true)
+    try {
+      const { data, error } = await (supabase.from('evaluations' as any) as any)
+        .insert({
+          ecole_id: ecoleId,
+          classe_id: selectedClasse,
+          matiere_id: selectedMatiere,
+          trimestre: selectedTrimestre,
+          annee_scolaire: anneeScolaire,
+          type: newEval.type,
+          date: newEval.date,
+          coef: selectedMatiereData?.coefficient || 1,
+          bareme: newEval.bareme,
+        })
+        .select()
+        .single() as any
+
+      if (!error && data) {
+        setShowNewEvalModal(false)
+        setNewEval({
+          type: 'controle',
+          date: getTodayDate(),
+          coef: 1,
+          bareme: 20,
+        })
+        await loadEvaluations()
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function saveNotes() {
+    if (!selectedEvaluation || eleves.length === 0) return
+    
+    setSaving(true)
+    try {
+      // 1. Notes to upsert (valid numbers)
+      const notesToInsert = eleves
+        .filter(eleve => notes[eleve.id] !== undefined && notes[eleve.id] !== null && String(notes[eleve.id]) !== '')
+        .map(eleve => ({
+          ecole_id: ecoleId!,
+          eleve_id: eleve.id,
+          evaluation_id: selectedEvaluation,
+          note: Number(notes[eleve.id]),
+          professeur_id: profile?.id,
+        }))
+
+      // 2. Notes to delete (cleared/undefined inputs)
+      const eleveIdsToDelete = eleves
+        .filter(eleve => notes[eleve.id] === undefined || notes[eleve.id] === null || String(notes[eleve.id]) === '')
+        .map(eleve => eleve.id)
+
+      let success = true
+      let errorMsg = ''
+
+      // Execute delete for cleared notes
+      if (eleveIdsToDelete.length > 0) {
+        const { error: delErr } = await (supabase
+          .from('notes' as any) as any)
+          .delete()
+          .eq('evaluation_id', selectedEvaluation)
+          .in('eleve_id', eleveIdsToDelete)
+        
+        if (delErr) {
+          success = false
+          errorMsg = delErr.message
+        }
+      }
+
+      // Execute upsert for valid notes
+      if (notesToInsert.length > 0 && success) {
+        const { error: upsertErr } = await (supabase
+          .from('notes' as any) as any)
+          .upsert(notesToInsert as any, {
+            onConflict: 'eleve_id,evaluation_id',
+            ignoreDuplicates: false,
+          })
+        
+        if (upsertErr) {
+          success = false
+          errorMsg = upsertErr.message
+        }
+      }
+
+      if (success) {
+        showToast('Notes enregistrées avec succès.', 'success')
+        // REFRESH DATA to see new averages
+        await loadNotes()
+      } else {
+        showToast('Erreur : ' + errorMsg, 'error')
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function deleteEvaluation(id: string) {
+    if (!confirm('Voulez-vous vraiment supprimer cette évaluation et toutes ses notes ?')) return
+    setSaving(true)
+    try {
+      const { error } = await (supabase.from('evaluations' as any) as any).delete().eq('id', id)
+      if (!error) {
+        showToast('Évaluation supprimée avec succès', 'success')
+        setSelectedEvaluation('')
+        await loadEvaluations()
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function updateEvaluation(ev: Evaluation) {
+    const newBareme = prompt('Nouveau Barème (ex: 20)?', ev.bareme.toString())
+    if (!newBareme || isNaN(Number(newBareme))) return
+
+    setSaving(true)
+    try {
+      const { error } = await (supabase.from('evaluations' as any) as any).update({ bareme: Number(newBareme) } as any).eq('id', ev.id)
+      if (!error) {
+        showToast('Barème mis à jour', 'success')
+        await loadEvaluations()
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const getMention = (note: number, bareme: number = 20): string => {
+    if (note === undefined || note === null) return '-';
+    
+    // Si le barème est sur 10 (ex: primaire au Sénégal)
+    if (bareme === 10) {
+      if (note < 5) return 'Insuffisant'
+      if (note < 6) return 'Passable'
+      if (note < 7) return 'Assez bien'
+      if (note < 8) return 'Bien'
+      return 'Très bien'
+    }
+
+    // Sinon, comportement classique sur 20
+    const noteSur20 = (note / bareme) * 20;
+    
+    if (noteSur20 < 10) return 'Insuffisant'
+    if (noteSur20 < 12) return 'Passable'
+    if (noteSur20 < 14) return 'Assez bien'
+    if (noteSur20 < 16) return 'Bien'
+    return 'Très bien'
+  }
+
+  const getNoteColor = (note: number, bareme: number = 20) => {
+    if (note === undefined || note === null) return 'text-slate-500 bg-slate-50';
+    
+    // Si le barème est sur 10
+    if (bareme === 10) {
+      if (note < 5) return 'text-red-600 bg-red-50'
+      if (note < 6) return 'text-orange-600 bg-orange-50'
+      if (note < 7) return 'text-yellow-600 bg-yellow-50'
+      return 'text-green-600 bg-green-50'
+    }
+
+    // Sinon, sur 20
+    const noteSur20 = (note / bareme) * 20;
+    
+    if (noteSur20 < 10) return 'text-red-600 bg-red-50'
+    if (noteSur20 < 12) return 'text-orange-600 bg-orange-50'
+    if (noteSur20 < 14) return 'text-yellow-600 bg-yellow-50'
+    return 'text-green-600 bg-green-50'
+  }
+
+  const selectedEvaluationData = evaluations.find(e => e.id === selectedEvaluation)
+  const selectedClasseData = classes.find(c => c.id === selectedClasse)
+  const selectedMatiereData = matieres.find(m => m.id === selectedMatiere)
+
+  if (loading || profileLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="flex items-center gap-2 text-slate-500 text-sm">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          Chargement...
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-8 pb-10">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+              <BookOpen className="w-5 h-5 text-emerald-400" />
+            </div>
+            <h1 className="text-3xl font-black text-white tracking-tight">Gestion des Notes</h1>
+          </div>
+          <p className="text-sm text-slate-400 font-medium tracking-tight">
+            Saisissez les évaluations et suivez les performances académiques des élèves.
+          </p>
+        </div>
+
+        {selectedEvaluationData && (
+          <div className="flex items-center gap-4 px-4 py-2 bg-white/5 rounded-2xl border border-white/10 shadow-sm">
+            <div className="text-center px-4 border-r border-white/10">
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Type</div>
+              <div className="text-sm font-black text-white leading-tight uppercase">{selectedEvaluationData.type}</div>
+            </div>
+            <div className="text-center px-4">
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Barème</div>
+              <div className="text-sm font-black text-emerald-400 leading-tight">/{selectedEvaluationData.bareme}</div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Filters */}
+      <div className="premium-glass rounded-[2rem] p-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+          <div className="space-y-2 min-w-0">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Structure / Classe</label>
+            <select
+              value={selectedClasse}
+              onChange={(e) => setSelectedClasse(e.target.value)}
+              className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3.5 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all appearance-none"
+            >
+              <option value="" className="bg-slate-900">Sélectionner une classe</option>
+              {classes.map(cls => (
+                <option key={cls.id} value={cls.id} className="bg-slate-900">{cls.nom_classe}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-2 min-w-0">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Discipline / Matière</label>
+            <select
+              value={selectedMatiere}
+              onChange={(e) => setSelectedMatiere(e.target.value)}
+              className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3.5 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all appearance-none"
+            >
+              <option value="" className="bg-slate-900">Sélectionner une matière</option>
+              {matieres.map(mat => (
+                <option key={mat.id} value={mat.id} className="bg-slate-900">{mat.nom}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-2 min-w-0">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Période scolaire</label>
+            <select
+              value={selectedTrimestre}
+              onChange={(e) => setSelectedTrimestre(Number(e.target.value) as 1 | 2 | 3)}
+              className="w-full bg-white/5 border border-white/5 rounded-xl px-4 py-3.5 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all appearance-none"
+            >
+              {typePeriode === 'semestre' ? (
+                <>
+                  <option value={1} className="bg-slate-900">1er Semestre</option>
+                  <option value={2} className="bg-slate-900">2ème Semestre</option>
+                </>
+              ) : (
+                <>
+                  <option value={1} className="bg-slate-900">1er Trimestre</option>
+                  <option value={2} className="bg-slate-900">2ème Trimestre</option>
+                  <option value={3} className="bg-slate-900">3ème Trimestre</option>
+                </>
+              )}
+            </select>
+          </div>
+
+          <div className="space-y-2 min-w-0">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Année Scolaire</label>
+            <div className="relative group">
+              <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-400 transition-transform group-hover:scale-110" />
+              <input
+                type="text"
+                value={anneeScolaire}
+                onChange={(e) => setAnneeScolaire(e.target.value)}
+                className="w-full bg-white/5 border border-white/5 rounded-xl pl-11 pr-4 py-3.5 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all placeholder:text-slate-600"
+                placeholder="2024-2025"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2 min-w-0">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Séance d&apos;Évaluation</label>
+            <div className="flex gap-2">
+              <select
+                value={selectedEvaluation}
+                onChange={(e) => setSelectedEvaluation(e.target.value)}
+                className="flex-1 bg-white/5 border border-white/5 rounded-xl px-4 py-3.5 text-sm font-black text-white focus:ring-4 focus:ring-emerald-500/10 focus:bg-white/10 transition-all min-w-0 truncate appearance-none"
+              >
+                <option value="" className="bg-slate-900">Choisir</option>
+                {evaluations.map(evaluation => (
+                  <option key={evaluation.id} value={evaluation.id} className="bg-slate-900">
+                    {evaluation.type.toUpperCase()} - {new Date(evaluation.date).toLocaleDateString('fr-FR')}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={() => setShowAppreciationsModal(true)}
+                disabled={!selectedClasse || !selectedMatiere}
+                className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-all shadow-lg shadow-indigo-600/20 disabled:opacity-30 disabled:grayscale active:scale-95"
+                title="Générer Appréciations IA"
+              >
+                ✨
+              </button>
+              <button
+                onClick={() => {
+                  const isPrimary = (classes.find(c => c.id === selectedClasse) as any)?.niveau_info?.cycle === 'primaire'
+                  setNewEval(prev => ({ ...prev, bareme: isPrimary ? 10 : 20 }))
+                  setShowNewEvalModal(true)
+                }}
+                disabled={!selectedClasse || !selectedMatiere}
+                className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-all shadow-lg shadow-emerald-600/20 disabled:opacity-30 disabled:grayscale active:scale-95"
+                title="Ajouter une évaluation"
+              >
+                <Plus className="w-5 h-5 font-black" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {selectedEvaluationData && (
+          <div className="mt-8 p-6 bg-slate-950/50 backdrop-blur-xl border border-white/5 rounded-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500 opacity-5 blur-[80px] -mr-32 -mt-32" />
+            <div className="relative z-10 flex flex-wrap items-center justify-between gap-6">
+              <div className="flex items-center gap-6">
+                <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center backdrop-blur-sm border border-white/10 text-white">
+                  <Calendar className="w-6 h-6 text-emerald-400" />
+                </div>
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-1">Détails de l&apos;évaluation</div>
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-lg font-black text-white capitalize">{selectedEvaluationData.type} de {selectedMatiereData?.nom}</h3>
+                    <span className="px-2 py-0.5 rounded-md bg-white/10 text-white text-[10px] font-black uppercase tracking-widest border border-white/10">
+                      Coef. {selectedEvaluationData.coef}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 text-right">
+                <div className="px-4 py-2 border-r border-white/10">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Classe</div>
+                  <div className="text-sm font-black text-white">{selectedClasseData?.nom_classe}</div>
+                </div>
+                <div className="px-4 py-2 border-r border-white/10">
+                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Date</div>
+                  <div className="text-sm font-black text-white uppercase">{new Date(selectedEvaluationData.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</div>
+                </div>
+                <div className="flex items-center gap-2 pl-4">
+                  <button 
+                    onClick={() => updateEvaluation(selectedEvaluationData)}
+                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-500 hover:text-emerald-400 hover:border-emerald-500/30 hover:bg-white/10 transition-all"
+                    title="Modifier le barème"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={() => deleteEvaluation(selectedEvaluationData.id)}
+                    className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-500 hover:text-rose-400 hover:border-rose-500/30 hover:bg-white/10 transition-all"
+                    title="Supprimer l'évaluation"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Notes Section with Save Button Fixed/Scrolling */}
+      {selectedEvaluation && eleves.length > 0 && (
+        <div className="space-y-6">
+          <div className="premium-glass rounded-[2rem] overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="px-8 py-6 border-b border-white/5 bg-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 mb-1">Tableau de Saisie</h2>
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-emerald-400" />
+                  <span className="text-base font-black text-white">{eleves.length} élèves inscrits</span>
+                </div>
+              </div>
+              
+              <button
+                onClick={saveNotes}
+                disabled={saving}
+                className="flex items-center justify-center gap-3 px-8 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-black rounded-xl transition-all shadow-xl shadow-emerald-900/20 disabled:opacity-50 active:scale-95"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Enregistrement…
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Mettre à jour les notes
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* DESKTOP TABLE VIEW */}
+            <div className="hidden md:block overflow-x-auto scrollbar-thin scrollbar-thumb-white/10">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/5 bg-white/5">
+                    <th className="text-left px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Élève</th>
+                    <th className="text-center px-4 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest w-40">Note / {selectedEvaluationData?.bareme || 20}</th>
+                    <th className="text-center px-4 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest w-32">Évaluation</th>
+                    <th className="text-center px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest w-40 bg-white/5">Moyenne Générale</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {eleves.map((eleve) => {
+                    const note = notes[eleve.id]
+                    const moyenneEleve = moyennesGenerales[eleve.id]
+                    return (
+                      <tr key={eleve.id} className="group hover:bg-white/5 transition-all duration-300">
+                        <td className="px-8 py-5">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-slate-500 text-xs font-black uppercase transition-transform group-hover:scale-110 border border-white/10">
+                              {eleve.prenom[0]}{eleve.nom[0]}
+                            </div>
+                            <div>
+                              <p className="text-base font-black text-white leading-tight">{eleve.prenom} {eleve.nom}</p>
+                              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">{eleve.matricule}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-5">
+                          <div className="relative max-w-[120px] mx-auto group-focus-within:scale-105 transition-transform">
+                            <input
+                              type="number"
+                              min="0"
+                              max={selectedEvaluationData?.bareme || 20}
+                              step="0.5"
+                              value={note === undefined ? '' : note}
+                              placeholder="—"
+                              onChange={(e) => setNotes(prev => ({
+                                ...prev,
+                                [eleve.id]: e.target.value === '' ? undefined as any : Number(e.target.value)
+                              }))}
+                              className={`w-full px-4 py-3 text-center rounded-[1rem] text-base font-black transition-all border-2 focus:outline-none focus:ring-4 ${
+                                note !== undefined 
+                                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                                  : 'bg-white/5 border-transparent text-slate-600 focus:bg-white/10 focus:border-emerald-500/30'
+                              }`}
+                            />
+                          </div>
+                        </td>
+                        <td className="px-4 py-5 text-center">
+                          <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider ${
+                             getNoteColor(note, selectedEvaluationData?.bareme).replace('bg-', 'bg-opacity-20 bg-')
+                          }`}>
+                            {getMention(note, selectedEvaluationData?.bareme)}
+                          </span>
+                        </td>
+                        <td className="px-8 py-5 text-center bg-white/5">
+                          {moyenneEleve !== undefined ? (
+                            <div className="flex flex-col items-center">
+                              <span className="text-lg font-black text-white">
+                                {(selectedClasseData?.niveau_info?.cycle === 'primaire' ? moyenneEleve / 2 : moyenneEleve).toFixed(2)}
+                              </span>
+                              <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest">
+                                {typePeriode === 'semestre' ? 'Sem.' : 'Trim.'} {selectedTrimestre}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center opacity-30">
+                              <span className="text-sm font-black text-slate-500">—</span>
+                              <span className="text-[9px] text-slate-500 font-black uppercase">N/A</span>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* MOBILE CARD VIEW */}
+            <div className="md:hidden divide-y divide-white/5">
+              {eleves.map((eleve) => {
+                const note = notes[eleve.id]
+                const moyenneEleve = moyennesGenerales[eleve.id]
+                return (
+                  <div key={eleve.id} className="p-6 space-y-4 hover:bg-white/5 transition-all duration-300">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-white/5 text-white flex items-center justify-center font-black text-sm uppercase border border-white/10">
+                        {eleve.prenom[0]}{eleve.nom[0]}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-base font-black text-white truncate">
+                          {eleve.prenom} {eleve.nom}
+                        </p>
+                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">
+                          {eleve.matricule}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Moyenne Générale</p>
+                        <p className="text-base font-black text-white">
+                          {moyenneEleve !== undefined 
+                            ? (selectedClasseData?.niveau_info?.cycle === 'primaire' ? moyenneEleve / 2 : moyenneEleve).toFixed(2)
+                            : '—'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Note / {selectedEvaluationData?.bareme || 20}</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max={selectedEvaluationData?.bareme || 20}
+                          step="0.5"
+                          value={note === undefined ? '' : note}
+                          placeholder="Note"
+                          onChange={(e) => setNotes(prev => ({
+                            ...prev,
+                            [eleve.id]: e.target.value === '' ? undefined as any : Number(e.target.value)
+                          }))}
+                          className={`w-full px-4 py-3 rounded-xl text-lg font-black transition-all border-2 focus:outline-none ${
+                            note !== undefined 
+                              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                              : 'bg-white/5 border-transparent text-slate-600 focus:bg-white/10 focus:border-emerald-500/30'
+                          }`}
+                        />
+                      </div>
+                      <div className="flex flex-col justify-end">
+                         <div className={`h-12 flex items-center justify-center rounded-xl text-[10px] font-black uppercase tracking-widest border border-current opacity-70 ${
+                            getNoteColor(note, selectedEvaluationData?.bareme).replace('bg-', 'bg-opacity-20 bg-')
+                         }`}>
+                            {getMention(note, selectedEvaluationData?.bareme)}
+                         </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+          
+          {/* Scrollable Save Button for Mobile */}
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 md:hidden w-[calc(100%-3rem)] max-w-sm">
+             <button
+               onClick={saveNotes}
+               disabled={saving}
+               className="w-full flex items-center justify-center gap-3 py-4 bg-slate-900 hover:bg-emerald-600 text-white text-sm font-black rounded-2xl transition-all shadow-2xl shadow-slate-900/40 disabled:opacity-50 border border-white/10"
+             >
+               {saving ? (
+                 <Loader2 className="w-5 h-5 animate-spin" />
+               ) : (
+                 <>
+                   <Save className="w-5 h-5" />
+                   ENREGISTRER LES NOTES
+                 </>
+               )}
+             </button>
+          </div>
+        </div>
+      )}
+
+      {/* New Evaluation Modal */}
+      {showNewEvalModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-[2.5rem] p-10 w-full max-w-lg shadow-2xl animate-in zoom-in duration-300 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16" />
+            
+            <div className="relative z-10">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-600/10 flex items-center justify-center text-emerald-600">
+                  <Plus className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">Nouvelle Évaluation</h3>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{selectedMatiereData?.nom} — {selectedClasseData?.nom_classe}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Nature de l&apos;épreuve</label>
+                  <select
+                    value={newEval.type}
+                    onChange={(e) => setNewEval(prev => ({ ...prev, type: e.target.value as any }))}
+                    className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all"
+                  >
+                    <option value="controle">Contrôle de classe</option>
+                    <option value="devoir">Devoir surveillé</option>
+                    <option value="composition">Composition trimestrielle</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Date</label>
+                  <input
+                    type="date"
+                    value={newEval.date}
+                    onChange={(e) => setNewEval(prev => ({ ...prev, date: e.target.value }))}
+                    className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all shadow-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Barème</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={newEval.bareme}
+                    onChange={(e) => setNewEval(prev => ({ ...prev, bareme: Number(e.target.value) }))}
+                    className="w-full bg-slate-50 border-none rounded-xl px-4 py-3.5 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all shadow-sm"
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1">Poids (Coefficient)</label>
+                  <div className="flex items-center gap-4 px-4 py-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="flex-1 text-sm font-bold text-slate-500">
+                      Coefficient de la matière (Lecture seule)
+                    </div>
+                    <span className="w-10 h-10 flex items-center justify-center bg-emerald-100 rounded-lg text-emerald-700 font-black" title="Lecture seule">
+                      {selectedMatiereData?.coefficient || 1}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 mt-10">
+                <button
+                  onClick={() => setShowNewEvalModal(false)}
+                  className="flex-1 px-6 py-4 rounded-xl text-sm font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={createEvaluation}
+                  disabled={saving}
+                  className="flex-[2] py-4 bg-slate-900 hover:bg-emerald-600 text-white rounded-xl text-sm font-black transition-all shadow-xl shadow-slate-900/10 flex items-center justify-center gap-2"
+                >
+                  {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Créer l\'évaluation'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {showAppreciationsModal && selectedMatiere && (
+        <AppreciationsModal
+          isOpen={showAppreciationsModal}
+          onClose={() => setShowAppreciationsModal(false)}
+          classeId={selectedClasse}
+          matiereId={selectedMatiere}
+          trimestre={selectedTrimestre}
+          anneeScolaire={anneeScolaire}
+          ecoleId={ecoleId || ''}
+        />
+      )}
+    </div>
+  )
+}

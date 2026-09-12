@@ -1,0 +1,88 @@
+/* src/app/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-sans: var(--font-outfit), system-ui, sans-serif;
+    --font-mono: var(--font-mono), monospace;
+    
+    /* Ultra Premium Palette */
+    --obsidian: #050505;
+    --emerald-primary: #10b981;
+    --emerald-glow: rgba(16, 185, 129, 0.25);
+    --glass-background: rgba(255, 255, 255, 0.03);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --card-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+    background-color: var(--obsidian);
+  }
+
+  body {
+    font-family: var(--font-sans);
+    color: #f8fafc;
+    min-height: 100vh;
+  }
+
+  /* Scrollbar Ultra Fine */
+  ::-webkit-scrollbar       { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.2); border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--emerald-primary); }
+}
+
+@layer utilities {
+  .font-sans { font-family: var(--font-sans); }
+  .font-mono { font-family: var(--font-mono); }
+
+  /* Simple solid panels */
+  .premium-glass {
+    background: #111827; /* slate-900 */
+    border: 1px solid #1f2937; /* slate-800 */
+  }
+
+  .premium-glass-hover {
+    transition: all 0.2s;
+  }
+  .premium-glass-hover:hover {
+    border-color: #10b981;
+  }
+
+  /* Mesh Background Utility - Ultra Premium Animated */
+  .mesh-gradient {
+    background-color: var(--obsidian);
+  }
+
+  /* Glow Effects */
+  .emerald-glow-text {
+    text-shadow: 0 0 20px var(--emerald-glow);
+  }
+
+  .emerald-glow-box {
+    box-shadow: 0 0 30px var(--emerald-glow);
+  }
+
+  /* Animation fade-in réutilisable */
+  .animate-fade-in {
+    animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .tap-target {
+    min-height: 44px;
+    min-width:  44px;
+  }
+}
